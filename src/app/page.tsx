@@ -7,6 +7,7 @@ import {
   TechStack,
   HowItWorks,
 } from "@/components/landing";
+import { Header } from "@/components/shared/Header";
 
 // Feature card icons as SVG components
 function GraphIcon() {
@@ -69,6 +70,7 @@ function DocumentsIcon() {
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-base-100">
+      <Header />
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />

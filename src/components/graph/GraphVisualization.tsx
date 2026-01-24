@@ -39,6 +39,8 @@ interface GraphVisualizationProps {
   onEdgeClick?: (edgeId: string) => void;
   /** Currently selected node ID */
   selectedNodeId?: string | null;
+  /** Highlighted node IDs */
+  highlightedNodeIds?: string[];
   /** Custom node colors */
   nodeColors?: NodeTypeColors;
   /** Additional CSS class */
@@ -56,6 +58,7 @@ export const GraphVisualization = memo(function GraphVisualization({
   onNodeClick,
   onEdgeClick,
   selectedNodeId,
+  highlightedNodeIds,
   nodeColors,
   className,
 }: GraphVisualizationProps) {
@@ -166,6 +169,7 @@ export const GraphVisualization = memo(function GraphVisualization({
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
         selectedNodeId={selectedNodeId}
+        highlightedNodeIds={highlightedNodeIds}
       />
     </div>
   );

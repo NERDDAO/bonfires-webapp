@@ -53,6 +53,7 @@ interface SigmaEventsProps {
   onNodeClick: (nodeId: string) => void;
   onEdgeClick: (edgeId: string) => void;
   selectedNodeId?: string | null;
+  highlightedNodeIds?: string[];
   isDraggingNodeRef: React.MutableRefObject<boolean>;
 }
 
@@ -60,6 +61,7 @@ function SigmaEvents({
   onNodeClick,
   onEdgeClick,
   selectedNodeId,
+  highlightedNodeIds,
   isDraggingNodeRef,
 }: SigmaEventsProps) {
   const sigma = useSigma();
@@ -131,6 +133,14 @@ function SigmaEvents({
   // Edge reducer for highlighting
   const activeEdge = hoveredEdge || selectedEdge;
   const activeNode = hoveredNode || selectedNodeId;
+  const highlightedSet = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const normalized = (highlightedNodeIds ?? []).map((id) =>
+      id.replace(/^n:/, "")
+    );
+    highlightedSet.current = new Set(normalized);
+  }, [highlightedNodeIds]);
 
   useEffect(() => {
     const graph = sigma.getGraph();
@@ -176,9 +186,11 @@ function SigmaEvents({
       if (!graph || graph.order === 0) return;
 
       graph.forEachNode((node: string) => {
-        const isSelected = selectedNodeId === node;
+        const normalizedNodeId = node.replace(/^n:/, "");
+        const isSelected = selectedNodeId === node || selectedNodeId === normalizedNodeId;
         const isHovered = hoveredNode === node;
-        const isActive = isSelected || isHovered;
+        const isExternalHighlight = highlightedSet.current.has(normalizedNodeId);
+        const isActive = isSelected || isHovered || isExternalHighlight;
 
         graph.setNodeAttribute(node, "highlighted", isActive);
         graph.setNodeAttribute(node, "forceLabel", isActive);
@@ -205,7 +217,7 @@ function SigmaEvents({
     } catch {
       // WebGL context may not be ready
     }
-  }, [hoveredNode, selectedNodeId, sigma]);
+  }, [hoveredNode, selectedNodeId, sigma, highlightedNodeIds]);
 
   return null;
 }
@@ -329,6 +341,7 @@ export interface SigmaGraphProps {
   onNodeClick: (nodeId: string) => void;
   onEdgeClick: (edgeId: string) => void;
   selectedNodeId?: string | null;
+  highlightedNodeIds?: string[];
 }
 
 export function SigmaGraph({
@@ -338,6 +351,7 @@ export function SigmaGraph({
   onNodeClick,
   onEdgeClick,
   selectedNodeId,
+  highlightedNodeIds,
 }: SigmaGraphProps) {
   const isDraggingNodeRef = useRef<boolean>(false);
   const [webglSupport, setWebglSupport] = useState<WebGLSupportStatus>("unknown");
@@ -398,6 +412,7 @@ export function SigmaGraph({
         onNodeClick={onNodeClick}
         onEdgeClick={onEdgeClick}
         selectedNodeId={selectedNodeId}
+        highlightedNodeIds={highlightedNodeIds}
         isDraggingNodeRef={isDraggingNodeRef}
       />
       <NodeDrag isDraggingNodeRef={isDraggingNodeRef} />

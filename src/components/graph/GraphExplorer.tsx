@@ -5,7 +5,7 @@
 
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search, RefreshCw, Settings } from "lucide-react";
 import { useWalletAccount } from "@/lib/wallet/e2e";
@@ -19,6 +19,7 @@ import {
   useAgentSelection,
   useBonfiresQuery,
   useGraphQuery,
+  useGraphExpand,
   useSendChatMessage,
   SelectionActionType,
   PanelActionType,
@@ -112,6 +113,10 @@ function normalizeEdge(raw: Record<string, unknown>): GraphEdge | null {
   };
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value as Record<string, unknown>;
+}
+
 interface GraphExplorerProps {
   /** Initial bonfire ID from URL */
   initialBonfireId?: string | null;
@@ -178,6 +183,10 @@ export function GraphExplorer({
   const [initialGraphData, setInitialGraphData] = useState<GraphData | null>(null);
   const [isHydrating, setIsHydrating] = useState(false);
   const [hydrationError, setHydrationError] = useState<string | null>(null);
+  const [extraGraphData, setExtraGraphData] = useState<GraphData | null>(null);
+  const expandCenterRef = useRef<string | null>(null);
+  const { expand } = useGraphExpand();
+  const nodeCacheRef = useRef<Map<string, GraphElement["data"]>>(new Map());
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -261,9 +270,9 @@ export function GraphExplorer({
       );
       if (episodeItems.length === 0) {
         episodeItems = nodes
-          .filter((node) => node.type === "episode")
+          .filter((node) => node.type === "episode" && !!node.uuid)
           .map((node) => ({
-            uuid: node.uuid,
+            uuid: node.uuid as string,
             name: node.name,
             summary: node.properties?.["summary"] as string | undefined,
             valid_at: node.properties?.["valid_at"] as string | undefined,
@@ -324,9 +333,11 @@ export function GraphExplorer({
 
   useEffect(() => {
     setInitialGraphData(null);
+    setExtraGraphData(null);
     setEpisodes([]);
     setSelectedEpisodeId(null);
     setHydrationError(null);
+    expandCenterRef.current = null;
   }, [agentSelection.selectedAgentId, agentSelection.selectedBonfireId]);
 
   useEffect(() => {
@@ -345,18 +356,91 @@ export function GraphExplorer({
   ]);
 
   const activeGraphData = graphQuery.data ?? initialGraphData;
+
+  const mergeGraphData = useCallback((base: GraphData | null, incoming: GraphData | null) => {
+    if (!base) return incoming;
+    if (!incoming) return base;
+
+    const nodeIds = new Set<string>();
+    const mergedNodes: GraphData["nodes"] = [];
+
+    for (const node of base.nodes) {
+      const nodeRecord = asRecord(node);
+      const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
+      if (!nodeId || nodeIds.has(nodeId)) continue;
+      nodeIds.add(nodeId);
+      mergedNodes.push(node);
+    }
+
+    for (const node of incoming.nodes) {
+      const nodeRecord = asRecord(node);
+      const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
+      if (!nodeId || nodeIds.has(nodeId)) continue;
+      nodeIds.add(nodeId);
+      mergedNodes.push(node);
+    }
+
+    const edgeKeys = new Set<string>();
+    const mergedEdges: GraphData["edges"] = [];
+
+    const addEdge = (edge: GraphData["edges"][number]) => {
+      const edgeRecord = asRecord(edge);
+      const sourceId = normalizeNodeId(
+        edgeRecord["source"] ??
+          edgeRecord["source_uuid"] ??
+          edgeRecord["source_node_uuid"] ??
+          edgeRecord["from_uuid"] ??
+          edgeRecord["from"]
+      );
+      const targetId = normalizeNodeId(
+        edgeRecord["target"] ??
+          edgeRecord["target_uuid"] ??
+          edgeRecord["target_node_uuid"] ??
+          edgeRecord["to_uuid"] ??
+          edgeRecord["to"]
+      );
+      if (!sourceId || !targetId) return;
+      const edgeType = String(
+        edgeRecord["type"] ??
+          edgeRecord["relationship"] ??
+          edgeRecord["relationship_type"] ??
+          edgeRecord["label"] ??
+          ""
+      );
+      const key = `${sourceId}|${targetId}|${edgeType}`;
+      if (edgeKeys.has(key)) return;
+      edgeKeys.add(key);
+      mergedEdges.push(edge);
+    };
+
+    for (const edge of base.edges) addEdge(edge);
+    for (const edge of incoming.edges) addEdge(edge);
+
+    return {
+      nodes: mergedNodes,
+      edges: mergedEdges,
+      metadata: base.metadata ?? incoming.metadata,
+    };
+  }, []);
+
+  const combinedGraphData = useMemo(
+    () => mergeGraphData(activeGraphData, extraGraphData),
+    [activeGraphData, extraGraphData, mergeGraphData]
+  );
   const isGraphLoading = graphQuery.isLoading || isHydrating;
   const graphError = graphQuery.error ?? (hydrationError ? new Error(hydrationError) : null);
 
   // Convert graph data to elements
   const elements: GraphElement[] = useMemo(() => {
-    if (!activeGraphData) return [];
+    if (!combinedGraphData) return [];
 
     const result: GraphElement[] = [];
+    const nodeIds = new Set<string>();
+    const cachedNodes = nodeCacheRef.current;
 
     // Convert nodes
-    for (const node of activeGraphData.nodes) {
-      const nodeRecord = node as Record<string, unknown>;
+    for (const node of combinedGraphData.nodes) {
+      const nodeRecord = asRecord(node);
       const rawLabels = nodeRecord["labels"];
       const labels = Array.isArray(rawLabels)
         ? rawLabels.filter((label): label is string => typeof label === "string")
@@ -367,6 +451,7 @@ export function GraphExplorer({
       );
       const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
       if (!nodeId) continue;
+      nodeIds.add(nodeId);
       const properties =
         (nodeRecord["properties"] as Record<string, unknown> | undefined) ??
         (nodeRecord["attributes"] as Record<string, unknown> | undefined) ??
@@ -395,8 +480,8 @@ export function GraphExplorer({
     }
 
     // Convert edges
-    for (const edge of activeGraphData.edges) {
-      const edgeRecord = edge as Record<string, unknown>;
+    for (const edge of combinedGraphData.edges) {
+      const edgeRecord = asRecord(edge);
       const sourceValue =
         edgeRecord["source"] ??
         edgeRecord["source_uuid"] ??
@@ -412,6 +497,8 @@ export function GraphExplorer({
       if (!sourceValue || !targetValue) continue;
       const sourceId = String(sourceValue).replace(/^n:/, "");
       const targetId = String(targetValue).replace(/^n:/, "");
+      nodeIds.add(sourceId);
+      nodeIds.add(targetId);
       const edgeType =
         (edgeRecord["type"] ??
           edgeRecord["relationship"] ??
@@ -439,8 +526,73 @@ export function GraphExplorer({
       });
     }
 
+    const centerId = urlCenterNode?.replace(/^n:/, "");
+    if (centerId && !nodeIds.has(centerId)) {
+      const cached = cachedNodes.get(centerId);
+      const cachedLabel =
+        (cached?.label as string | undefined) ??
+        (cached?.name as string | undefined) ??
+        (cached?.["title"] as string | undefined);
+
+      result.push({
+        data: {
+          ...(cached ?? {}),
+          id: `n:${centerId}`,
+          label: cachedLabel ?? `center:${centerId.slice(0, 8)}`,
+          node_type:
+            (cached?.node_type as "episode" | "entity" | undefined) ?? "episode",
+          placeholder: !cached,
+        },
+      });
+      nodeIds.add(centerId);
+    }
+
     return result;
-  }, [activeGraphData]);
+  }, [combinedGraphData, urlCenterNode]);
+
+  useEffect(() => {
+    if (!agentSelection.selectedBonfireId || !urlCenterNode) return;
+    if (!activeGraphData) return;
+
+    const centerId = urlCenterNode.replace(/^n:/, "");
+    if (!centerId) return;
+
+    const expandKey = `${agentSelection.selectedBonfireId}:${centerId}:${urlSearchQuery}`;
+    if (expandCenterRef.current === expandKey) return;
+
+    expandCenterRef.current = expandKey;
+    expand({
+      bonfire_id: agentSelection.selectedBonfireId,
+      node_uuid: centerId,
+      depth: 1,
+      limit: 50,
+    })
+      .then((data) => {
+        setExtraGraphData((prev) => mergeGraphData(prev, data));
+      })
+      .catch(() => {
+        expandCenterRef.current = null;
+      });
+  }, [
+    activeGraphData,
+    agentSelection.selectedBonfireId,
+    expand,
+    mergeGraphData,
+    urlCenterNode,
+    urlSearchQuery,
+  ]);
+
+  useEffect(() => {
+    if (elements.length === 0) return;
+    const nextCache = new Map(nodeCacheRef.current);
+    for (const element of elements) {
+      if (!element.data?.id) continue;
+      const rawId = element.data.id as string;
+      const normalizedId = rawId.replace(/^n:/, "");
+      nextCache.set(normalizedId, element.data);
+    }
+    nodeCacheRef.current = nextCache;
+  }, [elements]);
 
   // Update episodes from graph data
   useEffect(() => {
@@ -448,12 +600,12 @@ export function GraphExplorer({
 
     const episodeNodes = activeGraphData.nodes
       .filter((n) => {
-        const nodeRecord = n as Record<string, unknown>;
+        const nodeRecord = asRecord(n);
         const nodeType = nodeRecord["type"] ?? nodeRecord["node_type"];
         return nodeType === "episode";
       })
       .map((n) => {
-        const nodeRecord = n as Record<string, unknown>;
+        const nodeRecord = asRecord(n);
         const properties =
           (nodeRecord["properties"] as Record<string, unknown> | undefined) ??
           (nodeRecord["attributes"] as Record<string, unknown> | undefined) ??
@@ -534,6 +686,17 @@ export function GraphExplorer({
         fact: el.data!['fact'] as string | undefined,
       }));
   }, [selection.selectedNodeId, elements]);
+
+  const highlightedNodeIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (selection.selectedNodeId) {
+      ids.add(selection.selectedNodeId.replace(/^n:/, ""));
+    }
+    if (urlCenterNode) {
+      ids.add(urlCenterNode.replace(/^n:/, ""));
+    }
+    return Array.from(ids);
+  }, [selection.selectedNodeId, urlCenterNode]);
 
   // Handlers
   const handleNodeClick = useCallback(
@@ -832,6 +995,7 @@ export function GraphExplorer({
               loading={isGraphLoading}
               error={graphError}
               selectedNodeId={selection.selectedNodeId}
+              highlightedNodeIds={highlightedNodeIds}
               onNodeClick={handleNodeClick}
               onEdgeClick={handleEdgeClick}
             />

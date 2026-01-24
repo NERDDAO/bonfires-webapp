@@ -7,20 +7,35 @@
 export type NodeType = "entity" | "episode";
 
 export interface GraphNode {
-  uuid: string;
-  name: string;
-  type: NodeType;
-  labels: string[];
-  properties: Record<string, unknown>;
+  uuid?: string;
+  id?: string;
+  name?: string;
+  label?: string;
+  title?: string;
+  type?: NodeType | string;
+  node_type?: NodeType | string;
+  labels?: string[];
+  properties?: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
+  content?: string;
+  summary?: string;
+  valid_at?: string;
   x?: number;
   y?: number;
+  [key: string]: unknown;
 }
 
 export interface GraphEdge {
-  source: string;
-  target: string;
-  type: string;
-  properties: Record<string, unknown>;
+  source?: string;
+  target?: string;
+  type?: string;
+  relationship?: string;
+  label?: string;
+  name?: string;
+  fact?: string;
+  properties?: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface GraphData {

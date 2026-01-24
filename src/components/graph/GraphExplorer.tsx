@@ -597,6 +597,24 @@ export function GraphExplorer({
     router.push(`/graph?${params.toString()}`);
   }, [searchQuery, searchParams, router]);
 
+  const handleSearchAroundNode = useCallback(
+    (nodeUuid: string) => {
+      const nextQuery = searchQuery.trim() || "relationships";
+      setSearchQuery(nextQuery);
+      const params = new URLSearchParams(searchParams.toString());
+      if (agentSelection.selectedBonfireId) {
+        params.set("bonfireId", agentSelection.selectedBonfireId);
+      }
+      if (agentSelection.selectedAgentId) {
+        params.set("agentId", agentSelection.selectedAgentId);
+      }
+      params.set("q", nextQuery);
+      params.set("centerNode", nodeUuid);
+      router.push(`/graph?${params.toString()}`);
+    },
+    [searchQuery, searchParams, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]
+  );
+
   const handleContextMenu = useCallback(
     (nodeData: NodeData, position: { x: number; y: number }) => {
       if (embedded) return; // No context menu in embedded mode
@@ -839,6 +857,7 @@ export function GraphExplorer({
               onBack={wikiNav.back}
               onForward={wikiNav.forward}
               onNodeSelect={handleNodeClick}
+              onSearchAroundNode={handleSearchAroundNode}
             />
           )}
         </div>

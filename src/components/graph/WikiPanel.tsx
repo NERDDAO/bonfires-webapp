@@ -6,7 +6,14 @@
 "use client";
 
 import React from "react";
-import { X, ChevronLeft, ChevronRight, Maximize2, Minimize2, ExternalLink } from "lucide-react";
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
+  Search,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
@@ -67,6 +74,8 @@ export interface WikiPanelProps {
   onForward: () => void;
   /** Callback when a node is selected from wiki */
   onNodeSelect: (nodeId: string) => void;
+  /** Callback to search around selected node */
+  onSearchAroundNode?: (nodeUuid: string) => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -102,6 +111,7 @@ export function WikiPanel({
   onBack,
   onForward,
   onNodeSelect,
+  onSearchAroundNode,
   className,
 }: WikiPanelProps) {
   // Don't render if not enabled or no selection
@@ -297,6 +307,7 @@ export function WikiPanel({
     : node?.name || node?.label || node?.uuid?.slice(0, 8) || "Node";
 
   const typeBadge = edge ? "edge" : isEpisode ? "episode" : "entity";
+  const canSearchAroundNode = !!node?.uuid && !!onSearchAroundNode;
 
   const panelContent = (
     <div
@@ -347,6 +358,17 @@ export function WikiPanel({
 
         {/* Actions */}
         <div className="flex items-center gap-1">
+          {canSearchAroundNode && (
+            <button
+              onClick={() => onSearchAroundNode?.(node.uuid)}
+              className="btn btn-ghost btn-xs btn-square"
+              aria-label="Search around this node"
+              title="Re-query the graph using this node as the center"
+              type="button"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={onToggleMode}
             className="btn btn-ghost btn-xs btn-square"

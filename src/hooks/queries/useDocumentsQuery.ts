@@ -38,12 +38,7 @@ interface DocumentsListResponse {
 /**
  * Response from the labeled_chunks endpoint
  */
-interface ChunksListResponse {
-  chunks: DocumentChunk[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+type ChunksListResponse = LabeledChunksResponse;
 
 /**
  * Generate query key for documents
@@ -140,16 +135,20 @@ export function useProcessingDocuments(bonfireId: string | null) {
 export function labeledChunksQueryKey(params: {
   bonfireId: string | null;
   label?: string | null;
-  limit?: number;
-  offset?: number;
+  page?: number;
+  pageSize?: number;
+  groupBy?: string | null;
+  previewLimit?: number;
 }) {
   return [
     "labeledChunks",
     {
       bonfireId: params.bonfireId,
       label: params.label ?? null,
-      limit: params.limit ?? 50,
-      offset: params.offset ?? 0,
+      page: params.page ?? 1,
+      pageSize: params.pageSize ?? 20,
+      groupBy: params.groupBy ?? null,
+      previewLimit: params.previewLimit ?? null,
     },
   ] as const;
 }
@@ -159,10 +158,14 @@ interface UseLabeledChunksParams {
   bonfireId: string | null;
   /** Filter by taxonomy label */
   label?: string | null;
-  /** Pagination limit */
-  limit?: number;
-  /** Pagination offset */
-  offset?: number;
+  /** Pagination page (1-indexed) */
+  page?: number;
+  /** Pagination page size */
+  pageSize?: number;
+  /** Group results by document */
+  groupBy?: "document" | "chunks";
+  /** Preview chunks per document (documents view) */
+  previewLimit?: number;
   /** Enable/disable the query */
   enabled?: boolean;
 }
@@ -172,10 +175,25 @@ interface UseLabeledChunksParams {
  * This calls the /api/documents endpoint which proxies to /bonfire/{id}/labeled_chunks
  */
 export function useLabeledChunks(params: UseLabeledChunksParams) {
-  const { enabled = true, bonfireId, label, limit = 50, offset = 0 } = params;
+  const {
+    enabled = true,
+    bonfireId,
+    label,
+    page = 1,
+    pageSize = 20,
+    groupBy,
+    previewLimit,
+  } = params;
 
   return useQuery({
-    queryKey: labeledChunksQueryKey({ bonfireId, label, limit, offset }),
+    queryKey: labeledChunksQueryKey({
+      bonfireId,
+      label,
+      page,
+      pageSize,
+      groupBy,
+      previewLimit,
+    }),
     queryFn: async (): Promise<ChunksListResponse> => {
       const searchParams = new URLSearchParams();
 
@@ -185,8 +203,14 @@ export function useLabeledChunks(params: UseLabeledChunksParams) {
       if (label) {
         searchParams.set("label", label);
       }
-      searchParams.set("limit", String(limit));
-      searchParams.set("offset", String(offset));
+      if (groupBy) {
+        searchParams.set("group_by", groupBy);
+      }
+      if (previewLimit !== undefined) {
+        searchParams.set("preview_limit", String(previewLimit));
+      }
+      searchParams.set("page", String(page));
+      searchParams.set("page_size", String(pageSize));
 
       const queryString = searchParams.toString();
       const response = await apiClient.get<ChunksListResponse>(
@@ -195,10 +219,13 @@ export function useLabeledChunks(params: UseLabeledChunksParams) {
 
       // Transform response if needed (ensure chunks array exists)
       return {
+        ...response,
         chunks: response.chunks ?? [],
-        total: response.total ?? 0,
-        limit: response.limit ?? limit,
-        offset: response.offset ?? offset,
+        total_chunks: response.total_chunks ?? response.chunks?.length ?? 0,
+        page: response.page ?? page,
+        page_size: response.page_size ?? pageSize,
+        labels: response.labels ?? [],
+        summary: response.summary,
       };
     },
     enabled: enabled && !!bonfireId,

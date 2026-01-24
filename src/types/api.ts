@@ -12,6 +12,7 @@ export interface BonfireInfo {
   description?: string;
   created_at: string;
   agent_count: number;
+  latest_taxonomies?: TaxonomyInfo[];
 }
 
 export interface AgentInfo {
@@ -313,6 +314,29 @@ export interface TaxonomyLabel {
   color?: string;
 }
 
+export interface TaxonomyInfo {
+  id?: string;
+  _id?: string;
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+export interface TaxonomyStat {
+  taxonomy_name: string;
+  taxonomy_id?: string;
+  chunk_count: number;
+}
+
+export interface TaxonomyStatsResponse {
+  bonfire_id: string;
+  total_chunks: number;
+  labeled_chunks: number;
+  unlabeled_chunks: number;
+  taxonomy_stats: TaxonomyStat[];
+  taxonomy_count: number;
+}
+
 /**
  * Document summary statistics
  */
@@ -327,10 +351,21 @@ export interface DocumentSummary {
  * Response from labeled chunks API endpoint
  */
 export interface LabeledChunksResponse {
-  chunks: DocumentChunk[];
-  total: number;
-  limit: number;
-  offset: number;
+  bonfire_id?: string;
+  view?: "chunks" | "documents";
+  chunks?: DocumentChunk[];
+  documents?: Record<string, unknown>[];
+  chunks_by_taxonomy?: Record<string, unknown>;
+  total_chunks?: number;
+  labeled_chunks?: number;
+  unlabeled_chunks?: number;
+  taxonomy_count?: number;
+  message?: string;
+  page?: number;
+  page_size?: number;
+  total_pages?: number;
+  has_next?: boolean;
+  has_previous?: boolean;
   labels?: TaxonomyLabel[];
   summary?: DocumentSummary;
 }

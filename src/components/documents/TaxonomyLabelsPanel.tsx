@@ -89,6 +89,8 @@ export function TaxonomyLabelsPanel({
     );
   }
 
+  const totalLabeledChunks = labels.reduce((acc, label) => acc + label.count, 0);
+
   return (
     <div className={`card bg-base-200 ${className}`}>
       <div className="card-body p-4">
@@ -191,13 +193,18 @@ export function TaxonomyLabelsPanel({
                       <button
                         key={label.name}
                         className={`
-                          badge gap-1 cursor-pointer transition-all
+                          badge gap-2 cursor-pointer transition-all max-w-full
                           ${isSelected ? `${colorClass} ring-2 ring-offset-2 ring-primary` : `badge-outline hover:${colorClass}`}
                         `}
                         onClick={() => handleLabelClick(label.name)}
+                        title={label.name}
                       >
-                        {label.name}
-                        <span className="text-xs opacity-70">({label.count})</span>
+                        <span className="line-clamp-2 text-left leading-snug">
+                          {label.name}
+                        </span>
+                        <span className="badge badge-ghost badge-xs shrink-0">
+                          {label.count}
+                        </span>
                       </button>
                     );
                   })}
@@ -207,10 +214,15 @@ export function TaxonomyLabelsPanel({
                 <div className="pt-2 border-t border-base-300 mt-3">
                   <div className="flex items-center justify-between text-xs text-base-content/50">
                     <span>
-                      {labels.reduce((acc, l) => acc + l.count, 0)} total labeled chunks
+                      {totalLabeledChunks} total labeled chunks
                     </span>
                     <span>{labels.length} categories</span>
                   </div>
+                  {totalLabeledChunks === 0 && (
+                    <p className="mt-2 text-xs text-base-content/50">
+                      No chunks labeled yet. Run labeling to populate counts.
+                    </p>
+                  )}
                 </div>
               </>
             )}

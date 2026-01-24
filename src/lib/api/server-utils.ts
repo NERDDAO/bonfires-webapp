@@ -7,8 +7,8 @@
 
 import { NextResponse } from "next/server";
 
-// Server-side timeout (10s for Vercel Hobby plan compatibility)
-const DEFAULT_TIMEOUT_MS = 10000;
+// Server-side timeout (60s for Vercel Pro compatibility)
+const DEFAULT_TIMEOUT_MS = 60000;
 
 // Get backend URL - prefer non-public env var for server-side
 const getBackendUrl = (): string => {
@@ -38,7 +38,7 @@ export interface ProxyOptions {
   body?: unknown;
   /** Additional headers */
   headers?: Record<string, string>;
-  /** Timeout in milliseconds (default: 10000) */
+  /** Timeout in milliseconds (default: 60000) */
   timeout?: number;
   /** Query parameters to append */
   queryParams?: Record<string, string | number | boolean | undefined>;

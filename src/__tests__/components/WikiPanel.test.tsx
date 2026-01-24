@@ -42,7 +42,7 @@ describe("WikiPanel", () => {
       />
     );
 
-    fireEvent.click(screen.getByLabelText("Search around this node"));
+    fireEvent.click(screen.getByRole("button", { name: "Search around this node" }));
     expect(onSearchAroundNode).toHaveBeenCalledWith("node-123");
   });
 
@@ -68,6 +68,8 @@ describe("WikiPanel", () => {
       />
     );
 
-    expect(screen.queryByLabelText("Search around this node")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Search around this node" })
+    ).toBeNull();
   });
 });

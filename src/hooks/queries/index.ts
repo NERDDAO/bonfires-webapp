@@ -57,6 +57,9 @@ export {
   labeledChunksQueryKey,
 } from "./useDocumentsQuery";
 
+// Taxonomy
+export { useTaxonomyStatsQuery, taxonomyStatsQueryKey } from "./useTaxonomyStatsQuery";
+
 // Job Polling
 export {
   useJobStatusPolling,

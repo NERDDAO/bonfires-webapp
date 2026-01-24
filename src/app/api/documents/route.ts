@@ -19,15 +19,19 @@ import {
  *
  * Query Parameters:
  * - bonfire_id: string (required) - Bonfire to get documents for
- * - limit?: number - Maximum results (default: 50)
- * - offset?: number - Pagination offset (default: 0)
+ * - page?: number - Page number (default: 1)
+ * - page_size?: number - Page size (default: 20)
+ * - group_by?: string - Group results by 'document' for document-level view
+ * - preview_limit?: number - Preview chunks per document (documents view)
  * - label?: string - Filter by taxonomy label
  */
 export async function GET(request: NextRequest) {
   const params = extractQueryParams(request, [
     "bonfire_id",
-    "limit",
-    "offset",
+    "page",
+    "page_size",
+    "group_by",
+    "preview_limit",
     "label",
   ]);
 
@@ -36,10 +40,16 @@ export async function GET(request: NextRequest) {
   }
 
   const queryParams: Record<string, string | number | undefined> = {
-    limit: params["limit"] ? parseInt(params["limit"], 10) : 50,
-    offset: params["offset"] ? parseInt(params["offset"], 10) : 0,
+    page: params["page"] ? parseInt(params["page"], 10) : 1,
+    page_size: params["page_size"] ? parseInt(params["page_size"], 10) : 20,
   };
 
+  if (params["group_by"]) {
+    queryParams["group_by"] = params["group_by"];
+  }
+  if (params["preview_limit"]) {
+    queryParams["preview_limit"] = parseInt(params["preview_limit"], 10);
+  }
   if (params["label"]) {
     queryParams["label"] = params["label"];
   }

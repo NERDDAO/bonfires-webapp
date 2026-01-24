@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
-  Search,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
@@ -358,17 +357,6 @@ export function WikiPanel({
 
         {/* Actions */}
         <div className="flex items-center gap-1">
-          {canSearchAroundNode && (
-            <button
-              onClick={() => onSearchAroundNode?.(node.uuid)}
-              className="btn btn-ghost btn-xs btn-square"
-              aria-label="Search around this node"
-              title="Re-query the graph using this node as the center"
-              type="button"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          )}
           <button
             onClick={onToggleMode}
             className="btn btn-ghost btn-xs btn-square"
@@ -413,6 +401,19 @@ export function WikiPanel({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">{renderContent()}</div>
+      {canSearchAroundNode && (
+        <div className="p-4 border-t border-base-300">
+          <button
+            onClick={() => onSearchAroundNode?.(node.uuid)}
+            className="btn btn-primary btn-sm w-full"
+            aria-label="Search around this node"
+            title="Re-query the graph using this node as the center"
+            type="button"
+          >
+            Search around this node
+          </button>
+        </div>
+      )}
     </div>
   );
 

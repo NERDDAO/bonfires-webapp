@@ -531,7 +531,7 @@ export function GraphExplorer({
           (el.data!.label as string | undefined),
         source: el.data!.source!,
         target: el.data!.target!,
-        fact: el.data!.fact as string | undefined,
+        fact: el.data!['fact'] as string | undefined,
       }));
   }, [selection.selectedNodeId, elements]);
 
@@ -593,9 +593,15 @@ export function GraphExplorer({
     if (!searchQuery.trim()) return;
     // The search will be triggered by URL params change
     const params = new URLSearchParams(searchParams.toString());
+    if (agentSelection.selectedBonfireId) {
+      params.set("bonfireId", agentSelection.selectedBonfireId);
+    }
+    if (agentSelection.selectedAgentId) {
+      params.set("agentId", agentSelection.selectedAgentId);
+    }
     params.set("q", searchQuery);
     router.push(`/graph?${params.toString()}`);
-  }, [searchQuery, searchParams, router]);
+  }, [searchQuery, searchParams, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]);
 
   const handleSearchAroundNode = useCallback(
     (nodeUuid: string) => {

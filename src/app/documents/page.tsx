@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, Fragment } from "react";
 import { useBonfireSelection } from "@/components/shared/BonfireSelector";
 import { BonfireSelector } from "@/components/shared/BonfireSelector";
 import { Header } from "@/components/shared/Header";
@@ -18,9 +18,9 @@ import {
   DocumentSummaryCards,
   TaxonomyLabelsPanel,
 } from "@/components/documents";
-import { useLabeledChunks } from "@/hooks";
+import { useLabeledChunks, useBonfireById, useTaxonomyStatsQuery } from "@/hooks";
 import { toast } from "@/components/common";
-import type { DocumentChunk, TaxonomyLabel, DocumentSummary } from "@/types";
+import type { DocumentSummary, TaxonomyLabel } from "@/types";
 
 export default function DocumentsPage() {
   const {
@@ -32,6 +32,9 @@ export default function DocumentsPage() {
   // Label filtering
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [isLabeling, setIsLabeling] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const previewLimit = 3;
 
   // Fetch all labeled chunks (for taxonomy computation)
   const {
@@ -40,49 +43,70 @@ export default function DocumentsPage() {
     refetch: refetchChunks,
   } = useLabeledChunks({
     bonfireId: selectedBonfireId,
+    label: selectedLabel ?? undefined,
+    groupBy: "document",
+    previewLimit,
+    page,
+    pageSize,
     enabled: !!selectedBonfireId,
   });
 
-  // Get all chunks from response
-  const allChunks: DocumentChunk[] = useMemo(() => {
-    return chunksData?.chunks ?? [];
+  useEffect(() => {
+    setPage(1);
+  }, [selectedBonfireId, selectedLabel]);
+
+  const visibleDocuments = useMemo(() => {
+    return chunksData?.documents ?? [];
   }, [chunksData]);
 
-  // Filter chunks by selected label on client side
-  const filteredChunks = useMemo(() => {
-    if (!selectedLabel) return allChunks;
-    return allChunks.filter((chunk) =>
-      chunk.labels?.includes(selectedLabel)
-    );
-  }, [allChunks, selectedLabel]);
+  const totalChunks = chunksData?.total_chunks ?? 0;
+  const totalDocuments = chunksData?.total_documents ?? visibleDocuments.length;
+  const totalPages =
+    chunksData?.total_pages ?? Math.max(1, Math.ceil(totalDocuments / pageSize));
+  const canGoPrev = page > 1;
+  const canGoNext = chunksData?.has_next ?? page < totalPages;
 
-  // Extract taxonomy labels from all chunks
+  // Extract taxonomy labels from response or visible chunks
+  const { data: bonfireDetails } = useBonfireById(selectedBonfireId);
+  const { data: taxonomyStats } = useTaxonomyStatsQuery(selectedBonfireId);
+
   const taxonomyLabels: TaxonomyLabel[] = useMemo(() => {
-    const labelCounts = new Map<string, number>();
-    allChunks.forEach((chunk) => {
-      chunk.labels?.forEach((label) => {
-        labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
-      });
+    const latestTaxonomies = bonfireDetails?.latest_taxonomies ?? [];
+    if (latestTaxonomies.length === 0) {
+      return chunksData?.labels ?? [];
+    }
+
+    const countById = new Map<string, number>();
+    if (taxonomyStats?.taxonomy_stats) {
+      for (const stat of taxonomyStats.taxonomy_stats) {
+        if (stat.taxonomy_id) {
+          countById.set(stat.taxonomy_id, stat.chunk_count);
+        }
+        countById.set(stat.taxonomy_name, stat.chunk_count);
+      }
+    }
+
+    return latestTaxonomies.map((taxonomy) => {
+      const taxonomyId = taxonomy.id ?? taxonomy._id ?? taxonomy.name;
+      return {
+        name: taxonomy.name,
+        count: countById.get(taxonomyId) ?? countById.get(taxonomy.name) ?? 0,
+      };
     });
-    return Array.from(labelCounts.entries()).map(([name, count]) => ({
-      name,
-      count,
-    }));
-  }, [allChunks]);
+  }, [bonfireDetails, chunksData, taxonomyStats]);
 
   // Calculate summary statistics
   const summary: DocumentSummary = useMemo(() => {
-    const totalChunks = chunksData?.total ?? allChunks.length;
-    const labeledChunks = allChunks.filter(
-      (c) => c.labels && c.labels.length > 0
-    ).length;
+    if (chunksData?.summary) {
+      return chunksData.summary;
+    }
     return {
-      total_documents: totalChunks, // Using chunk count as doc proxy for now
+      total_documents: totalDocuments,
       total_chunks: totalChunks,
-      labeled_chunks: labeledChunks,
-      unlabeled_chunks: totalChunks - labeledChunks,
+      labeled_chunks: chunksData?.labeled_chunks ?? 0,
+      unlabeled_chunks: chunksData?.unlabeled_chunks ?? 0,
     };
-  }, [allChunks, chunksData]);
+  }, [chunksData, totalChunks, totalDocuments]);
 
   // Handle successful upload
   const handleUploadSuccess = useCallback(
@@ -203,16 +227,32 @@ export default function DocumentsPage() {
                         )}
                       </h2>
                       <div className="text-sm text-base-content/60">
-                        {filteredChunks.length} chunk
-                        {filteredChunks.length !== 1 ? "s" : ""}
-                        {selectedLabel &&
-                          ` (${allChunks.length} total)`}
+                        {visibleDocuments.length} document
+                        {visibleDocuments.length !== 1 ? "s" : ""}
+                        {totalDocuments > visibleDocuments.length &&
+                          ` (${totalDocuments} total)`}
                       </div>
                     </div>
-                    <DocumentsTable
-                      chunks={filteredChunks}
-                      isLoading={isLoading}
-                    />
+                    <div className="flex items-center justify-end gap-2 mb-4 text-sm text-base-content/60">
+                      <span>
+                        Page {page} of {totalPages}
+                      </span>
+                      <button
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={!canGoPrev}
+                      >
+                        Prev
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => setPage((prev) => prev + 1)}
+                        disabled={!canGoNext}
+                      >
+                        Next
+                      </button>
+                    </div>
+                    <DocumentsListTable documents={visibleDocuments} />
                   </div>
                 </div>
               </div>
@@ -252,6 +292,150 @@ export default function DocumentsPage() {
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+interface DocumentPreviewChunk {
+  id?: string;
+  content?: string;
+  index?: number;
+  category?: string;
+}
+
+interface DocumentPreview {
+  doc_id?: string;
+  chunk_count?: number;
+  taxonomies?: string[];
+  preview_chunks?: DocumentPreviewChunk[];
+}
+
+function DocumentsListTable({ documents }: { documents: DocumentPreview[] }) {
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (key: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const copyToClipboard = (text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+  };
+
+  if (documents.length === 0) {
+    return (
+      <div className="text-center py-8 text-base-content/50">
+        No documents available
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Doc ID</th>
+            <th>Chunks</th>
+            <th>Taxonomies</th>
+            <th>Preview</th>
+            <th className="w-24">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {documents.map((doc, idx) => {
+            const rowKey = doc.doc_id ?? `doc-${idx}`;
+            const isExpanded = expandedRows.has(rowKey);
+            const previewChunks = doc.preview_chunks ?? [];
+            const hasPreview = previewChunks.length > 0;
+
+            return (
+              <Fragment key={rowKey}>
+                <tr className="hover">
+                  <td className="font-mono text-xs">
+                    <div className="flex items-center gap-2">
+                      <span>{doc.doc_id ? `${doc.doc_id.slice(0, 8)}...` : "—"}</span>
+                      <button
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => copyToClipboard(doc.doc_id ?? "")}
+                        disabled={!doc.doc_id}
+                        title="Copy full Doc ID"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </td>
+                  <td>{doc.chunk_count ?? 0}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-1">
+                      {doc.taxonomies && doc.taxonomies.length > 0 ? (
+                        doc.taxonomies.map((taxonomy, taxIdx) => (
+                          <span
+                            key={`${taxonomy}-${taxIdx}`}
+                            className="badge badge-outline badge-sm"
+                          >
+                            {taxonomy}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-base-content/40">No taxonomies</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="max-w-md">
+                    {hasPreview && previewChunks[0]?.content ? (
+                      <div className="text-sm line-clamp-2">
+                        {previewChunks[0].content}
+                      </div>
+                    ) : (
+                      <span className="text-base-content/40">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {hasPreview && (
+                      <button
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => toggleRow(rowKey)}
+                      >
+                        {isExpanded ? "Hide" : "Show"}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+                {isExpanded && hasPreview && (
+                  <tr className="bg-base-200/60">
+                    <td colSpan={5}>
+                      <div className="space-y-2 p-3">
+                        {previewChunks.map((chunk, chunkIdx) => (
+                          <div
+                            key={chunk.id ?? `preview-${chunkIdx}`}
+                            className="rounded-lg border border-base-300 bg-base-100 p-3"
+                          >
+                            <div className="text-xs text-base-content/60 mb-1">
+                              Chunk #{chunk.index ?? "—"} • {chunk.category ?? "Unlabeled"}
+                            </div>
+                            <div className="text-sm whitespace-pre-wrap">
+                              {chunk.content ?? ""}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

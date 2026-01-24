@@ -61,8 +61,10 @@ export {
   useCompletedDocuments,
   useProcessingDocuments,
   useLabeledChunks,
+  useTaxonomyStatsQuery,
   documentsQueryKey,
   labeledChunksQueryKey,
+  taxonomyStatsQueryKey,
   // Job Polling
   useJobStatusPolling,
   useStartJob,

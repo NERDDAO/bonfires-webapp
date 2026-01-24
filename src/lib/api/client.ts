@@ -39,7 +39,7 @@ interface CacheStats {
   sampleKeys: string[];
 }
 
-const DEFAULT_TIMEOUT = 30000; // 30 seconds
+const DEFAULT_TIMEOUT = 60000; // 60 seconds
 const DEFAULT_CACHE_TTL = 60000; // 1 minute
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY = 1000;

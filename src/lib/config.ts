@@ -47,7 +47,7 @@ function getConfig(): AppConfig {
     api: {
       baseUrl:
         process.env["NEXT_PUBLIC_DELVE_API_URL"] ?? "http://localhost:8000",
-      timeout: 30000,
+      timeout: 60000,
     },
 
     server: {
@@ -56,8 +56,8 @@ function getConfig(): AppConfig {
         process.env["DELVE_API_URL"] ??
         process.env["NEXT_PUBLIC_DELVE_API_URL"] ??
         "http://localhost:8000",
-      // 10s timeout for Vercel Hobby plan compatibility
-      timeout: 10000,
+      // 60s timeout for Vercel Pro compatibility
+      timeout: 60000,
     },
 
     web3: {

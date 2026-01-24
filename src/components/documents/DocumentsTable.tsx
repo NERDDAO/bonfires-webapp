@@ -11,7 +11,7 @@ import { useState, useCallback } from "react";
 import type { DocumentChunk } from "@/types";
 
 interface DocumentRow {
-  uuid: string;
+  uuid?: string;
   name?: string;
   content: string;
   category?: string;
@@ -64,13 +64,17 @@ function truncateText(text: string, maxLength: number = 100): string {
 
 function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowProps) {
   const [copied, setCopied] = useState(false);
+  const chunkUuid = chunk.uuid ?? "";
+  const canCopyUuid = chunkUuid.length > 0;
+  const shortUuid = chunkUuid ? `${chunkUuid.slice(0, 8)}...` : "—";
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(chunk.uuid);
+    if (!chunkUuid) return;
+    navigator.clipboard.writeText(chunkUuid);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    onCopyId(chunk.uuid);
-  }, [chunk.uuid, onCopyId]);
+    onCopyId(chunkUuid);
+  }, [chunkUuid, onCopyId]);
 
   return (
     <>
@@ -95,7 +99,7 @@ function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowP
         </td>
         <td className="max-w-xs">
           <div className="font-mono text-xs text-base-content/60">
-            {chunk.uuid.slice(0, 8)}...
+            {shortUuid}
           </div>
         </td>
         <td className="max-w-md">
@@ -121,9 +125,12 @@ function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowP
             className={`btn btn-ghost btn-xs ${copied ? "text-success" : ""}`}
             onClick={(e) => {
               e.stopPropagation();
-              handleCopy();
+              if (canCopyUuid) {
+                handleCopy();
+              }
             }}
-            title="Copy Document ID"
+            title={canCopyUuid ? "Copy Document ID" : "No ID to copy"}
+            disabled={!canCopyUuid}
           >
             {copied ? (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +185,7 @@ function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowP
               <div className="flex gap-6 text-xs text-base-content/60">
                 <div>
                   <span className="font-semibold">UUID:</span>{" "}
-                  <code className="font-mono">{chunk.uuid}</code>
+                  <code className="font-mono">{chunkUuid || "—"}</code>
                 </div>
                 {chunk.document_id && (
                   <div>
@@ -295,15 +302,19 @@ export function DocumentsTable({
           </tr>
         </thead>
         <tbody>
-          {chunks.map((chunk) => (
+          {chunks.map((chunk) => {
+            const rowId =
+              chunk.uuid ?? `${chunk.document_id ?? "chunk"}-${chunk.index}`;
+            return (
             <ExpandableRow
-              key={chunk.uuid}
+              key={rowId}
               chunk={chunk}
-              isExpanded={expandedRows.has(chunk.uuid)}
-              onToggle={() => toggleRow(chunk.uuid)}
+              isExpanded={expandedRows.has(rowId)}
+              onToggle={() => toggleRow(rowId)}
               onCopyId={handleCopyId}
             />
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

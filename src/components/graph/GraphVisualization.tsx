@@ -63,30 +63,16 @@ export const GraphVisualization = memo(function GraphVisualization({
   const hasLoadedOnceRef = useRef(false);
   const wasLoadingRef = useRef(false);
   const [runLayout, setRunLayout] = useState(false);
-  const hasSemanticPositions = useMemo(
-    () =>
-      elements.some(
-        (element) =>
-          typeof element.data?.x === "number" && typeof element.data?.y === "number"
-      ),
-    [elements]
-  );
 
   // Update hasLoadedOnce when loading transitions from true to false
   useEffect(() => {
     if (wasLoadingRef.current && !loading) {
       hasLoadedOnceRef.current = true;
-      // Trigger layout after data loads if no semantic positions
-      setRunLayout(!hasSemanticPositions);
+      // Trigger layout after data loads
+      setRunLayout(true);
     }
     wasLoadingRef.current = loading;
-  }, [loading, hasSemanticPositions]);
-
-  useEffect(() => {
-    if (hasSemanticPositions) {
-      setRunLayout(false);
-    }
-  }, [hasSemanticPositions]);
+  }, [loading]);
 
   // Transform elements to graphology format
   const graph = useMemo(() => {

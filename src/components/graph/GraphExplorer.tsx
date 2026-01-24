@@ -353,54 +353,6 @@ export function GraphExplorer({
     if (!activeGraphData) return [];
 
     const result: GraphElement[] = [];
-    const embeddedPositions = new Map<string, { x: number; y: number }>();
-    const embeddings: Array<{ id: string; x: number; y: number }> = [];
-
-    for (const node of activeGraphData.nodes) {
-      const nodeRecord = node as Record<string, unknown>;
-      const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
-      if (!nodeId) continue;
-
-      const properties =
-        (nodeRecord["properties"] as Record<string, unknown> | undefined) ??
-        (nodeRecord["attributes"] as Record<string, unknown> | undefined) ??
-        {};
-      const embedding =
-        (properties["embedding"] as number[] | undefined) ??
-        (nodeRecord["embedding"] as number[] | undefined) ??
-        (properties["vector"] as number[] | undefined) ??
-        (nodeRecord["vector"] as number[] | undefined);
-
-      if (
-        Array.isArray(embedding) &&
-        embedding.length >= 2 &&
-        typeof embedding[0] === "number" &&
-        typeof embedding[1] === "number"
-      ) {
-        embeddings.push({ id: nodeId, x: embedding[0], y: embedding[1] });
-      }
-    }
-
-    if (embeddings.length > 0) {
-      const xs = embeddings.map((entry) => entry.x);
-      const ys = embeddings.map((entry) => entry.y);
-      const minX = Math.min(...xs);
-      const maxX = Math.max(...xs);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-      const scale = (value: number, min: number, max: number) => {
-        if (max === min) return 0;
-        const normalized = (value - min) / (max - min);
-        return normalized * 200 - 100;
-      };
-
-      for (const entry of embeddings) {
-        embeddedPositions.set(entry.id, {
-          x: scale(entry.x, minX, maxX),
-          y: scale(entry.y, minY, maxY),
-        });
-      }
-    }
 
     // Convert nodes
     for (const node of activeGraphData.nodes) {
@@ -429,8 +381,6 @@ export function GraphExplorer({
         properties["valid_at"] = nodeRecord["valid_at"];
       }
 
-      const embeddedPosition = embeddedPositions.get(nodeId);
-
       result.push({
         data: {
           id: `n:${nodeId}`,
@@ -439,8 +389,6 @@ export function GraphExplorer({
             | undefined,
           node_type: nodeType,
           labels,
-          x: embeddedPosition?.x,
-          y: embeddedPosition?.y,
           ...properties,
         },
       });

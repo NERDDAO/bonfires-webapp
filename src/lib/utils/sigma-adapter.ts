@@ -43,8 +43,6 @@ export interface GraphElementData {
   name?: string;
   node_type?: "episode" | "entity" | "unknown";
   labels?: string[];
-  x?: number;
-  y?: number;
   source?: string;
   target?: string;
   relationship?: string;
@@ -134,14 +132,9 @@ export function adaptToSigma(
             ? colors.entity
             : colors.unknown;
 
-    const x =
-      typeof data.x === "number"
-        ? data.x
-        : Math.random() * 200 - 100;
-    const y =
-      typeof data.y === "number"
-        ? data.y
-        : Math.random() * 200 - 100;
+    // Random initial positions (will be recalculated by force-directed layout)
+    const x = Math.random() * 200 - 100;
+    const y = Math.random() * 200 - 100;
 
     graph.addNode(uniqueId, {
       label: labelValue,

@@ -3,8 +3,8 @@
  *
  * POST /api/graph/expand - Expand graph from a node
  *
- * This endpoint proxies to the backend /knowledge_graph/episodes/expand
- * endpoint to load related nodes around a specific entity or episode.
+ * This endpoint proxies to /delve using center_node_uuid to expand
+ * related nodes around a specific entity or episode.
  */
 
 import { NextRequest } from "next/server";
@@ -14,7 +14,7 @@ import {
   createErrorResponse,
   parseJsonBody,
 } from "@/lib/api/server-utils";
-import type { GraphExpandRequest } from "@/types";
+import type { DelveRequest, GraphExpandRequest } from "@/types";
 
 /**
  * POST /api/graph/expand
@@ -39,14 +39,18 @@ export async function POST(request: NextRequest) {
     return createErrorResponse("node_uuid is required", 400);
   }
 
-  const expandRequest = {
-    episode_uuid: body.node_uuid,
-    depth: body.depth ?? 1,
-    limit: body.limit ?? 50,
+  if (!body?.bonfire_id) {
+    return createErrorResponse("bonfire_id is required", 400);
+  }
+
+  const expandRequest: DelveRequest = {
+    query: "",
     bonfire_id: body.bonfire_id,
+    center_node_uuid: body.node_uuid,
+    num_results: body.limit ?? 50,
   };
 
-  return handleProxyRequest("/knowledge_graph/episodes/expand", {
+  return handleProxyRequest("/delve", {
     method: "POST",
     body: expandRequest,
   });

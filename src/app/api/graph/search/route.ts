@@ -4,7 +4,7 @@
  * POST /api/graph/search - Search for entities in the knowledge graph
  *
  * This endpoint proxies to the backend vector search endpoint for
- * semantic search over knowledge graph entities.
+ * semantic search over chunks.
  */
 
 import { NextRequest } from "next/server";
@@ -14,7 +14,7 @@ import {
   createErrorResponse,
   parseJsonBody,
 } from "@/lib/api/server-utils";
-import type { GraphSearchRequest } from "@/types";
+import type { GraphSearchRequest, VectorSearchRequest } from "@/types";
 
 /**
  * POST /api/graph/search
@@ -34,16 +34,17 @@ export async function POST(request: NextRequest) {
     return createErrorResponse(error, 400);
   }
 
-  // Validate required fields
   if (!body?.query) {
     return createErrorResponse("query is required", 400);
   }
+  if (!body?.bonfire_id) {
+    return createErrorResponse("bonfire_id is required", 400);
+  }
 
-  const searchRequest = {
-    query: body.query,
-    bonfire_id: body.bonfire_id,
+  const searchRequest: VectorSearchRequest = {
+    bonfire_ref: body.bonfire_id,
+    search_string: body.query,
     limit: body.limit ?? 10,
-    filters: body.filters,
   };
 
   return handleProxyRequest("/vector_store/search", {

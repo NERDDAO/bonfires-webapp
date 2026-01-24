@@ -21,6 +21,7 @@ export interface AgentInfo {
   is_active: boolean;
   bonfire_id: string;
   capabilities?: string[];
+  episode_uuids?: string[];
 }
 
 export interface AgentSelectionState {
@@ -189,13 +190,37 @@ export interface ChatResponse {
 // Graph/Delve Types
 // ============================================================================
 
-export interface DelveRequest {
+export interface AgentEpisodesSearchRequest {
+  limit?: number;
+  before_time?: string | null;
+  after_time?: string | null;
+}
+
+export interface AgentLatestEpisodesResponse {
+  success: boolean;
   query: string;
-  bonfire_id?: string;
-  agent_config_id?: string;
+  episodes: Record<string, unknown>[];
+  nodes: Record<string, unknown>[];
+  entities: Record<string, unknown>[];
+  edges: Record<string, unknown>[];
+  num_results: number;
+  bonfire_ids?: string[] | null;
+  agent_context?: Record<string, unknown> | null;
+  graph_id?: string | null;
+}
+
+export interface DelveRequest {
+  query?: string;
+  bonfire_id: string;
   num_results?: number;
   center_node_uuid?: string;
   graph_id?: string;
+  search_recipe?: string;
+  min_fact_rating?: number;
+  mmr_lambda?: number;
+  window_start?: string;
+  window_end?: string;
+  relationship_types?: string[];
 }
 
 export interface DelveResponse {
@@ -226,6 +251,21 @@ export interface GraphSearchRequest {
   filters?: Record<string, unknown>;
 }
 
+export interface VectorSearchRequest {
+  bonfire_ref: string;
+  search_string: string;
+  taxonomy_refs?: string[];
+  agent_id?: string;
+  limit?: number;
+}
+
+export interface VectorSearchResponse {
+  success: boolean;
+  results: Record<string, unknown>[];
+  count: number;
+  query?: string;
+}
+
 // ============================================================================
 // Document Types
 // ============================================================================
@@ -241,6 +281,73 @@ export interface DocumentIngestResponse {
   success: boolean;
   document_id?: string;
   message?: string;
+}
+
+/**
+ * Document chunk with content and taxonomy labels
+ */
+export interface DocumentChunk {
+  uuid: string;
+  content: string;
+  category?: string;
+  index: number;
+  document_id?: string;
+  labels?: string[];
+  created_at?: string;
+}
+
+/**
+ * Extended document info with chunks
+ */
+export interface DocumentWithChunks extends DocumentInfo {
+  chunks: DocumentChunk[];
+  chunk_count: number;
+}
+
+/**
+ * Taxonomy label with count information
+ */
+export interface TaxonomyLabel {
+  name: string;
+  count: number;
+  color?: string;
+}
+
+/**
+ * Document summary statistics
+ */
+export interface DocumentSummary {
+  total_documents: number;
+  total_chunks: number;
+  labeled_chunks: number;
+  unlabeled_chunks: number;
+}
+
+/**
+ * Response from labeled chunks API endpoint
+ */
+export interface LabeledChunksResponse {
+  chunks: DocumentChunk[];
+  total: number;
+  limit: number;
+  offset: number;
+  labels?: TaxonomyLabel[];
+  summary?: DocumentSummary;
+}
+
+/**
+ * Supported file types for document upload
+ */
+export type SupportedFileType = "pdf" | "txt" | "md" | "docx";
+
+/**
+ * File validation result
+ */
+export interface FileValidationResult {
+  valid: boolean;
+  error?: string;
+  file?: File;
+  type?: SupportedFileType;
 }
 
 // ============================================================================

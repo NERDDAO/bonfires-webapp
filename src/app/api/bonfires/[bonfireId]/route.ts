@@ -6,10 +6,12 @@
 
 import { NextRequest } from "next/server";
 import {
-  handleProxyRequest,
+  proxyToBackend,
   handleCorsOptions,
   createErrorResponse,
+  createSuccessResponse,
 } from "@/lib/api/server-utils";
+import type { BonfireListResponse } from "@/types";
 
 interface RouteParams {
   params: Promise<{ bonfireId: string }>;
@@ -30,10 +32,25 @@ export async function GET(
     return createErrorResponse("Bonfire ID is required", 400);
   }
 
-  // The backend has taxonomy_stats endpoint for bonfire details
-  return handleProxyRequest(`/bonfire/${bonfireId}/taxonomy_stats`, {
+  const response = await proxyToBackend<BonfireListResponse>("/bonfires", {
     method: "GET",
   });
+
+  if (!response.success) {
+    return createErrorResponse(
+      response.error?.error ?? "Failed to load bonfire",
+      response.status,
+      response.error?.details,
+      response.error?.code
+    );
+  }
+
+  const bonfire = response.data?.bonfires?.find((item) => item.id === bonfireId);
+  if (!bonfire) {
+    return createErrorResponse("Bonfire not found", 404);
+  }
+
+  return createSuccessResponse(bonfire);
 }
 
 /**

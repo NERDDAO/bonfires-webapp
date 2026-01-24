@@ -24,3 +24,41 @@ export {
 
 // Config
 export { config, getEnvVar, requireEnvVar } from "./config";
+
+// Wallet Utilities
+export {
+  formatWalletAddress,
+  formatBalance,
+  isValidAddress,
+  isSameAddress,
+  isContractAddress,
+  useWalletIdentity,
+  useIsOwner,
+  useUserWallet,
+  useRequireWallet,
+  useIsCorrectChain,
+  useFormattedBalance,
+} from "./wallet";
+
+// Utility Functions
+export {
+  truncateAddress,
+  formatTimestamp,
+  formatErrorMessage,
+  isMicrosubError,
+  formatTokenAmount,
+  truncateText,
+  calculateReadingTime,
+  formatUsdPrice,
+  truncatePreviewSmart,
+} from "./utils";
+
+// Payment Utilities
+export {
+  buildPaymentTypedData,
+  encodePaymentHeader,
+  type X402PaymentHeader,
+  type PaymentConfig,
+  type PaymentTypedData,
+  type X402PaymentMessage,
+} from "./payment";

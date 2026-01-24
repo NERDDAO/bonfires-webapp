@@ -2,13 +2,16 @@
  * Shared Components
  *
  * Re-exports all shared components for convenient imports.
- * Individual components will be implemented in ticket:853c4799-01c9-4695-82f3-6e9f186b51e1
+ * These components are used across multiple features.
  */
 
-// Placeholder exports - components will be implemented in separate tickets
-
-// export { AgentSelector } from "./AgentSelector";
-// export { Header } from "./Header";
-// export { Footer } from "./Footer";
-// export { WalletButton } from "./WalletButton";
-// export { PaymentConfirmDialog } from "./PaymentConfirmDialog";
+export { AgentSelector } from "./AgentSelector";
+export { BonfireSelector, useBonfireSelection } from "./BonfireSelector";
+export { Header, default as HeaderDefault } from "./Header";
+export { Footer, default as FooterDefault } from "./Footer";
+export { WalletButton, default as WalletButtonDefault } from "./WalletButton";
+export { WalletConnectionGuard } from "./WalletConnectionGuard";
+export {
+  PaymentConfirmDialog,
+  default as PaymentConfirmDialogDefault,
+} from "./PaymentConfirmDialog";

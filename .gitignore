@@ -39,6 +39,11 @@ Thumbs.db
 # Testing
 coverage/
 .nyc_output/
+playwright-report/
+test-results/
+blob-report/
+.lighthouseci/
+.next/analyze/
 
 # Misc
 *.log

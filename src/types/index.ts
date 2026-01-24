@@ -3,6 +3,8 @@ export type {
   ActiveJobsResponse,
   AgentInfo,
   AgentListResponse,
+  AgentEpisodesSearchRequest,
+  AgentLatestEpisodesResponse,
   AgentSelectionState,
   ApiError,
   ApiResponse,
@@ -20,9 +22,13 @@ export type {
   DataRoomSubscription,
   DelveRequest,
   DelveResponse,
+  DocumentChunk,
   DocumentInfo,
   DocumentIngestRequest,
   DocumentIngestResponse,
+  DocumentSummary,
+  DocumentWithChunks,
+  FileValidationResult,
   GraphExpandRequest,
   GraphSearchRequest,
   HyperBlogInfo,
@@ -32,12 +38,17 @@ export type {
   JobsListResponse,
   JobStatus,
   JobType,
+  LabeledChunksResponse,
   PaginatedResponse,
   PaymentMetadata,
   PaymentStatusRequest,
   PaymentStatusResponse,
   PaymentVerifyRequest,
   PaymentVerifyResponse,
+  SupportedFileType,
+  TaxonomyLabel,
+  VectorSearchRequest,
+  VectorSearchResponse,
 } from "./api";
 
 // Graph Types
@@ -64,3 +75,17 @@ export type {
   SubscriptionStatus,
   WalletState,
 } from "./web3";
+
+// Dashboard Types
+export type {
+  CreatedDataRoom,
+  DashboardData,
+  DashboardDocumentSummary,
+  DashboardSectionState,
+  PaymentHistoryParams,
+  PaymentHistoryResponse,
+  QuickAction,
+  QuickActionType,
+  RecentChatSummary,
+  SubscribedDataRoom,
+} from "./dashboard";

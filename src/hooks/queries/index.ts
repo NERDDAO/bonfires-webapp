@@ -2,15 +2,80 @@
  * React Query Hooks
  *
  * Re-exports all query hooks for convenient imports.
- * Individual hooks will be implemented in separate tickets.
  */
 
-// Placeholder exports - hooks will be implemented in ticket:474a5204-6570-4548-bffc-7c3fbba40f66
+// Bonfires
+export {
+  useBonfiresQuery,
+  useBonfireById,
+  bonfiresQueryKey,
+} from "./useBonfiresQuery";
 
-// export { useBonfiresQuery } from "./useBonfiresQuery";
-// export { useAgentsQuery } from "./useAgentsQuery";
-// export { useGraphQuery } from "./useGraphQuery";
-// export { useDocumentsQuery } from "./useDocumentsQuery";
-// export { useDataRoomsQuery } from "./useDataRoomsQuery";
-// export { useHyperBlogsQuery } from "./useHyperBlogsQuery";
-// export { useJobStatusPolling } from "./useJobStatusPolling";
+// Agents
+export {
+  useAgentsQuery,
+  useAgentById,
+  useActiveAgents,
+  agentsQueryKey,
+} from "./useAgentsQuery";
+
+// Graph
+export {
+  useGraphQuery,
+  useGraphExpand,
+  useGraphSearch,
+  graphQueryKey,
+} from "./useGraphQuery";
+
+// Data Rooms
+export {
+  useDataRoomsQuery,
+  useDataRoomById,
+  useMyCreatedDataRooms,
+  useMySubscribedDataRooms,
+  dataRoomsQueryKey,
+} from "./useDataRoomsQuery";
+
+// HyperBlogs
+export {
+  useHyperBlogsQuery,
+  useHyperBlogById,
+  useMyHyperBlogs,
+  usePublicHyperBlogsFeed,
+  useDataRoomHyperBlogs,
+  hyperBlogsQueryKey,
+} from "./useHyperBlogsQuery";
+
+// Documents
+export {
+  useDocumentsQuery,
+  useDocumentById,
+  useCompletedDocuments,
+  useProcessingDocuments,
+  useLabeledChunks,
+  documentsQueryKey,
+  labeledChunksQueryKey,
+} from "./useDocumentsQuery";
+
+// Job Polling
+export {
+  useJobStatusPolling,
+  useStartJob,
+  useJobWithPolling,
+  jobStatusQueryKey,
+} from "./useJobStatusPolling";
+
+// Payment History
+export {
+  usePaymentHistoryQuery,
+  useMyPaymentHistory,
+  usePaymentHistoryByType,
+  paymentHistoryQueryKey,
+} from "./usePaymentHistoryQuery";
+
+// Dashboard
+export {
+  useDashboardData,
+  useDashboardRequiresWallet,
+  useRefreshDashboard,
+} from "./useDashboardData";

@@ -9,7 +9,6 @@ import {
   handleProxyRequest,
   handleCorsOptions,
   createErrorResponse,
-  extractQueryParams,
 } from "@/lib/api/server-utils";
 
 interface RouteParams {
@@ -22,10 +21,10 @@ interface RouteParams {
  * Get all agents belonging to a specific bonfire.
  *
  * Query Parameters:
- * - active_only: If "true", only return active agents
+ * - active_only: If "true", only return active agents (not supported by backend)
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteParams
 ) {
   const { bonfireId } = await params;
@@ -34,14 +33,8 @@ export async function GET(
     return createErrorResponse("Bonfire ID is required", 400);
   }
 
-  const queryParams = extractQueryParams(request, ["active_only"]);
-
-  return handleProxyRequest("/agents", {
+  return handleProxyRequest(`/bonfires/${bonfireId}/agents`, {
     method: "GET",
-    queryParams: {
-      bonfire_id: bonfireId,
-      active_only: queryParams["active_only"] === "true",
-    },
   });
 }
 

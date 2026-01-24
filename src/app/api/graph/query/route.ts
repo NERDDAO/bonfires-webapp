@@ -23,9 +23,8 @@ import type { DelveRequest } from "@/types";
  * Execute a semantic graph query.
  *
  * Request Body:
- * - query: string (required) - The search query
- * - bonfire_id?: string - Filter by bonfire
- * - agent_config_id?: string - Use specific agent config
+ * - bonfire_id: string (required) - Filter by bonfire
+ * - query?: string - The search query
  * - num_results?: number - Maximum results to return
  * - center_node_uuid?: string - Center the query on a specific node
  * - graph_id?: string - Use existing graph context
@@ -37,15 +36,13 @@ export async function POST(request: NextRequest) {
     return createErrorResponse(error, 400);
   }
 
-  // Validate required fields
-  if (!body?.query) {
-    return createErrorResponse("query is required", 400);
+  if (!body?.bonfire_id) {
+    return createErrorResponse("bonfire_id is required", 400);
   }
 
   const delveRequest: DelveRequest = {
-    query: body.query,
+    query: body.query ?? "",
     bonfire_id: body.bonfire_id,
-    agent_config_id: body.agent_config_id,
     num_results: body.num_results ?? 10,
     center_node_uuid: body.center_node_uuid,
     graph_id: body.graph_id,

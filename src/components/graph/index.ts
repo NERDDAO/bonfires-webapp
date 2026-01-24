@@ -1,14 +1,11 @@
 /**
  * Graph Components
- *
- * Re-exports all graph visualization components for convenient imports.
- * Individual components will be implemented in ticket:13306bc0-9d91-4050-86ca-8e10e2e93dd7
  */
 
-// Placeholder exports - components will be migrated from graph-viz-webapp
-
-// export { GraphExplorer } from "./GraphExplorer";
-// export { GraphVisualization } from "./GraphVisualization";
-// export { NodeDetails } from "./NodeDetails";
-// export { Timeline } from "./Timeline";
-// export { WikiPanel } from "./WikiPanel";
+export { SigmaGraph, type SigmaGraphProps } from "./SigmaGraph";
+export { GraphVisualization } from "./GraphVisualization";
+export { Timeline, type EpisodeTimelineItem } from "./Timeline";
+export { NodeContextMenu, type NodeData, type NodeContextMenuProps } from "./NodeContextMenu";
+export { WikiPanel, type WikiNodeData, type WikiEdgeData, type WikiPanelProps } from "./WikiPanel";
+export { ChatPanel, FloatingChatButton, type ChatMessage, type ChatPanelProps } from "./ChatPanel";
+export { GraphExplorer } from "./GraphExplorer";

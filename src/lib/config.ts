@@ -5,9 +5,17 @@
  */
 
 interface AppConfig {
-  // API Configuration
+  // API Configuration (client-side)
   api: {
     baseUrl: string;
+    timeout: number;
+  };
+
+  // Server-side API Configuration
+  server: {
+    /** Backend URL for server-side requests (prefers non-public env var) */
+    backendUrl: string;
+    /** Timeout for API routes (10s for Vercel Hobby plan) */
     timeout: number;
   };
 
@@ -40,6 +48,16 @@ function getConfig(): AppConfig {
       baseUrl:
         process.env["NEXT_PUBLIC_DELVE_API_URL"] ?? "http://localhost:8000",
       timeout: 30000,
+    },
+
+    server: {
+      // Prefer non-public env var for server-side requests
+      backendUrl:
+        process.env["DELVE_API_URL"] ??
+        process.env["NEXT_PUBLIC_DELVE_API_URL"] ??
+        "http://localhost:8000",
+      // 10s timeout for Vercel Hobby plan compatibility
+      timeout: 10000,
     },
 
     web3: {

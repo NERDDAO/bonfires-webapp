@@ -85,3 +85,305 @@ export interface PaginatedResponse<T> {
   per_page: number;
   has_more: boolean;
 }
+
+// ============================================================================
+// Job Response Types (for async polling)
+// ============================================================================
+
+/**
+ * Full job response from backend /jobs/{id}/status endpoint
+ */
+export interface JobResponse {
+  id: string;
+  job_type: string;
+  status: JobStatus;
+  bonfire_id?: string;
+  agent_id?: string;
+  workflow_type?: string;
+  progress?: number;
+  result?: unknown;
+  error?: string;
+  created_at: string;
+  updated_at?: string;
+  completed_at?: string;
+}
+
+/**
+ * Response when initiating an async job
+ */
+export interface JobInitiateResponse {
+  jobId: string;
+  status: JobStatus;
+  message?: string;
+}
+
+/**
+ * List of jobs response
+ */
+export interface JobsListResponse {
+  jobs: JobResponse[];
+  total: number;
+}
+
+/**
+ * Active jobs response
+ */
+export interface ActiveJobsResponse {
+  active_jobs: JobResponse[];
+  count: number;
+}
+
+// ============================================================================
+// Bonfire & Agent List Response Types
+// ============================================================================
+
+export interface BonfireListResponse {
+  bonfires: BonfireInfo[];
+}
+
+export interface AgentListResponse {
+  agents: AgentInfo[];
+  total?: number;
+}
+
+export interface BonfireAgentsResponse {
+  bonfire_id: string;
+  agents: AgentInfo[];
+  total_agents: number;
+  active_agents: number;
+}
+
+// ============================================================================
+// Chat Types
+// ============================================================================
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface ChatRequest {
+  message: string;
+  chat_history?: ChatMessage[];
+  agent_id: string;
+  graph_mode?: "adaptive" | "static" | "dynamic" | "none";
+  center_node_uuid?: string;
+  graph_id?: string;
+  bonfire_id?: string;
+}
+
+export interface ChatResponse {
+  reply: string;
+  graph_action?: string;
+  search_prompt?: string;
+  graph_data?: unknown;
+  graph_operation?: unknown;
+  new_graph_id?: string;
+  graph_id?: string;
+  center_node_uuid?: string;
+  agent_id?: string;
+  context?: Record<string, unknown>;
+}
+
+// ============================================================================
+// Graph/Delve Types
+// ============================================================================
+
+export interface DelveRequest {
+  query: string;
+  bonfire_id?: string;
+  agent_config_id?: string;
+  num_results?: number;
+  center_node_uuid?: string;
+  graph_id?: string;
+}
+
+export interface DelveResponse {
+  success: boolean;
+  query: string;
+  entities?: Record<string, unknown>[];
+  episodes?: Record<string, unknown>[];
+  edges?: Record<string, unknown>[];
+  nodes?: Record<string, unknown>[];
+  metrics?: {
+    entity_count?: number;
+    episode_count?: number;
+    edge_count?: number;
+  };
+}
+
+export interface GraphExpandRequest {
+  node_uuid: string;
+  bonfire_id?: string;
+  depth?: number;
+  limit?: number;
+}
+
+export interface GraphSearchRequest {
+  query: string;
+  bonfire_id?: string;
+  limit?: number;
+  filters?: Record<string, unknown>;
+}
+
+// ============================================================================
+// Document Types
+// ============================================================================
+
+export interface DocumentIngestRequest {
+  content: string;
+  bonfire_id: string;
+  filename?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DocumentIngestResponse {
+  success: boolean;
+  document_id?: string;
+  message?: string;
+}
+
+// ============================================================================
+// DataRoom Types
+// ============================================================================
+
+export interface DataRoomInfo {
+  id: string;
+  creator_wallet?: string;
+  bonfire_id: string;
+  description: string;
+  system_prompt?: string;
+  center_node_uuid?: string;
+  price_usd: number;
+  query_limit: number;
+  expiration_days: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  creator_name?: string;
+  creator_username?: string;
+  bonfire_name?: string;
+  agent_id?: string;
+  dynamic_pricing_enabled?: boolean;
+  price_step_usd?: number;
+  price_decay_rate?: number;
+  total_purchases?: number;
+  last_purchase_at?: string;
+  image_model?: "schnell" | "dev" | "pro" | "realism";
+}
+
+export interface DataRoomListResponse {
+  datarooms: DataRoomInfo[];
+  count: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreateDataRoomRequest {
+  creator_wallet?: string;
+  bonfire_id: string;
+  description: string;
+  system_prompt: string;
+  center_node_uuid?: string;
+  price_usd: number;
+  query_limit: number;
+  expiration_days: number;
+  dynamic_pricing_enabled?: boolean;
+  price_step_usd?: number;
+  price_decay_rate?: number;
+  image_model?: "schnell" | "dev" | "pro" | "realism";
+}
+
+export interface DataRoomSubscribeRequest {
+  payment_header: string;
+  user_wallet: string;
+}
+
+export interface DataRoomSubscription {
+  id: string;
+  dataroom_id: string;
+  user_wallet: string;
+  queries_remaining: number;
+  expires_at: string;
+  status: "active" | "expired" | "cancelled";
+  created_at: string;
+}
+
+// ============================================================================
+// HyperBlog Types
+// ============================================================================
+
+export interface HyperBlogInfo {
+  id: string;
+  dataroom_id: string;
+  user_query: string;
+  generation_status: "generating" | "completed" | "failed";
+  author_wallet: string;
+  author_name?: string;
+  author_username?: string;
+  created_at: string;
+  is_public: boolean;
+  tx_hash: string | null;
+  word_count: number | null;
+  blog_length: "short" | "medium" | "long";
+  generation_mode?: "blog" | "card";
+  preview: string;
+  summary?: string | null;
+  image_prompt?: string | null;
+  banner_url?: string | null;
+  upvotes?: number;
+  downvotes?: number;
+  comment_count?: number;
+  view_count?: number;
+  taxonomy_keywords?: string[] | null;
+  dataroom_description?: string | null;
+}
+
+export interface HyperBlogListResponse {
+  hyperblogs: HyperBlogInfo[];
+  count: number;
+  limit: number;
+  offset: number;
+}
+
+// ============================================================================
+// Payment Types
+// ============================================================================
+
+export interface PaymentMetadata {
+  verified: boolean;
+  settled: boolean;
+  from_address?: string;
+  facilitator?: string;
+  tx_hash?: string;
+  settlement_error?: string;
+  microsub_active?: boolean;
+  queries_remaining?: number;
+  expires_at?: string;
+}
+
+export interface PaymentVerifyRequest {
+  payment_header: string;
+  expected_amount?: string;
+  resource_type: "chat" | "delve" | "dataroom" | "hyperblog";
+  resource_id?: string;
+}
+
+export interface PaymentVerifyResponse {
+  verified: boolean;
+  tx_hash?: string;
+  from_address?: string;
+  amount?: string;
+  error?: string;
+}
+
+export interface PaymentStatusRequest {
+  tx_hash: string;
+}
+
+export interface PaymentStatusResponse {
+  status: "pending" | "confirmed" | "failed";
+  tx_hash: string;
+  confirmed_at?: string;
+  error?: string;
+}

@@ -1,15 +1,43 @@
 // API Types
 export type {
+  ActiveJobsResponse,
   AgentInfo,
+  AgentListResponse,
   AgentSelectionState,
   ApiError,
   ApiResponse,
   AsyncJob,
+  BonfireAgentsResponse,
   BonfireInfo,
+  BonfireListResponse,
+  ChatMessage,
+  ChatRequest,
+  ChatResponse,
+  CreateDataRoomRequest,
+  DataRoomInfo,
+  DataRoomListResponse,
+  DataRoomSubscribeRequest,
+  DataRoomSubscription,
+  DelveRequest,
+  DelveResponse,
   DocumentInfo,
+  DocumentIngestRequest,
+  DocumentIngestResponse,
+  GraphExpandRequest,
+  GraphSearchRequest,
+  HyperBlogInfo,
+  HyperBlogListResponse,
+  JobInitiateResponse,
+  JobResponse,
+  JobsListResponse,
   JobStatus,
   JobType,
   PaginatedResponse,
+  PaymentMetadata,
+  PaymentStatusRequest,
+  PaymentStatusResponse,
+  PaymentVerifyRequest,
+  PaymentVerifyResponse,
 } from "./api";
 
 // Graph Types
@@ -26,11 +54,8 @@ export type {
   NodeType,
 } from "./graph";
 
-// Web3 Types
+// Web3 Types (excluding types already exported from api.ts)
 export type {
-  DataRoomInfo,
-  DataRoomSubscription,
-  HyperBlogInfo,
   HyperBlogStatus,
   PaymentParams,
   PaymentStatus,

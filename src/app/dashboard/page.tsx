@@ -9,6 +9,7 @@
 "use client";
 
 import { useDashboardData } from "@/hooks";
+import { Header } from "@/components/shared/Header";
 import {
   RecentChatsSection,
   DataRoomsSection,
@@ -24,7 +25,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-base-100">
-      {/* Header */}
+      <Header />
+      {/* Page header */}
       <header className="border-b border-base-300 bg-base-200">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">

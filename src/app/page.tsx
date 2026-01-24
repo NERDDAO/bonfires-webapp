@@ -138,7 +138,7 @@ export default function HomePage() {
               description="Create and monetize curated knowledge spaces with blockchain-powered access control."
               icon={<Web3Icon />}
               variant="web3"
-              href="/data-rooms"
+              href="/datarooms"
               badge="Monetize"
               features={[
                 "Data Room marketplace",

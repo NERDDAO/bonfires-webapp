@@ -12,6 +12,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { LoadingSpinner } from "@/components/common";
 import type { NodeData } from "@/components/graph";
 import dynamicImport from "next/dynamic";
+import { Header } from "@/components/shared/Header";
 
 const GraphExplorer = dynamicImport(
   () => import("@/components/graph").then((mod) => mod.GraphExplorer),
@@ -34,6 +35,7 @@ function GraphPageContent() {
 
   const bonfireId = searchParams.get("bonfireId");
   const agentId = searchParams.get("agentId");
+  const hideHeader = searchParams.get("hideHeader") === "1";
 
   // Handle Create Data Room action
   const handleCreateDataRoom = (nodeData: NodeData, bonfireId: string) => {
@@ -47,12 +49,15 @@ function GraphPageContent() {
   };
 
   return (
-    <GraphExplorer
-      initialBonfireId={bonfireId}
-      initialAgentId={agentId}
-      onCreateDataRoom={handleCreateDataRoom}
-      className="flex-1"
-    />
+    <div className="min-h-screen flex flex-col bg-base-100">
+      {!hideHeader && <Header />}
+      <GraphExplorer
+        initialBonfireId={bonfireId}
+        initialAgentId={agentId}
+        onCreateDataRoom={handleCreateDataRoom}
+        className="flex-1"
+      />
+    </div>
   );
 }
 

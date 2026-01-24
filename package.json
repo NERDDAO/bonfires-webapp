@@ -1,0 +1,65 @@
+{
+  "name": "delve-unified-webapp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Unified Delve platform combining graph visualization, Web3 features, and document management",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "typecheck": "tsc --noEmit --pretty",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "dependencies": {
+    "next": "^16.0.10",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+
+    "@tanstack/react-query": "^5.90.8",
+    "@tanstack/react-query-devtools": "^5.90.2",
+    "zustand": "^5.0.8",
+
+    "@rainbow-me/rainbowkit": "2.2.8",
+    "wagmi": "2.16.4",
+    "viem": "2.34.0",
+
+    "@react-sigma/core": "^5.0.6",
+    "sigma": "^3.0.0",
+    "graphology": "^0.26.0",
+    "graphology-layout-force": "^0.2.4",
+    "graphology-layout-forceatlas2": "^0.10.1",
+
+    "daisyui": "^5.0.9",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.553.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.3.1",
+
+    "react-error-boundary": "^6.0.0",
+    "react-hot-toast": "^2.4.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@types/uuid": "^10.0.0",
+    "graphology-types": "^0.24.8",
+    "typescript": "^5.9.3",
+    "eslint": "^9.23.0",
+    "eslint-config-next": "^15.3.3",
+    "eslint-config-prettier": "^10.1.1",
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+    "prettier": "^3.6.2",
+    "@tailwindcss/postcss": "latest",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

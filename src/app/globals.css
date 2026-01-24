@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* DaisyUI configuration */
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
+
+/* Custom CSS Variables for Graph Theme */
+:root {
+  /* Graph canvas colors */
+  --graph-background: #0a0a0a;
+  --graph-node-default: #4f46e5;
+  --graph-node-entity: #22c55e;
+  --graph-node-episode: #f59e0b;
+  --graph-edge-default: #6b7280;
+  --graph-edge-highlight: #8b5cf6;
+  --graph-selection: #ec4899;
+
+  /* Graph text */
+  --graph-label-color: #e5e7eb;
+  --graph-label-font: "Inter", system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --graph-background: #0a0a0a;
+  --graph-label-color: #e5e7eb;
+}
+
+[data-theme="light"] {
+  --graph-background: #fafafa;
+  --graph-label-color: #1f2937;
+}
+
+/* Graph canvas styling */
+.graph-canvas {
+  background-color: var(--graph-background);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(var(--b2));
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--bc) / 0.5);
+}
+
+/* Selection styling */
+::selection {
+  background-color: oklch(var(--p) / 0.3);
+}
+
+/* Focus ring styling */
+:focus-visible {
+  outline: 2px solid oklch(var(--p));
+  outline-offset: 2px;
+}
+
+/* Animation utilities */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out;
+}

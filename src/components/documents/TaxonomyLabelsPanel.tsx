@@ -184,7 +184,7 @@ export function TaxonomyLabelsPanel({
                 )}
 
                 {/* Labels */}
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
                   {labels.map((label) => {
                     const isSelected = selectedLabel === label.name;
                     const colorClass = label.color ?? getLabelColor(label.name);
@@ -193,16 +193,16 @@ export function TaxonomyLabelsPanel({
                       <button
                         key={label.name}
                         className={`
-                          badge gap-2 cursor-pointer transition-all max-w-full
-                          ${isSelected ? `${colorClass} ring-2 ring-offset-2 ring-primary` : `badge-outline hover:${colorClass}`}
+                          w-full flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-all
+                          ${isSelected ? `${colorClass} ring-2 ring-offset-2 ring-primary` : "border-base-300 hover:bg-base-300/50"}
                         `}
                         onClick={() => handleLabelClick(label.name)}
                         title={label.name}
                       >
-                        <span className="line-clamp-2 text-left leading-snug">
+                        <span className="flex-1 whitespace-normal break-words leading-snug">
                           {label.name}
                         </span>
-                        <span className="badge badge-ghost badge-xs shrink-0">
+                        <span className="badge badge-ghost badge-sm shrink-0">
                           {label.count}
                         </span>
                       </button>

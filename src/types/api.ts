@@ -5,6 +5,8 @@
  * These mirror the backend DTOs for type safety.
  */
 
+import type { GraphStatePayload } from "./graph";
+
 // Agent & Bonfire Types
 export interface BonfireInfo {
   id: string;
@@ -164,6 +166,11 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface ChatContextPayload {
+  graphState?: GraphStatePayload;
+  [key: string]: unknown;
+}
+
 export interface ChatRequest {
   message: string;
   chat_history?: ChatMessage[];
@@ -172,6 +179,7 @@ export interface ChatRequest {
   center_node_uuid?: string;
   graph_id?: string;
   bonfire_id?: string;
+  context?: ChatContextPayload;
 }
 
 export interface ChatResponse {

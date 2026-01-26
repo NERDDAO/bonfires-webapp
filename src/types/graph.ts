@@ -51,6 +51,27 @@ export interface GraphMetadata {
   timestamp: string;
 }
 
+export interface GraphElementPayload {
+  data: {
+    id?: string;
+    label?: string;
+    node_type?: NodeType | string;
+    source?: string;
+    target?: string;
+    [key: string]: unknown;
+  };
+  classes?: string | string[];
+}
+
+export interface GraphStatePayload {
+  nodes: GraphElementPayload[];
+  edges: GraphElementPayload[];
+  nodeCount?: number;
+  edgeCount?: number;
+  centerNodeUuid?: string;
+  lastUpdated?: string;
+}
+
 // Graph Query Parameters
 export interface GraphQueryParams {
   bonfire_id: string;

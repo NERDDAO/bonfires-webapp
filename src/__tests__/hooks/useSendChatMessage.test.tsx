@@ -165,6 +165,34 @@ describe("useSendChatMessage", () => {
     );
   });
 
+  it("should include graph context when provided", async () => {
+    const graphState = {
+      nodes: [{ data: { id: "n:node-1", label: "Node 1", node_type: "entity" } }],
+      edges: [{ data: { source: "n:node-1", target: "n:node-2", label: "related_to" } }],
+      nodeCount: 1,
+      edgeCount: 1,
+      centerNodeUuid: "node-1",
+      lastUpdated: "2025-01-01T00:00:00Z",
+    };
+
+    const mockResponse = { reply: "Graph context received" };
+    (apiClient.post as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+    const { result } = renderHook(() => useSendChatMessage(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        agentId: "agent-123",
+        message: "Explain the graph",
+        context: { graphState },
+      });
+    });
+
+    const requestBody = (apiClient.post as jest.Mock).mock.calls[0]?.[1];
+    expect(requestBody.context).toEqual({ graphState });
+    expect(requestBody.graph_id).toBeUndefined();
+  });
+
   it("should handle API errors", async () => {
     const error = new Error("Network error");
     (apiClient.post as jest.Mock).mockRejectedValueOnce(error);

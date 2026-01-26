@@ -32,7 +32,15 @@ import { WikiPanel, type WikiNodeData, type WikiEdgeData } from "./WikiPanel";
 import { ChatPanel, FloatingChatButton, type ChatMessage } from "./ChatPanel";
 import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
-import type { AgentLatestEpisodesResponse, GraphData, GraphEdge, GraphNode, NodeType } from "@/types";
+import type {
+  AgentLatestEpisodesResponse,
+  GraphData,
+  GraphEdge,
+  GraphElementPayload,
+  GraphNode,
+  GraphStatePayload,
+  NodeType,
+} from "@/types";
 
 function resolveNodeType(rawType: unknown, labels: string[]): NodeType {
   const normalized = typeof rawType === "string" ? rawType.toLowerCase() : "";
@@ -115,6 +123,43 @@ function normalizeEdge(raw: Record<string, unknown>): GraphEdge | null {
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
+}
+
+function buildGraphStatePayload(
+  elements: GraphElement[],
+  centerNodeId: string | null
+): GraphStatePayload {
+  const nodes: GraphElementPayload[] = [];
+  const edges: GraphElementPayload[] = [];
+
+  for (const element of elements) {
+    if (!element.data) continue;
+    const data = { ...element.data } as GraphElementPayload["data"];
+
+    if (typeof data.node_type === "string") {
+      nodes.push({
+        data,
+        classes: element.classes,
+      });
+      continue;
+    }
+
+    if (data.source && data.target) {
+      edges.push({
+        data,
+        classes: element.classes,
+      });
+    }
+  }
+
+  return {
+    nodes,
+    edges,
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
+    centerNodeUuid: centerNodeId ? normalizeNodeId(centerNodeId) || undefined : undefined,
+    lastUpdated: new Date().toISOString(),
+  };
 }
 
 interface GraphExplorerProps {
@@ -839,10 +884,17 @@ export function GraphExplorer({
       setChatMessages((prev) => [...prev, userMessage]);
 
       try {
+        const centerNodeId = selection.selectedNodeId ?? urlCenterNode ?? null;
+        const graphState = buildGraphStatePayload(elements, centerNodeId);
         const response = await chatMutation.mutateAsync({
           agentId: agentSelection.selectedAgentId,
           message: content,
           bonfireId: agentSelection.selectedBonfireId ?? undefined,
+          centerNodeUuid: graphState.centerNodeUuid,
+          graphMode: "static",
+          context: {
+            graphState,
+          },
         });
 
         const assistantMessage: ChatMessage = {

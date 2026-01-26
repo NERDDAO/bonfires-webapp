@@ -12,6 +12,7 @@ export type {
   BonfireAgentsResponse,
   BonfireInfo,
   BonfireListResponse,
+  ChatContextPayload,
   ChatMessage,
   ChatRequest,
   ChatResponse,
@@ -55,6 +56,7 @@ export type {
 export type {
   GraphData,
   GraphEdge,
+  GraphElementPayload,
   GraphExpandParams,
   GraphFilters,
   GraphMetadata,
@@ -62,6 +64,7 @@ export type {
   GraphQueryParams,
   GraphSearchParams,
   GraphState,
+  GraphStatePayload,
   NodeType,
 } from "./graph";
 

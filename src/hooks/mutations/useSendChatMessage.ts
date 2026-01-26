@@ -11,7 +11,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
 import { apiClient } from "@/lib/api/client";
 import { addChatMessage, getChatHistory, type ChatMessage as StoredChatMessage } from "@/lib/storage/chatHistory";
-import type { ChatRequest, ChatResponse, ChatMessage } from "@/types";
+import type { ChatContextPayload, ChatRequest, ChatResponse, ChatMessage } from "@/types";
 
 interface SendChatMessageParams {
   /** The agent ID to chat with */
@@ -26,6 +26,8 @@ interface SendChatMessageParams {
   centerNodeUuid?: string;
   /** Optional graph ID for state continuity */
   graphId?: string;
+  /** Optional additional context for the agent */
+  context?: ChatContextPayload;
   /** Include chat history from localStorage */
   includeHistory?: boolean;
 }
@@ -64,6 +66,7 @@ export function useSendChatMessage() {
         graphMode = "adaptive",
         centerNodeUuid,
         graphId,
+        context,
         includeHistory = true,
       } = params;
 
@@ -80,6 +83,7 @@ export function useSendChatMessage() {
         center_node_uuid: centerNodeUuid,
         graph_id: graphId,
         bonfire_id: bonfireId,
+        context,
       };
 
       // Create user message for storage

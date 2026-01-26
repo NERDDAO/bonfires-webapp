@@ -60,7 +60,8 @@ export default function DocumentsPage() {
   }, [chunksData]);
 
   const totalChunks = chunksData?.total_chunks ?? 0;
-  const totalDocuments = chunksData?.total_documents ?? visibleDocuments.length;
+  const totalDocuments =
+    chunksData?.summary?.total_documents ?? visibleDocuments.length;
   const totalPages =
     chunksData?.total_pages ?? Math.max(1, Math.ceil(totalDocuments / pageSize));
   const canGoPrev = page > 1;

@@ -12,6 +12,7 @@ Implementation tasks for the unified dashboard work and the WebGL SSR fix.
 ## In Progress Tasks
 
 - [ ] Validate navigation and quick actions manually in UI
+- [ ] Resolve TypeScript errors in documents page
 
 ## Future Tasks
 
@@ -29,3 +30,4 @@ Implementation tasks for the unified dashboard work and the WebGL SSR fix.
 - `src/hooks/queries/useDashboardData.ts` - Aggregated dashboard data hook ✅
 - `src/components/dashboard/*` - Dashboard sections and skeletons ✅
 - `src/app/(graph)/search/page.tsx` - Client-only graph search rendering ✅
+- `src/app/documents/page.tsx` - Documents page summary + pagination logic

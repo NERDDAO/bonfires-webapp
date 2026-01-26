@@ -172,16 +172,26 @@ export function WikiPanel({
           )}
 
           {/* Fact */}
-          {(edge.fact || edge.attributes?.["fact"]) && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                Fact
-              </h3>
-              <p className="text-sm text-base-content/80 leading-relaxed">
-                {(edge.fact ?? edge.attributes?.["fact"]) as string}
-              </p>
-            </section>
-          )}
+          {(() => {
+            const attributeFact = edge.attributes?.["fact"];
+            const fact =
+              typeof edge.fact === "string"
+                ? edge.fact
+                : typeof attributeFact === "string"
+                  ? attributeFact
+                  : undefined;
+            if (!fact) return null;
+            return (
+              <section>
+                <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+                  Fact
+                </h3>
+                <p className="text-sm text-base-content/80 leading-relaxed">
+                  {fact}
+                </p>
+              </section>
+            );
+          })()}
 
           {/* Attributes */}
           {edge.attributes && Object.keys(edge.attributes).length > 0 && (

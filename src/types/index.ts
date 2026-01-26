@@ -47,6 +47,7 @@ export type {
   PaymentVerifyRequest,
   PaymentVerifyResponse,
   SupportedFileType,
+  TaxonomyStatsResponse,
   TaxonomyLabel,
   VectorSearchRequest,
   VectorSearchResponse,

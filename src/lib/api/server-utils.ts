@@ -63,33 +63,29 @@ export interface ProxyResult<T = unknown> {
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "Content-Type, Authorization, X-Payment-Header, X-Clerk-User-Id, X-Clerk-Org-Id, X-Clerk-Org-Role",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Payment-Header",
 } as const;
 
 /**
  * Get Clerk authentication headers for backend requests
  *
- * Extracts user ID, organization ID, and role from the current session
- * and returns them as headers to pass to the Python backend.
+ * Gets the Clerk session JWT token and returns it as a Bearer token header.
+ * The backend verifies the JWT signature using Clerk's JWKS endpoint.
  */
 export async function getAuthHeaders(): Promise<Record<string, string>> {
   try {
-    const { userId, orgId, orgRole } = await auth();
+    const { getToken } = await auth();
 
-    const headers: Record<string, string> = {};
+    // Get the Clerk session JWT
+    const token = await getToken();
 
-    if (userId) {
-      headers["X-Clerk-User-Id"] = userId;
-    }
-    if (orgId) {
-      headers["X-Clerk-Org-Id"] = orgId;
-    }
-    if (orgRole) {
-      headers["X-Clerk-Org-Role"] = orgRole;
+    if (token) {
+      return {
+        Authorization: `Bearer ${token}`,
+      };
     }
 
-    return headers;
+    return {};
   } catch (error) {
     // Auth not available (public route) - return empty headers
     console.debug("[Auth Headers] No auth context available:", error);

@@ -1,26 +1,32 @@
 /**
  * Document Ingest API Route
  *
- * POST /api/documents/ingest - Ingest a new document
+ * POST /api/documents/ingest - Ingest a new document (with access control)
  */
 
 import { NextRequest } from "next/server";
 import {
+  proxyToBackend,
   handleProxyRequest,
   handleCorsOptions,
   createErrorResponse,
   parseJsonBody,
 } from "@/lib/api/server-utils";
-import type { DocumentIngestRequest } from "@/types";
+import {
+  checkBonfireAccess,
+  createAccessDeniedResponse,
+} from "@/lib/api/bonfire-access";
+import type { DocumentIngestRequest, BonfireListResponse } from "@/types";
 
 /**
  * POST /api/documents/ingest
  *
  * Ingest a new document into the knowledge graph.
+ * Validates bonfire access before allowing ingestion.
  *
  * Request Body:
  * - content: string (required) - Document content
- * - bonfire_id: string (required) - Target bonfire
+ * - bonfire_id: string (required) - Target bonfire (access control applied)
  * - filename?: string - Original filename
  * - metadata?: object - Additional metadata
  */
@@ -37,6 +43,21 @@ export async function POST(request: NextRequest) {
   }
   if (!body?.bonfire_id) {
     return createErrorResponse("bonfire_id is required", 400);
+  }
+
+  // Check bonfire access
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
+    method: "GET",
+  });
+
+  const bonfire = bonfireResponse.data?.bonfires?.find(
+    (b) => b.id === body.bonfire_id
+  );
+
+  const access = await checkBonfireAccess(body.bonfire_id, bonfire?.is_public);
+  if (!access.allowed) {
+    const denied = createAccessDeniedResponse(access.reason);
+    return createErrorResponse(denied.error, 403, denied.details, denied.code);
   }
 
   const ingestRequest = {

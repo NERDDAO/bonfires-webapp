@@ -11,6 +11,7 @@ export { Header, default as HeaderDefault } from "./Header";
 export { Footer, default as FooterDefault } from "./Footer";
 export { WalletButton, default as WalletButtonDefault } from "./WalletButton";
 export { WalletConnectionGuard } from "./WalletConnectionGuard";
+export { AuthGuard, default as AuthGuardDefault } from "./AuthGuard";
 export {
   PaymentConfirmDialog,
   default as PaymentConfirmDialogDefault,

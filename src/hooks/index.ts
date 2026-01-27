@@ -109,3 +109,6 @@ export {
   type MicrosubInfo,
   type MicrosubInfoWithDisabled,
 } from "./web3";
+
+// Auth Hooks
+export { useAuth, default as useAuthDefault } from "./useAuth";

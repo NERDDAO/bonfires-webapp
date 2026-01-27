@@ -2,10 +2,11 @@
  * Server-side API Utilities
  *
  * Reusable utilities for Next.js API routes that proxy to the Delve backend.
- * These utilities handle timeout, error handling, logging, and CORS.
+ * These utilities handle timeout, error handling, logging, CORS, and auth.
  */
 
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 // Server-side timeout (60s for Vercel Pro compatibility)
 const DEFAULT_TIMEOUT_MS = 60000;
@@ -42,6 +43,8 @@ export interface ProxyOptions {
   timeout?: number;
   /** Query parameters to append */
   queryParams?: Record<string, string | number | boolean | undefined>;
+  /** Include Clerk auth headers (default: true) */
+  includeAuth?: boolean;
 }
 
 /**
@@ -60,8 +63,39 @@ export interface ProxyResult<T = unknown> {
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Payment-Header",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Payment-Header, X-Clerk-User-Id, X-Clerk-Org-Id, X-Clerk-Org-Role",
 } as const;
+
+/**
+ * Get Clerk authentication headers for backend requests
+ *
+ * Extracts user ID, organization ID, and role from the current session
+ * and returns them as headers to pass to the Python backend.
+ */
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const { userId, orgId, orgRole } = await auth();
+
+    const headers: Record<string, string> = {};
+
+    if (userId) {
+      headers["X-Clerk-User-Id"] = userId;
+    }
+    if (orgId) {
+      headers["X-Clerk-Org-Id"] = orgId;
+    }
+    if (orgRole) {
+      headers["X-Clerk-Org-Role"] = orgRole;
+    }
+
+    return headers;
+  } catch (error) {
+    // Auth not available (public route) - return empty headers
+    console.debug("[Auth Headers] No auth context available:", error);
+    return {};
+  }
+}
 
 /**
  * Create a standardized error response
@@ -188,18 +222,25 @@ export async function proxyToBackend<T = unknown>(
     headers = {},
     timeout = DEFAULT_TIMEOUT_MS,
     queryParams,
+    includeAuth = true,
   } = options;
 
   const backendUrl = getBackendUrl();
   const url = buildUrl(backendUrl, endpoint, queryParams);
 
-  console.log(`[API Proxy] ${method} ${url}`);
+  // Get auth headers if requested
+  const authHeaders = includeAuth ? await getAuthHeaders() : {};
+
+  console.log(`[API Proxy] ${method} ${url}`, {
+    hasAuth: Object.keys(authHeaders).length > 0,
+  });
 
   try {
     const response = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
         ...headers,
       },
       body: body ? JSON.stringify(body) : undefined,

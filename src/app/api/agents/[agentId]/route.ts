@@ -1,26 +1,70 @@
 /**
  * Single Agent API Route
  *
- * GET /api/agents/[agentId] - Get agent details
- * PUT /api/agents/[agentId] - Update agent
+ * GET /api/agents/[agentId] - Get agent details (with access control)
+ * PUT /api/agents/[agentId] - Update agent (with access control)
  */
 
 import { NextRequest } from "next/server";
 import {
+  proxyToBackend,
   handleProxyRequest,
   handleCorsOptions,
   createErrorResponse,
+  createSuccessResponse,
   parseJsonBody,
 } from "@/lib/api/server-utils";
+import {
+  checkBonfireAccess,
+  createAccessDeniedResponse,
+} from "@/lib/api/bonfire-access";
+import type { AgentInfo, BonfireListResponse } from "@/types";
 
 interface RouteParams {
   params: Promise<{ agentId: string }>;
 }
 
 /**
+ * Helper to check if user can access an agent based on its bonfire
+ */
+async function checkAgentAccess(agentId: string) {
+  // Fetch the agent to get its bonfire_id
+  const agentResponse = await proxyToBackend<AgentInfo>(`/agents/${agentId}`, {
+    method: "GET",
+  });
+
+  if (!agentResponse.success || !agentResponse.data) {
+    return { allowed: false, error: "Agent not found", status: 404 };
+  }
+
+  const agent = agentResponse.data;
+  const bonfireId = agent.bonfire_id;
+
+  if (!bonfireId) {
+    // Agent has no bonfire, allow access
+    return { allowed: true, agent };
+  }
+
+  // Fetch bonfire to check is_public
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
+    method: "GET",
+  });
+
+  const bonfire = bonfireResponse.data?.bonfires?.find((b) => b.id === bonfireId);
+
+  const access = await checkBonfireAccess(bonfireId, bonfire?.is_public);
+  if (!access.allowed) {
+    return { allowed: false, error: "Access denied", status: 403, reason: access.reason };
+  }
+
+  return { allowed: true, agent };
+}
+
+/**
  * GET /api/agents/[agentId]
  *
  * Get details of a specific agent.
+ * Checks access based on the agent's bonfire.
  */
 export async function GET(
   request: NextRequest,
@@ -32,15 +76,23 @@ export async function GET(
     return createErrorResponse("Agent ID is required", 400);
   }
 
-  return handleProxyRequest(`/agents/${agentId}`, {
-    method: "GET",
-  });
+  const accessCheck = await checkAgentAccess(agentId);
+  if (!accessCheck.allowed) {
+    if (accessCheck.status === 404) {
+      return createErrorResponse(accessCheck.error ?? "Agent not found", 404);
+    }
+    const denied = createAccessDeniedResponse(accessCheck.reason);
+    return createErrorResponse(denied.error, 403, denied.details, denied.code);
+  }
+
+  return createSuccessResponse(accessCheck.agent);
 }
 
 /**
  * PUT /api/agents/[agentId]
  *
  * Update an existing agent.
+ * Checks access based on the agent's bonfire.
  *
  * Request Body:
  * - name?: string
@@ -55,6 +107,16 @@ export async function PUT(
 
   if (!agentId) {
     return createErrorResponse("Agent ID is required", 400);
+  }
+
+  // Check access before allowing update
+  const accessCheck = await checkAgentAccess(agentId);
+  if (!accessCheck.allowed) {
+    if (accessCheck.status === 404) {
+      return createErrorResponse(accessCheck.error ?? "Agent not found", 404);
+    }
+    const denied = createAccessDeniedResponse(accessCheck.reason);
+    return createErrorResponse(denied.error, 403, denied.details, denied.code);
   }
 
   const { data: body, error } = await parseJsonBody(request);

@@ -1,26 +1,34 @@
 /**
  * Agents API Route
  *
- * GET /api/agents - List agents (with optional filters)
+ * GET /api/agents - List agents (with optional filters and access control)
  * POST /api/agents - Create a new agent
  */
 
 import { NextRequest } from "next/server";
 import {
+  proxyToBackend,
   handleProxyRequest,
   handleCorsOptions,
   createErrorResponse,
+  createSuccessResponse,
   parseJsonBody,
   extractQueryParams,
 } from "@/lib/api/server-utils";
+import {
+  checkBonfireAccess,
+  createAccessDeniedResponse,
+} from "@/lib/api/bonfire-access";
+import type { BonfireListResponse } from "@/types";
 
 /**
  * GET /api/agents
  *
  * List agents with optional filtering by bonfire, username, or active status.
+ * If bonfire_id is provided, validates access to that bonfire first.
  *
  * Query Parameters:
- * - bonfire_id: Filter by bonfire ID
+ * - bonfire_id: Filter by bonfire ID (access control applied)
  * - username: Filter by username
  * - active_only: If "true", only return active agents
  */
@@ -33,9 +41,26 @@ export async function GET(request: NextRequest) {
 
   const queryParams: Record<string, string | boolean | undefined> = {};
 
+  // If bonfire_id is provided, validate access first
   if (params["bonfire_id"]) {
+    // Fetch bonfire to check access
+    const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
+      method: "GET",
+    });
+
+    const bonfire = bonfireResponse.data?.bonfires?.find(
+      (b) => b.id === params["bonfire_id"]
+    );
+
+    const access = await checkBonfireAccess(params["bonfire_id"], bonfire?.is_public);
+    if (!access.allowed) {
+      const denied = createAccessDeniedResponse(access.reason);
+      return createErrorResponse(denied.error, 403, denied.details, denied.code);
+    }
+
     queryParams["bonfire_id"] = params["bonfire_id"];
   }
+
   if (params["username"]) {
     queryParams["username"] = params["username"];
   }

@@ -14,6 +14,7 @@ export interface BonfireInfo {
   description?: string;
   created_at: string;
   agent_count: number;
+  is_public?: boolean;
   latest_taxonomies?: TaxonomyInfo[];
 }
 

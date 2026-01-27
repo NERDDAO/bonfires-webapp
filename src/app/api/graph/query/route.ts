@@ -1,7 +1,7 @@
 /**
  * Graph Query API Route
  *
- * POST /api/graph/query - Execute a graph query (delve search)
+ * POST /api/graph/query - Execute a graph query (delve search) with access control
  *
  * This endpoint proxies to the backend /delve endpoint for semantic
  * graph searches. For long-running queries, the backend may return
@@ -10,20 +10,26 @@
 
 import { NextRequest } from "next/server";
 import {
+  proxyToBackend,
   handleProxyRequest,
   handleCorsOptions,
   createErrorResponse,
   parseJsonBody,
 } from "@/lib/api/server-utils";
-import type { DelveRequest } from "@/types";
+import {
+  checkBonfireAccess,
+  createAccessDeniedResponse,
+} from "@/lib/api/bonfire-access";
+import type { DelveRequest, BonfireListResponse } from "@/types";
 
 /**
  * POST /api/graph/query
  *
  * Execute a semantic graph query.
+ * Validates bonfire access before executing.
  *
  * Request Body:
- * - bonfire_id: string (required) - Filter by bonfire
+ * - bonfire_id: string (required) - Filter by bonfire (access control applied)
  * - query?: string - The search query
  * - num_results?: number - Maximum results to return
  * - center_node_uuid?: string - Center the query on a specific node
@@ -38,6 +44,21 @@ export async function POST(request: NextRequest) {
 
   if (!body?.bonfire_id) {
     return createErrorResponse("bonfire_id is required", 400);
+  }
+
+  // Check bonfire access
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
+    method: "GET",
+  });
+
+  const bonfire = bonfireResponse.data?.bonfires?.find(
+    (b) => b.id === body.bonfire_id
+  );
+
+  const access = await checkBonfireAccess(body.bonfire_id, bonfire?.is_public);
+  if (!access.allowed) {
+    const denied = createAccessDeniedResponse(access.reason);
+    return createErrorResponse(denied.error, 403, denied.details, denied.code);
   }
 
   const delveRequest: DelveRequest = {

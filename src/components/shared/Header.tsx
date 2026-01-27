@@ -3,6 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  SignInButton,
+  UserButton,
+  OrganizationSwitcher,
+} from "@clerk/nextjs";
+import { useAuth } from "@/hooks/useAuth";
 import { WalletButton } from "./WalletButton";
 
 type NavSection = "graph" | "web3" | "documents" | "dashboard" | null;
@@ -297,11 +303,62 @@ export function Header({ className = "" }: HeaderProps) {
         </ul>
       </div>
 
-      {/* Wallet button */}
-      <div className="navbar-end">
+      {/* Auth and Wallet buttons */}
+      <div className="navbar-end flex items-center gap-2">
+        <AuthSection />
         <WalletButton />
       </div>
     </header>
+  );
+}
+
+/**
+ * Authentication section of the header
+ * Shows sign-in button when not authenticated,
+ * or organization switcher and user button when authenticated.
+ */
+function AuthSection() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Don't render until auth is loaded to prevent flash
+  if (!isLoaded) {
+    return <div className="skeleton h-8 w-20 rounded-full" />;
+  }
+
+  if (!isSignedIn) {
+    return (
+      <SignInButton mode="modal">
+        <button className="btn btn-ghost btn-sm">Sign In</button>
+      </SignInButton>
+    );
+  }
+
+  return (
+    <>
+      <OrganizationSwitcher
+        hidePersonal={true}
+        afterSelectOrganizationUrl="/dashboard"
+        appearance={{
+          elements: {
+            // Trigger button styling for dark header
+            rootBox: "flex items-center",
+            organizationSwitcherTrigger:
+              "btn btn-ghost btn-sm normal-case gap-2 [&_*]:!text-base-content",
+            organizationSwitcherTriggerIcon: "!text-base-content",
+            // Dropdown - dark text on white background
+            organizationSwitcherPopoverCard: "[&_*]:!text-gray-900",
+          },
+        }}
+      />
+      <UserButton
+        afterSignOutUrl="/"
+        appearance={{
+          elements: {
+            avatarBox: "w-8 h-8",
+          },
+        }}
+      />
+    </>
   );
 }
 

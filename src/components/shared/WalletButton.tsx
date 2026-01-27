@@ -38,7 +38,13 @@ export function WalletButton({
   const { openConnectModal } = useConnectModal();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Prevent hydration mismatch by only showing dynamic content after mount
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -66,8 +72,11 @@ export function WalletButton({
     ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol ?? "ETH"}`
     : "0.0000 ETH";
 
-  // Not connected state
+  // Not connected state - use hasMounted to prevent hydration mismatch
   if (!isConnected) {
+    // Show consistent state during SSR/hydration
+    const showLoading = hasMounted && isConnecting;
+
     return (
       <button
         className={`btn btn-ghost btn-sm gap-2 ${className}`}
@@ -78,9 +87,9 @@ export function WalletButton({
           }
           openConnectModal?.();
         }}
-        disabled={isConnecting}
+        disabled={showLoading}
       >
-        {isConnecting ? (
+        {showLoading ? (
           <span className="loading loading-spinner loading-xs" />
         ) : (
           <WalletIcon className="w-5 h-5" />

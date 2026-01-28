@@ -14,6 +14,14 @@ export type BonfireRole =
   | "org:bonfire_member"; // End user - read-only access
 
 /**
+ * Bonfire-specific organization permissions
+ *
+ * Permissions are assigned to roles and appear in the JWT's org_permissions array.
+ * Use the `hasPermission()` function from `useAuth` hook to check permissions.
+ */
+export type BonfirePermission = "org:bonfire:write"; // Can create datarooms, manage content
+
+/**
  * Authenticated user information
  */
 export interface AuthUser {
@@ -44,50 +52,4 @@ export interface AuthState {
   orgRole: BonfireRole | null;
   isSignedIn: boolean;
   isLoaded: boolean;
-}
-
-/**
- * Role permission definitions
- */
-export const ROLE_PERMISSIONS = {
-  "org:bonfire_admin": {
-    canDeleteBonfire: true,
-    canManageMembers: true,
-    canInviteUsers: true,
-    canReadMembers: true,
-  },
-  "org:bonfire_manager": {
-    canDeleteBonfire: false,
-    canManageMembers: true,
-    canInviteUsers: true,
-    canReadMembers: true,
-  },
-  "org:bonfire_member": {
-    canDeleteBonfire: false,
-    canManageMembers: false,
-    canInviteUsers: false,
-    canReadMembers: true,
-  },
-} as const;
-
-/**
- * Check if a role can manage members (invite, promote, remove)
- */
-export function canManageMembers(role: BonfireRole | null): boolean {
-  if (!role) return false;
-  return role === "org:bonfire_admin" || role === "org:bonfire_manager";
-}
-
-/**
- * Check if a role is a manager or admin
- */
-export function isManager(role: BonfireRole | null): boolean {
-  return role === "org:bonfire_manager" || role === "org:bonfire_admin";
-}
-
-/**
- * Check if a role is an admin (system super admin)
- */
-export function isAdmin(role: BonfireRole | null): boolean {
-  return role === "org:bonfire_admin";
 }

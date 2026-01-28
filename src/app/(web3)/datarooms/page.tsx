@@ -13,6 +13,7 @@ import { DataRoomMarketplaceCard } from "@/components/web3/DataRoomMarketplaceCa
 import { DataRoomWizard } from "@/components/web3/DataRoomWizard";
 import type { DataRoomInfo, DataRoomListResponse, CreateDataRoomRequest } from "@/types";
 import { Header } from "@/components/shared/Header";
+import { useAuth } from "@/hooks/useAuth";
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -25,6 +26,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
 
 export default function DataRoomsPage() {
   const { address, isConnected } = useWalletAccount();
+  const { canCreateDataRoom } = useAuth();
 
   const [dataRooms, setDataRooms] = useState<DataRoomInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -128,18 +130,20 @@ export default function DataRoomsPage() {
                 Browse and subscribe to data rooms created by the community.
               </p>
             </div>
-            <button
-              className="btn btn-primary btn-sm gap-2"
-              onClick={handleOpenWizard}
-              disabled={isCreating || !isConnected}
-            >
-              {isCreating ? (
-                <span className="loading loading-spinner loading-xs"></span>
-              ) : (
-                "+"
-              )}
-              Create Data Room
-            </button>
+            {canCreateDataRoom && (
+              <button
+                className="btn btn-primary btn-sm gap-2"
+                onClick={handleOpenWizard}
+                disabled={isCreating || !isConnected}
+              >
+                {isCreating ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  "+"
+                )}
+                Create Data Room
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -170,13 +174,15 @@ export default function DataRoomsPage() {
                 Browse and subscribe to data rooms created by the community.
               </p>
             </div>
-            <button
-              className="btn btn-primary btn-sm gap-2"
-              onClick={handleOpenWizard}
-              disabled={isCreating || !isConnected}
-            >
-              Create Data Room
-            </button>
+            {canCreateDataRoom && (
+              <button
+                className="btn btn-primary btn-sm gap-2"
+                onClick={handleOpenWizard}
+                disabled={isCreating || !isConnected}
+              >
+                Create Data Room
+              </button>
+            )}
           </div>
 
           <div className="alert alert-error shadow-lg">
@@ -224,13 +230,15 @@ export default function DataRoomsPage() {
                 Browse and subscribe to data rooms created by the community.
               </p>
             </div>
-            <button
-              className="btn btn-primary btn-sm gap-2"
-              onClick={handleOpenWizard}
-              disabled={isCreating || !isConnected}
-            >
-              Create Data Room
-            </button>
+            {canCreateDataRoom && (
+              <button
+                className="btn btn-primary btn-sm gap-2"
+                onClick={handleOpenWizard}
+                disabled={isCreating || !isConnected}
+              >
+                Create Data Room
+              </button>
+            )}
           </div>
 
           <div className="alert alert-info shadow-lg">
@@ -319,18 +327,20 @@ export default function DataRoomsPage() {
                 )}
                 Refresh
               </button>
-              <button
-                className="btn btn-primary btn-sm gap-2"
-                onClick={handleOpenWizard}
-                disabled={isCreating || !isConnected}
-              >
-                {isCreating ? (
-                  <span className="loading loading-spinner loading-xs"></span>
-                ) : (
-                  "+"
-                )}
-                Create Data Room
-              </button>
+              {canCreateDataRoom && (
+                <button
+                  className="btn btn-primary btn-sm gap-2"
+                  onClick={handleOpenWizard}
+                  disabled={isCreating || !isConnected}
+                >
+                  {isCreating ? (
+                    <span className="loading loading-spinner loading-xs"></span>
+                  ) : (
+                    "+"
+                  )}
+                  Create Data Room
+                </button>
+              )}
             </div>
           </div>
         </div>

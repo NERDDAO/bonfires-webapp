@@ -103,10 +103,5 @@ export type {
   AuthOrganization,
   AuthState,
   BonfireRole,
-} from "./auth";
-export {
-  ROLE_PERMISSIONS,
-  canManageMembers,
-  isManager,
-  isAdmin,
+  BonfirePermission,
 } from "./auth";

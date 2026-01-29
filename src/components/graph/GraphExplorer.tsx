@@ -21,10 +21,12 @@ import {
   useGraphQuery,
   useGraphExpand,
   useSendChatMessage,
+  useExpandEntity,
   SelectionActionType,
   PanelActionType,
   type PanelMode,
 } from "@/hooks";
+import type { GraphExpandResponse } from "@/types";
 
 import { GraphVisualization } from "./GraphVisualization";
 import { Timeline, type EpisodeTimelineItem } from "./Timeline";
@@ -232,6 +234,11 @@ export function GraphExplorer({
   const expandCenterRef = useRef<string | null>(null);
   const { expand } = useGraphExpand();
   const nodeCacheRef = useRef<Map<string, GraphElement["data"]>>(new Map());
+
+  // Entity expansion state
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [newlyAddedNodes, setNewlyAddedNodes] = useState<Set<string>>(new Set());
+  const expandEntityMutation = useExpandEntity();
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -841,11 +848,102 @@ export function GraphExplorer({
     [embedded]
   );
 
-  const handleExpandNode = useCallback((nodeData: NodeData) => {
-    // Trigger graph expansion
-    toast.info(`Expanding node: ${nodeData.label || nodeData.id}`);
-    // TODO: Implement node expansion
-  }, []);
+  const handleExpandNode = useCallback(
+    async (nodeData: NodeData) => {
+      if (!agentSelection.selectedBonfireId) {
+        toast.error("No bonfire selected");
+        return;
+      }
+
+      const nodeUuid = nodeData.id.replace(/^n:/, "");
+      const nodeType = nodeData.type ?? nodeData.node_type ?? "entity";
+      const isEntity = nodeType === "entity";
+
+      // Show loading state
+      setIsExpanding(true);
+
+      try {
+        // Call the expansion API (entity expansion uses the new endpoint)
+        if (isEntity) {
+          const result = await expandEntityMutation.mutateAsync({
+            entityUuid: nodeUuid,
+            bonfireId: agentSelection.selectedBonfireId,
+            limit: 50,
+          });
+
+          // Get existing node UUIDs for deduplication
+          const existingUuids = new Set(
+            elements.map((el) => {
+              const id = el.data?.id as string | undefined;
+              return id?.replace(/^n:/, "") ?? "";
+            })
+          );
+
+          // Identify new nodes
+          const newNodeUuids = result.nodes
+            .map((n) => {
+              const record = n as Record<string, unknown>;
+              return String(record["uuid"] ?? record["id"] ?? "").replace(/^n:/, "");
+            })
+            .filter((uuid) => uuid && !existingUuids.has(uuid));
+
+          // Convert response to GraphData format for merging
+          const incomingData: GraphData = {
+            nodes: result.nodes.map((n) => normalizeNode(n as Record<string, unknown>)).filter((n): n is GraphNode => !!n),
+            edges: result.edges.map((e) => normalizeEdge(e as Record<string, unknown>)).filter((e): e is GraphEdge => !!e),
+            metadata: {
+              bonfire_id: agentSelection.selectedBonfireId,
+              query: `expand:${nodeUuid}`,
+              timestamp: new Date().toISOString(),
+            },
+          };
+
+          // Merge into extra graph data
+          setExtraGraphData((prev) => mergeGraphData(prev, incomingData));
+
+          // Track newly added nodes for animation
+          if (newNodeUuids.length > 0) {
+            setNewlyAddedNodes(new Set(newNodeUuids));
+            // Clear animation after 3 seconds
+            setTimeout(() => setNewlyAddedNodes(new Set()), 3000);
+          }
+
+          // Show toast with result counts
+          const nodeCount = newNodeUuids.length;
+          const edgeCount = result.edges.length;
+
+          if (nodeCount > 0 || edgeCount > 0) {
+            toast.success(`Added ${nodeCount} nodes, ${edgeCount} edges`);
+          } else {
+            toast.info("All connections already visible");
+          }
+        } else {
+          // For episodes, use the existing expand function
+          const data = await expand({
+            bonfire_id: agentSelection.selectedBonfireId,
+            node_uuid: nodeUuid,
+            depth: 1,
+            limit: 50,
+          });
+
+          setExtraGraphData((prev) => mergeGraphData(prev, data));
+          toast.success("Episode expanded");
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to expand node";
+        toast.error(message);
+      } finally {
+        setIsExpanding(false);
+      }
+    },
+    [
+      agentSelection.selectedBonfireId,
+      expandEntityMutation,
+      expand,
+      elements,
+      mergeGraphData,
+    ]
+  );
 
   const handleDeleteNode = useCallback((nodeData: NodeData) => {
     // Remove node from graph
@@ -1042,6 +1140,16 @@ export function GraphExplorer({
               </div>
             )}
 
+            {/* Expansion Loading Overlay */}
+            {isExpanding && (
+              <div className="graph-expansion-overlay">
+                <LoadingSpinner size="lg" />
+                <span className="text-sm font-medium text-base-content">
+                  Expanding entity...
+                </span>
+              </div>
+            )}
+
             <GraphVisualization
               elements={elements}
               loading={isGraphLoading}
@@ -1066,6 +1174,7 @@ export function GraphExplorer({
               breadcrumbs={wikiNav.breadcrumbs}
               canGoBack={wikiNav.canGoBack}
               canGoForward={wikiNav.canGoForward}
+              isExpanding={isExpanding}
               onClose={() => {
                 dispatchSelection({ type: SelectionActionType.CLEAR_SELECTION });
                 dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "none" });
@@ -1080,6 +1189,13 @@ export function GraphExplorer({
               onForward={wikiNav.forward}
               onNodeSelect={handleNodeClick}
               onSearchAroundNode={handleSearchAroundNode}
+              onExpandNode={(nodeUuid, nodeType) => {
+                handleExpandNode({
+                  id: nodeUuid,
+                  type: nodeType as "episode" | "entity",
+                  node_type: nodeType as "episode" | "entity",
+                });
+              }}
             />
           )}
         </div>

@@ -275,6 +275,30 @@ export interface VectorSearchResponse {
   query?: string;
 }
 
+export interface EntityExpandRequest {
+  entity_uuid: string;
+  bonfire_id: string;
+  limit?: number;
+}
+
+export interface GraphExpandResponse {
+  success: boolean;
+  message?: string;
+  episodes: Record<string, unknown>[];
+  nodes: Record<string, unknown>[];
+  edges: Record<string, unknown>[];
+  graph_id?: string;
+  num_results?: number;
+}
+
+export interface NodeEpisodesResponse {
+  success: boolean;
+  message?: string;
+  node_uuid: string;
+  episodes: Record<string, unknown>[];
+  num_results: number;
+}
+
 // ============================================================================
 // Document Types
 // ============================================================================

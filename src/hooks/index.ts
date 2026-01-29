@@ -42,6 +42,9 @@ export {
   useGraphExpand,
   useGraphSearch,
   graphQueryKey,
+  // Node Episodes
+  useNodeEpisodes,
+  nodeEpisodesQueryKey,
   // Data Rooms
   useDataRoomsQuery,
   useDataRoomById,
@@ -98,6 +101,9 @@ export {
   useIngestDocument,
   useBatchIngestDocuments,
   useDeleteDocument,
+  // Graph Expansion
+  useExpandEntity,
+  type ExpandEntityParams,
 } from "./mutations";
 
 // Web3 Hooks

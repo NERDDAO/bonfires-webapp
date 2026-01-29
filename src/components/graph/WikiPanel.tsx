@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
+  Expand,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
@@ -63,6 +64,8 @@ export interface WikiPanelProps {
   canGoBack: boolean;
   /** Whether forward navigation is available */
   canGoForward: boolean;
+  /** Whether expansion is in progress */
+  isExpanding?: boolean;
   /** Callback to close the panel */
   onClose: () => void;
   /** Callback to toggle panel mode */
@@ -75,6 +78,8 @@ export interface WikiPanelProps {
   onNodeSelect: (nodeId: string) => void;
   /** Callback to search around selected node */
   onSearchAroundNode?: (nodeUuid: string) => void;
+  /** Callback to expand the selected node */
+  onExpandNode?: (nodeUuid: string, nodeType: string) => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -105,12 +110,14 @@ export function WikiPanel({
   breadcrumbs,
   canGoBack,
   canGoForward,
+  isExpanding = false,
   onClose,
   onToggleMode,
   onBack,
   onForward,
   onNodeSelect,
   onSearchAroundNode,
+  onExpandNode,
   className,
 }: WikiPanelProps) {
   // Don't render if not enabled or no selection
@@ -317,6 +324,8 @@ export function WikiPanel({
 
   const typeBadge = edge ? "edge" : isEpisode ? "episode" : "entity";
   const canSearchAroundNode = !!node?.uuid && !!onSearchAroundNode;
+  const canExpandNode = !!node?.uuid && !!onExpandNode && !edge;
+  const expandLabel = isEpisode ? "Expand Episode" : "Expand Entity";
 
   const panelContent = (
     <div
@@ -411,17 +420,38 @@ export function WikiPanel({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">{renderContent()}</div>
-      {canSearchAroundNode && (
-        <div className="p-4 border-t border-base-300">
-          <button
-            onClick={() => onSearchAroundNode?.(node.uuid)}
-            className="btn btn-primary btn-sm w-full"
-            aria-label="Search around this node"
-            title="Re-query the graph using this node as the center"
-            type="button"
-          >
-            Search around this node
-          </button>
+
+      {/* Footer Actions */}
+      {(canExpandNode || canSearchAroundNode) && (
+        <div className="p-4 border-t border-base-300 space-y-2">
+          {canExpandNode && (
+            <button
+              onClick={() => onExpandNode?.(node.uuid, nodeType || "entity")}
+              disabled={isExpanding}
+              className="btn btn-success btn-sm w-full gap-2"
+              aria-label={expandLabel}
+              title={`Expand connections from this ${nodeType || "entity"}`}
+              type="button"
+            >
+              {isExpanding ? (
+                <span className="loading loading-spinner loading-xs" />
+              ) : (
+                <Expand className="w-4 h-4" />
+              )}
+              {isExpanding ? "Expanding..." : expandLabel}
+            </button>
+          )}
+          {canSearchAroundNode && (
+            <button
+              onClick={() => onSearchAroundNode?.(node.uuid)}
+              className="btn btn-primary btn-sm w-full"
+              aria-label="Search around this node"
+              title="Re-query the graph using this node as the center"
+              type="button"
+            >
+              Search around this node
+            </button>
+          )}
         </div>
       )}
     </div>

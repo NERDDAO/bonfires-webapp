@@ -27,3 +27,6 @@ export {
   useBatchIngestDocuments,
   useDeleteDocument,
 } from "./useIngestDocument";
+
+// Graph Expansion
+export { useExpandEntity, type ExpandEntityParams } from "./useExpandEntity";

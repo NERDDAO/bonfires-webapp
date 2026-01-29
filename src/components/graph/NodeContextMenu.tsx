@@ -149,6 +149,7 @@ export function NodeContextMenu({
   }
 
   const nodeLabel = nodeData.label || nodeData.name || nodeData.id.slice(0, 8);
+  const expandLabel = isEpisode ? "Expand Episode" : "Expand Entity";
 
   return (
     <>
@@ -202,27 +203,40 @@ export function NodeContextMenu({
         )}
 
         {/* Expand Button - Left */}
-        <button
-          role="menuitem"
-          aria-label={`Expand relationships from ${nodeLabel}`}
-          onClick={handleExpand}
-          className={cn(
-            "absolute w-12 h-12 rounded-full",
-            "bg-success hover:bg-success/80 text-success-content",
-            "flex items-center justify-center",
-            "transition-all duration-200 hover:scale-110",
-            "focus:outline-none focus:ring-2 focus:ring-success/50",
-            "shadow-lg hover:shadow-xl"
-          )}
-          style={{
-            left: "50%",
-            top: "50%",
-            transform: "translate(calc(-50% - 55px), 20px)",
-          }}
-          title="Expand relationships"
-        >
-          <Expand className="w-5 h-5" />
-        </button>
+        <div className="absolute" style={{ left: "50%", top: "50%" }}>
+          <button
+            role="menuitem"
+            aria-label={`${expandLabel}: ${nodeLabel}`}
+            onClick={handleExpand}
+            className={cn(
+              "absolute w-12 h-12 rounded-full",
+              "bg-success hover:bg-success/80 text-success-content",
+              "flex items-center justify-center",
+              "transition-all duration-200 hover:scale-110",
+              "focus:outline-none focus:ring-2 focus:ring-success/50",
+              "shadow-lg hover:shadow-xl"
+            )}
+            style={{
+              left: "0",
+              top: "0",
+              transform: "translate(calc(-50% - 55px), 20px)",
+            }}
+            title={expandLabel}
+          >
+            <Expand className="w-5 h-5" />
+          </button>
+          {/* Label below expand button */}
+          <div
+            className="absolute text-xs text-base-content/60 text-center whitespace-nowrap pointer-events-none font-medium"
+            style={{
+              left: "0",
+              top: "0",
+              transform: "translate(calc(-50% - 55px), 75px)",
+            }}
+          >
+            {expandLabel}
+          </div>
+        </div>
 
         {/* Delete Button - Right */}
         <button

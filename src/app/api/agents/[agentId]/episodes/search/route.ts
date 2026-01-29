@@ -1,17 +1,22 @@
 /**
  * Agent Episodes Search API Route
  *
- * POST /api/agents/[agentId]/episodes/search - Fetch latest episodes for an agent
+ * POST /api/agents/[agentId]/episodes/search - Fetch latest episodes for an agent (with access control)
  */
 
 import { NextRequest } from "next/server";
 import {
+  proxyToBackend,
   handleProxyRequest,
   handleCorsOptions,
   createErrorResponse,
   parseJsonBody,
 } from "@/lib/api/server-utils";
-import type { AgentEpisodesSearchRequest } from "@/types";
+import {
+  checkBonfireAccess,
+  createAccessDeniedResponse,
+} from "@/lib/api/bonfire-access";
+import type { AgentEpisodesSearchRequest, AgentInfo, BonfireListResponse } from "@/types";
 
 interface RouteParams {
   params: Promise<{ agentId: string }>;
@@ -19,6 +24,9 @@ interface RouteParams {
 
 /**
  * POST /api/agents/[agentId]/episodes/search
+ *
+ * Fetch latest episodes for an agent.
+ * Checks access based on the agent's bonfire.
  *
  * Request Body:
  * - limit?: number - Max episodes to return (default: 10)
@@ -30,6 +38,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (!agentId) {
     return createErrorResponse("Agent ID is required", 400);
+  }
+
+  // Fetch agent to check bonfire access
+  const agentResponse = await proxyToBackend<AgentInfo>(`/agents/${agentId}`, {
+    method: "GET",
+  });
+
+  if (!agentResponse.success || !agentResponse.data) {
+    return createErrorResponse("Agent not found", 404);
+  }
+
+  const bonfireId = agentResponse.data.bonfire_id;
+
+  if (bonfireId) {
+    // Fetch bonfire to check is_public
+    const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
+      method: "GET",
+    });
+
+    const bonfire = bonfireResponse.data?.bonfires?.find((b) => b.id === bonfireId);
+
+    const access = await checkBonfireAccess(bonfireId, bonfire?.is_public);
+    if (!access.allowed) {
+      const denied = createAccessDeniedResponse(access.reason);
+      return createErrorResponse(denied.error, 403, denied.details, denied.code);
+    }
   }
 
   const { data: body, error } = await parseJsonBody<AgentEpisodesSearchRequest>(request);

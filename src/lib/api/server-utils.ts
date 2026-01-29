@@ -2,10 +2,11 @@
  * Server-side API Utilities
  *
  * Reusable utilities for Next.js API routes that proxy to the Delve backend.
- * These utilities handle timeout, error handling, logging, and CORS.
+ * These utilities handle timeout, error handling, logging, CORS, and auth.
  */
 
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 // Server-side timeout (60s for Vercel Pro compatibility)
 const DEFAULT_TIMEOUT_MS = 60000;
@@ -42,6 +43,8 @@ export interface ProxyOptions {
   timeout?: number;
   /** Query parameters to append */
   queryParams?: Record<string, string | number | boolean | undefined>;
+  /** Include Clerk auth headers (default: true) */
+  includeAuth?: boolean;
 }
 
 /**
@@ -62,6 +65,33 @@ export const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Payment-Header",
 } as const;
+
+/**
+ * Get Clerk authentication headers for backend requests
+ *
+ * Gets the Clerk session JWT token and returns it as a Bearer token header.
+ * The backend verifies the JWT signature using Clerk's JWKS endpoint.
+ */
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const { getToken } = await auth();
+
+    // Get the Clerk session JWT
+    const token = await getToken();
+
+    if (token) {
+      return {
+        Authorization: `Bearer ${token}`,
+      };
+    }
+
+    return {};
+  } catch (error) {
+    // Auth not available (public route) - return empty headers
+    console.debug("[Auth Headers] No auth context available:", error);
+    return {};
+  }
+}
 
 /**
  * Create a standardized error response
@@ -188,18 +218,25 @@ export async function proxyToBackend<T = unknown>(
     headers = {},
     timeout = DEFAULT_TIMEOUT_MS,
     queryParams,
+    includeAuth = true,
   } = options;
 
   const backendUrl = getBackendUrl();
   const url = buildUrl(backendUrl, endpoint, queryParams);
 
-  console.log(`[API Proxy] ${method} ${url}`);
+  // Get auth headers if requested
+  const authHeaders = includeAuth ? await getAuthHeaders() : {};
+
+  console.log(`[API Proxy] ${method} ${url}`, {
+    hasAuth: Object.keys(authHeaders).length > 0,
+  });
 
   try {
     const response = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
         ...headers,
       },
       body: body ? JSON.stringify(body) : undefined,

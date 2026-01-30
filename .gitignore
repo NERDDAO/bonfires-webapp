@@ -48,3 +48,6 @@ blob-report/
 # Misc
 *.log
 *.local
+
+# clerk configuration (can include secrets)
+/.clerk/

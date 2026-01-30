@@ -5,6 +5,13 @@
   themes: light --default, dark --prefersdark;
 }
 
+/* Font families: use CSS variables set by Next.js font loader on body */
+@theme {
+  --font-laro-soft: var(--font-laro-soft);
+  --font-dm-sans: var(--font-dm-sans);
+  --font-montserrat: var(--font-montserrat);
+}
+
 /* Custom CSS Variables for Graph Theme */
 :root {
   /* Graph canvas colors */

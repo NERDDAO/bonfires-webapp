@@ -70,13 +70,16 @@ function DocumentsIcon() {
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-base-100">
+      <div className="text-4xl font-bold font-laro-soft">
+        Large Text
+      </div>
       <Header />
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
         <div className="relative max-w-6xl mx-auto px-4 py-20 sm:py-28 lg:py-32">
           <div className="text-center max-w-4xl mx-auto animate-fade-in">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+            <h1 className="font-laro-soft text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
               <span className="bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent">
                 Delve
               </span>
@@ -112,7 +115,7 @@ export default function HomePage() {
       <section className="py-16 px-4 bg-base-200/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Platform Capabilities</h2>
+            <h2 className="font-laro-soft text-3xl font-bold mb-4">Platform Capabilities</h2>
             <p className="text-base-content/60 max-w-2xl mx-auto">
               Three interconnected feature sets that work together to help you
               organize, monetize, and share knowledge.
@@ -186,7 +189,7 @@ export default function HomePage() {
       {/* Footer CTA */}
       <section className="py-20 px-4 bg-gradient-to-br from-base-200 to-base-300">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Explore?</h2>
+          <h2 className="font-laro-soft text-3xl font-bold mb-4">Ready to Explore?</h2>
           <p className="text-base-content/60 mb-8 text-lg">
             Dive into knowledge graphs, create data rooms, or generate your
             first HyperBlog. Use the navigation above to get started.

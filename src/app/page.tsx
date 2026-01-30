@@ -10,6 +10,7 @@ import {
 import { Header } from "@/components/shared/Header";
 import { Navbar } from "@/components/navbar";
 import Hero from "@/components/landing-sections/hero";
+import StaticGraph from "@/components/landing-sections/static-graph";
 
 // Feature card icons as SVG components
 function GraphIcon() {
@@ -73,6 +74,7 @@ export default function HomePage() {
   return (
     <main>
       <Hero />
+      <StaticGraph />
     </main>
   )
   // return (

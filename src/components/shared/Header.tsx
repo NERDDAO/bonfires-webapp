@@ -335,7 +335,7 @@ function AuthSection() {
 
   return (
     <>
-      <OrganizationSwitcher
+      {/* <OrganizationSwitcher
         hidePersonal={true}
         afterSelectOrganizationUrl="/dashboard"
         appearance={{
@@ -349,7 +349,7 @@ function AuthSection() {
             organizationSwitcherPopoverCard: "[&_*]:!text-gray-900",
           },
         }}
-      />
+      /> */}
       <UserButton
         afterSignOutUrl="/"
         appearance={{

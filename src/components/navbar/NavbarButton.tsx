@@ -37,7 +37,7 @@ export function NavbarButton({
   }, []);
 
   const buttonClasses = cn(
-    "inline-flex items-center gap-2 rounded-lg px-6 py-3 transition-colors hover:bg-[#1A1C1F] hover:text-dark-s-0 rounded-t-lg rounded-b-none border-b",
+    "whitespace-nowrap inline-flex items-center gap-2 rounded-lg px-6 py-3 transition-colors hover:bg-[#1A1C1F] hover:text-dark-s-0 rounded-t-lg rounded-b-none border-b",
     isActive
       ? "bg-dark-s-800/50 text-dark-s-0 border-b-brand-skyblue"
       : "bg-brand-bg text-dark-s-0/70 border-b-transparent"

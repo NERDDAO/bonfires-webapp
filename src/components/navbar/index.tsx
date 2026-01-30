@@ -9,6 +9,8 @@ import { usePathname } from "next/navigation";
 import { navigationItems } from "@/content";
 
 import { NavbarButton } from "./NavbarButton";
+import { AuthSection } from "./AuthSection";
+import WalletButton from "./WalletButton";
 
 export interface NavigationItem {
   label: string;
@@ -26,7 +28,7 @@ export function Navbar() {
   }, [pathname]);
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between w-full bg-brand-black py-4 px-20">
+    <nav className="sticky top-0 z-50 flex items-center justify-between w-full bg-brand-black py-4 px-20 min-h-20">
       <Link href="/" className="flex items-center shrink-0" aria-label="Home">
         <Image
           src="/logo-white.svg"
@@ -38,7 +40,7 @@ export function Navbar() {
         />
       </Link>
 
-      <div className="flex items-center gap-2 mx-auto h-12">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
         {navigationItems.map((item) => (
           <NavbarButton
             key={item.label}
@@ -46,6 +48,12 @@ export function Navbar() {
             navigationItem={item}
           />
         ))}
+      </div>
+
+      {/* Auth and Wallet buttons */}
+      <div className="navbar-end flex items-center gap-2">
+        <AuthSection />
+        <WalletButton />
       </div>
     </nav>
   );

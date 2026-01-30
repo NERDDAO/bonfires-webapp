@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 
 import "./globals.css";
 import { Providers } from "./providers";
+import { Background } from "@/components/background";
 import { Navbar } from "@/components/navbar";
 
 const { laroSoft, dmSans, montserrat } = customFonts;
@@ -33,12 +34,14 @@ export default function RootLayout({
             laroSoft.variable,
             dmSans.variable,
             montserrat.variable,
-            "font-sans antialiased min-h-screen bg-brand-bg"
+            "font-sans antialiased min-h-screen"
           )}
         >
           <Providers>
-            <Navbar />
-            {children}
+            <Background>
+              <Navbar />
+              {children}
+            </Background>
           </Providers>
         </body>
       </html>

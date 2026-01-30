@@ -8,6 +8,7 @@ import {
   HowItWorks,
 } from "@/components/landing";
 import { Header } from "@/components/shared/Header";
+import { Navbar } from "@/components/navbar";
 
 // Feature card icons as SVG components
 function GraphIcon() {
@@ -69,10 +70,7 @@ function DocumentsIcon() {
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-base-100">
-      <div className="text-4xl font-bold font-laro-soft">
-        Large Text
-      </div>
+    <main className="min-h-screen">
       <Header />
       {/* Hero Section */}
       <section className="relative overflow-hidden">
@@ -112,7 +110,7 @@ export default function HomePage() {
       </section>
 
       {/* Feature Cards Section */}
-      <section className="py-16 px-4 bg-base-200/30">
+      <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-laro-soft text-3xl font-bold mb-4">Platform Capabilities</h2>

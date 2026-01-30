@@ -5,9 +5,9 @@ const orbBackground =
 export function Background({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen bg-brand-black">
-      {/* Orb layer — fills this container so orbs are positioned relative to content height */}
+      {/* Orb layer — fixed to viewport so orbs stay in place regardless of scroll/content */}
       <div
-        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
         aria-hidden
       >
         {/* Top-left orb — 40vh size, center at top-left corner (offset by half: 20vh) */}

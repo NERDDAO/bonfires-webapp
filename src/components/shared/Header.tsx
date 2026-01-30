@@ -9,7 +9,7 @@ import {
   OrganizationSwitcher,
 } from "@clerk/nextjs";
 import { useAuth } from "@/hooks/useAuth";
-import { WalletButton } from "./WalletButton";
+import { WalletButton } from "../navbar/WalletButton";
 
 type NavSection = "graph" | "web3" | "documents" | "dashboard" | null;
 
@@ -335,7 +335,7 @@ function AuthSection() {
 
   return (
     <>
-      {/* <OrganizationSwitcher
+      <OrganizationSwitcher
         hidePersonal={true}
         afterSelectOrganizationUrl="/dashboard"
         appearance={{
@@ -349,7 +349,7 @@ function AuthSection() {
             organizationSwitcherPopoverCard: "[&_*]:!text-gray-900",
           },
         }}
-      /> */}
+      />
       <UserButton
         afterSignOutUrl="/"
         appearance={{

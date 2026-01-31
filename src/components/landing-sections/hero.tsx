@@ -18,8 +18,8 @@ export default function Hero() {
         <div className="font-laro-soft">{heroCopy.description}</div>
 
         <div className="mt-3 flex gap-6">
-          <Button variant="primary">{heroCopy.ctaPrimary}</Button>
-          <Button variant="outline">{heroCopy.ctaSecondary}</Button>
+          <Button variant="primary" className="z-10">{heroCopy.ctaPrimary}</Button>
+          <Button variant="outline" className="z-10">{heroCopy.ctaSecondary}</Button>
         </div>
       </div>
     </div>

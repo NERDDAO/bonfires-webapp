@@ -32,8 +32,8 @@ type D3Node = (typeof NODES_DATA)[0] & {
 };
 type D3Link = { source: D3Node; target: D3Node };
 
-const WIDTH = 700 * 1.5;
-const HEIGHT = 400 * 1.5;
+export const WIDTH = 700 * 1.5;
+export const HEIGHT = 400 * 1.5;
 
 /** Alpha below which we consider the layout phase "settled". */
 const LAYOUT_ALPHA_MIN = 0.001;
@@ -47,7 +47,7 @@ const WAYPOINT_THRESHOLD = 12;
 
 /** Force simulation tuning. */
 const LINK_DISTANCE = 80;
-const LINK_STRENGTH = 0.5;
+const LINK_STRENGTH = 0.75;
 const CHARGE_STRENGTH = -280;
 const COLLISION_PADDING = 20;
 
@@ -357,17 +357,13 @@ export default function StaticGraph() {
   }, []);
 
   return (
-    <div className="relative" style={{ minHeight: `max(100dvh, ${HEIGHT}px)` }}>
-      <figure className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-        <canvas
-          ref={canvasRef}
-          width={WIDTH}
-          height={HEIGHT}
-          className="block w-full text-base-content"
-          style={{ width: WIDTH, height: HEIGHT }}
-          aria-label="Force-directed graph of Web3 conference terms"
-        />
-      </figure>
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={WIDTH}
+      height={HEIGHT}
+      className="block w-full text-base-content"
+      style={{ width: WIDTH, height: HEIGHT }}
+      aria-label="Force-directed graph of Web3 conference terms"
+    />
   );
 }

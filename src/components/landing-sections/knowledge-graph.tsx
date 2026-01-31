@@ -6,7 +6,7 @@ import { knowledgeGraphSectionCopy } from "@/content/landing-page";
 import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 
 import { Button } from "../ui/button";
-import StaticGraph from "./static-graph";
+import StaticGraph from "./ui/static-graph";
 
 /** Cubic bezier at t: B(t) = (1-t)³P0 + 3(1-t)²t P1 + 3(1-t)t² P2 + t³ P3 */
 function cubicBezier(

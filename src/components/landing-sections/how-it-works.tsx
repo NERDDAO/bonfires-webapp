@@ -1,8 +1,6 @@
-import Image from "next/image";
-
 import { howItWorksSectionCopy } from "@/content/landing-page";
 
-import SpecularCircle from "./specular-circle";
+import SpecularCircle from "./ui/specular-circle";
 
 export default function HowItWorks() {
   const { title, description, steps } = howItWorksSectionCopy;

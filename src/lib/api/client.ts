@@ -222,6 +222,7 @@ class ApiClient {
         method: config.method,
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${"7n4l-rj0mKjywrTnJ3rJCjo1fxLMfTJYy_yLgq_t8-o"}`,
           ...config.headers,
         },
         body: config.body ? JSON.stringify(config.body) : undefined,
@@ -257,6 +258,8 @@ class ApiClient {
       return response.json() as Promise<T>;
     } catch (error) {
       clearTimeout(timeoutId);
+
+      console.log("error api", error);
 
       // Retry on network/timeout errors
       if (error instanceof Error && retryCount < MAX_RETRIES) {

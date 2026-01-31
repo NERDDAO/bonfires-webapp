@@ -1,5 +1,5 @@
 import Image from "next/image";
-
+import { heroCopy } from "@/content";
 import { Button } from "../ui/button";
 
 export default function Hero() {
@@ -13,16 +13,13 @@ export default function Hero() {
           height={67}
         />
         <div className="font-montserrat text-5xl font-black">
-          Collective Sensemaking Experience
+          {heroCopy.title}
         </div>
-        <div className="font-laro-soft">
-          Explore, visualize and interact with ETHBoulder's collective
-          intelligence.
-        </div>
+        <div className="font-laro-soft">{heroCopy.description}</div>
 
         <div className="mt-3 flex gap-6">
-          <Button variant="primary">Explore Graph</Button>
-          <Button variant="outline">Join ETH Boulder Telegram group</Button>
+          <Button variant="primary">{heroCopy.ctaPrimary}</Button>
+          <Button variant="outline">{heroCopy.ctaSecondary}</Button>
         </div>
       </div>
     </div>

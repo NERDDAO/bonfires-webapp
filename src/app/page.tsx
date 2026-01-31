@@ -10,8 +10,8 @@ import {
 import { Header } from "@/components/shared/Header";
 import { Navbar } from "@/components/navbar";
 import Hero from "@/components/landing-sections/hero";
-import ScrollGraphContainer from "@/components/landing-sections/scroll-graph-container";
 import StaticGraph from "@/components/landing-sections/static-graph";
+import KnowledgeGraph from "@/components/landing-sections/knowledge-graph";
 
 // Feature card icons as SVG components
 function GraphIcon() {
@@ -75,10 +75,7 @@ export default function HomePage() {
   return (
     <main className="max-w-dw overflow-x-hidden">
       <Hero />
-      <ScrollGraphContainer>
-        <StaticGraph />
-      </ScrollGraphContainer>
-      <div className="h-screen bg-red-500"></div>
+      <KnowledgeGraph />
     </main>
   )
   // return (

@@ -6,6 +6,30 @@ export const heroCopy = {
   ctaSecondary: "Join ETH Boulder Telegram group",
 };
 
+export const knowledgeGraphSectionCopy = {
+  title: "Knowledge Graph",
+  subtitle:
+    "The Structuring Process.",
+  paragraphs: [
+    {
+      heading: "Episodic Memory",
+      description:
+        "The graph is constructed from episodic summaries, snapshots taken every 20 minutes across all chats and channels. This provides longitudinal memory of the conference, capturing vibes, not just data.",
+    },
+    {
+      heading: "Entity Extraction",
+      description:
+        "Episodes contain the narrative and activity of the conference. The Bonfire then extracts notable entities such as users, concepts, actions and events, helping the agent stay informed.",
+    },
+    {
+      heading: "Relationship Mapping",
+      description:
+        "Entities are then related to each other, giving the Bonfire a crystal clear vision of how everyone relates to every thing. This provides an intelligent, coherent view of the conference for the AI to read.",
+    },
+  ],
+  cta: "Explore ETH Boulder Graph",
+};
+
 // Static nodes: web3 conference–related terms with id, label, and size (1–5).
 const NODES_DATA: { id: string; label: string; size: number }[] = [
   { id: "eth", label: "ETH", size: 5 },

@@ -41,7 +41,7 @@ const LAYOUT_ALPHA_MIN = 0.001;
 /** Phase 2: how fast position lerps toward waypoint (0–1). */
 const FLOAT_LERP = 0.0008;
 /** Phase 2: max pixel offset of waypoint from rest (drift radius). */
-const DRIFT_RADIUS = 50;
+const DRIFT_RADIUS = 150;
 /** Phase 2: when within this distance of waypoint, pick a new one. */
 const WAYPOINT_THRESHOLD = 12;
 
@@ -49,7 +49,7 @@ const WAYPOINT_THRESHOLD = 12;
 const LINK_DISTANCE = 80;
 const LINK_STRENGTH = 0.75;
 const CHARGE_STRENGTH = -280;
-const COLLISION_PADDING = 20;
+const COLLISION_PADDING = 10;
 
 /** Deterministic float in [0, 1) from string (for per-node speed). */
 function hash(s: string): number {

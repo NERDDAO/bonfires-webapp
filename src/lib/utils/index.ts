@@ -4,6 +4,8 @@
  * Common utility functions for formatting, validation, and error handling.
  */
 
+import removeMd from "remove-markdown";
+
 /**
  * Truncate an Ethereum address for display
  */
@@ -30,6 +32,19 @@ export function formatTimestamp(isoString: string): string {
   } catch {
     return isoString;
   }
+}
+
+/**
+ * Format a number for display
+ */
+export function formatNumber(
+  number: number,
+  decimals: number = 2,
+): string {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: decimals,
+  }).format(number);
 }
 
 /**
@@ -103,7 +118,10 @@ export function isMicrosubError(error: unknown): {
     return { isMicrosubError: true, errorType: "expired" };
   }
 
-  if (message.includes("exhausted") || message.includes("no queries remaining")) {
+  if (
+    message.includes("exhausted") ||
+    message.includes("no queries remaining")
+  ) {
     return { isMicrosubError: true, errorType: "exhausted" };
   }
 
@@ -205,7 +223,10 @@ export function truncatePreviewSmart(
   }
 
   if (lastSentenceEnd !== -1) {
-    const truncated = preview.slice(0, truncationZoneStart + lastSentenceEnd + 1);
+    const truncated = preview.slice(
+      0,
+      truncationZoneStart + lastSentenceEnd + 1
+    );
     if (truncated.length < preview.length) {
       return truncated + " ...";
     }
@@ -218,4 +239,9 @@ export function truncatePreviewSmart(
   }
 
   return preview.slice(0, maxLength) + "...";
+}
+
+export function getTextFromMarkdown(markdown: string): string {
+  if (!markdown || typeof markdown !== "string") return "";
+  return removeMd(markdown).trim();
 }

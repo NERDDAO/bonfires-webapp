@@ -5,13 +5,10 @@ import {
   FeatureCard,
   HyperBlogFeedPreview,
   TechStack,
-  HowItWorks,
 } from "@/components/landing";
 import { Header } from "@/components/shared/Header";
 import { Navbar } from "@/components/navbar";
-import Hero from "@/components/landing-sections/hero";
-import StaticGraph from "@/components/landing-sections/static-graph";
-import KnowledgeGraph from "@/components/landing-sections/knowledge-graph";
+import { Footer, Hero, HowItWorks, KnowledgeGraph } from "@/components/landing-sections";
 
 // Feature card icons as SVG components
 function GraphIcon() {
@@ -76,6 +73,8 @@ export default function HomePage() {
     <main className="max-w-dw overflow-x-hidden">
       <Hero />
       <KnowledgeGraph />
+      <HowItWorks />
+      <Footer />
     </main>
   )
   // return (

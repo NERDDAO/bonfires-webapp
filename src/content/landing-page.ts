@@ -30,6 +30,40 @@ export const knowledgeGraphSectionCopy = {
   cta: "Explore ETH Boulder Graph",
 };
 
+export const howItWorksSectionCopy = {
+  title: "How It Works",
+  description: "From knowledge exploration to monetization, Delve provides a complete platform for working with AI-powered knowledge graphs.",
+  steps: [
+    {
+      icon: "icons/search.svg",
+      title: "Explore Knowledge Graphs",
+      description: "Navigate interconnected knowledge through interactive graph visualizations. Discover entities, relationships, and episodes with AI-assisted exploration.",
+    },
+    {
+      icon: "icons/upload-file.svg",
+      title: "Upload & Process Documents",
+      description: "Feed documents into the system to automatically extract knowledge. Our AI processes content, creates chunks, and generates taxonomies.",
+    },
+    {
+      icon: "icons/cottage.svg",
+      title: "Create Data Rooms",
+      description: "Package your knowledge into monetizable data rooms. Set pricing, access controls, and let others subscribe to your curated knowledge.",
+    },
+    {
+      icon: "icons/auto-awesome.svg",
+      title: "Generate HyperBlogs",
+      description: "Transform knowledge graphs into comprehensive AI-generated blog posts. Publish content with blockchain-verified payments.",
+    },
+  ],
+};
+
+export const footerCopy = {
+  title: "Ready to Explore?",
+  subtitle: "Dive into knowledge graphs, create data rooms, or generate your first HyperBlog. Use the navigation above to get started.",
+  ctaPrimary: "Explore Graph",
+  ctaSecondary: "Join ETH Boulder Telegram group",
+};
+
 // Static nodes: web3 conference–related terms with id, label, and size (1–5).
 const NODES_DATA: { id: string; label: string; size: number }[] = [
   { id: "eth", label: "ETH", size: 5 },

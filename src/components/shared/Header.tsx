@@ -9,7 +9,7 @@ import {
   OrganizationSwitcher,
 } from "@clerk/nextjs";
 import { useAuth } from "@/hooks/useAuth";
-import { WalletButton } from "../navbar/WalletButton";
+import ConnectWallet from "../navbar/connect-wallet";
 
 type NavSection = "graph" | "web3" | "documents" | "dashboard" | null;
 
@@ -306,7 +306,7 @@ export function Header({ className = "" }: HeaderProps) {
       {/* Auth and Wallet buttons */}
       <div className="navbar-end flex items-center gap-2">
         <AuthSection />
-        <WalletButton />
+        <ConnectWallet />
       </div>
     </header>
   );

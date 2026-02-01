@@ -75,7 +75,7 @@ const Button = React.forwardRef<
         className={cn(
           "absolute inset-0 rounded-lg",
           variant === "primary" && "bg-brand-secondary",
-          variant === "outline" && "border border-brand-secondary"
+          variant === "outline" && "border bg-brand-black border-brand-secondary"
         )}
         aria-hidden
       />

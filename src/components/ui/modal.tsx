@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
+import Image from "next/image";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
@@ -22,8 +23,6 @@ export interface ModalProps {
   showCloseButton?: boolean;
   /** Extra class for the modal content box */
   className?: string;
-  /** Content for the header area (e.g. tabs). When provided, close button is still shown if showCloseButton. */
-  header?: ReactNode;
 }
 
 const sizeClasses: Record<ModalSize, string> = {
@@ -33,19 +32,6 @@ const sizeClasses: Record<ModalSize, string> = {
   xl: "max-w-xl",
   full: "max-w-full mx-4",
 };
-
-const CloseIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
 
 /**
  * Reusable modal with blurred backdrop. Renders in a portal, locks scroll when open,
@@ -61,7 +47,6 @@ export function Modal({
   closeOnEscape = true,
   showCloseButton = true,
   className,
-  header,
 }: ModalProps) {
   useEffect(() => {
     if (!closeOnEscape || !isOpen) return;
@@ -107,7 +92,7 @@ export function Modal({
       {/* Modal content */}
       <div
         className={cn(
-          "relative z-10 w-full overflow-hidden rounded-2xl",
+          "p-7.5 relative z-10 w-full overflow-hidden rounded-2xl",
           "bg-brand-black border border-dark-s-700 shadow-2xl",
           "animate-in fade-in zoom-in-95 duration-200",
           sizeClasses[size],
@@ -115,11 +100,9 @@ export function Modal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {(title != null || header != null || showCloseButton) && (
+        {(title != null || showCloseButton) && (
           <div className="flex items-center justify-between border-b border-dark-s-700">
-            {header != null ? (
-              <div className="flex-1 min-w-0">{header}</div>
-            ) : title != null ? (
+            {title != null ? (
               <h2 id="modal-title" className="font-semibold text-lg text-dark-s-0 truncate">
                 {title}
               </h2>
@@ -133,7 +116,12 @@ export function Modal({
                 className="shrink-0 p-3 text-dark-s-100 hover:bg-dark-s-700 hover:text-dark-s-30 transition-colors rounded-lg"
                 aria-label="Close"
               >
-                <CloseIcon />
+                <Image
+                  src="/icons/close.svg"
+                  alt="Close"
+                  width={12}
+                  height={12}
+                />
               </button>
             )}
           </div>

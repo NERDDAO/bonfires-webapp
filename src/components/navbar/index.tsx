@@ -8,11 +8,10 @@ import { usePathname } from "next/navigation";
 
 import { navigationItems } from "@/content";
 
-import { NavbarButton } from "./NavbarButton";
-import { AuthSection } from "./AuthSection";
+import { NavbarButton } from "./navbar-button";
 import Drawer from "./drawer";
 import ConnectWallet from "./connect-wallet";
-
+import Signin from "./signin";
 
 export interface NavigationItem {
   label: string;
@@ -82,7 +81,7 @@ export function Navbar() {
 
       {/* Auth and Wallet buttons */}
       <div className="navbar-end items-center gap-2 hidden lg:flex">
-        <AuthSection />
+        <Signin />
         <ConnectWallet />
       </div>
     </nav>

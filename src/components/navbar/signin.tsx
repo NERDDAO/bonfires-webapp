@@ -7,6 +7,7 @@ import Dropdown from "../ui/dropdown";
 import Image from "next/image";
 
 export default function Signin() {
+  const isMobile = window.innerWidth < 768;
   const { isLoaded, isSignedIn, signOut, orgId } = useAuth();
   const { isLoaded: orgLoaded } = useOrganization();
   const { user } = useUser();
@@ -18,9 +19,16 @@ export default function Signin() {
   const profilePicture = user?.imageUrl;
   const email = user?.emailAddresses.find((email) => email.id === user?.primaryEmailAddressId)?.emailAddress;
 
+  if (!isLoaded) {
+    return (
+      <div className="w-8 h-8 rounded-full bg-dark-s-900 skeleton" />
+    );
+  }
+
   if (isSignedIn) {
     return (
       <Dropdown
+        placement={isMobile ? "center" : "end"}
         trigger={(open, onToggle) => (
           <Button
             type="button"
@@ -153,8 +161,7 @@ export default function Signin() {
         type="button"
         variant="ghost"
         className={cn(
-          "flex items-center gap-3 font-normal text-sm py-2 px-5 border border-[#3B1517] rounded-lg bg-brand-black text-dark-s-0 hover:bg-dark-s-900 transition-colors duration-200",
-          !isLoaded && "skeleton"
+          "flex items-center gap-3 font-normal text-sm py-2 px-5 border border-[#3B1517] rounded-lg bg-brand-black text-dark-s-0 hover:bg-dark-s-900 transition-colors duration-200"
         )}
         disabled={!isLoaded}
       >
@@ -163,3 +170,47 @@ export default function Signin() {
     </SignInButton>
   );
 }
+
+
+/* Replaced with Custom Components */
+
+// // Don't render until auth is loaded to prevent flash
+// if (!isLoaded) {
+//   return <div className="skeleton h-8 w-20 rounded-full" />;
+// }
+
+// if (!isSignedIn) {
+//   return (
+//     <SignInButton mode="modal">
+//       <button className="btn btn-ghost btn-sm">Sign In</button>
+//     </SignInButton>
+//   );
+// }
+
+// return (
+//   <>
+//     <OrganizationSwitcher
+//       hidePersonal={true}
+//       afterSelectOrganizationUrl="/dashboard"
+//       appearance={{
+//         elements: {
+//           // Trigger button styling for dark header
+//           rootBox: "flex items-center",
+//           organizationSwitcherTrigger:
+//             "btn btn-ghost btn-sm normal-case gap-2 [&_*]:!text-base-content",
+//           organizationSwitcherTriggerIcon: "!text-base-content",
+//           // Dropdown - dark text on white background
+//           organizationSwitcherPopoverCard: "[&_*]:!text-gray-900",
+//         },
+//       }}
+//     />
+//     <UserButton
+//       afterSignOutUrl="/"
+//       appearance={{
+//         elements: {
+//           avatarBox: "w-8 h-8",
+//         },
+//       }}
+//     />
+//   </>
+// );

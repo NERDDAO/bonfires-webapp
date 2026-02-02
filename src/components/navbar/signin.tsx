@@ -1,13 +1,14 @@
 "use client";
 
 import { SignInButton, useAuth, useClerk, useOrganization, useOrganizationList, useUser } from "@clerk/nextjs";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/common/Button";
 import Dropdown from "../ui/dropdown";
 import Image from "next/image";
 
 export default function Signin() {
-  const isMobile = window.innerWidth < 768;
+  const isMobile = useIsMobile();
   const { isLoaded, isSignedIn, signOut, orgId } = useAuth();
   const { isLoaded: orgLoaded } = useOrganization();
   const { user } = useUser();

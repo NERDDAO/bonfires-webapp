@@ -32,8 +32,9 @@ type D3Node = (typeof NODES_DATA)[0] & {
 };
 type D3Link = { source: D3Node; target: D3Node };
 
-export const WIDTH = 700 * 1.5;
-export const HEIGHT = 400 * 1.5;
+const SCALE_FACTOR = 1.5;
+export const WIDTH = 700 * SCALE_FACTOR;
+export const HEIGHT = 400 * SCALE_FACTOR;
 
 /** Alpha below which we consider the layout phase "settled". */
 const LAYOUT_ALPHA_MIN = 0.001;

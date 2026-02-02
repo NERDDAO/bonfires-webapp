@@ -1,97 +1,121 @@
 "use client";
 
+import Link from "next/link";
 import * as React from "react";
 
 import { cn } from "@/lib/cn";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
+  href?: string;
 }
 
-type ButtonVariant = "primary" | "outline";
+type ButtonVariant = "primary" | "outline" | "outline-white";
+
+type ButtonRef = HTMLButtonElement | HTMLAnchorElement;
 
 const Button = React.forwardRef<
-  HTMLButtonElement,
+  ButtonRef,
   ButtonProps & { variant?: ButtonVariant }
->(({ className = "", children, variant = "primary", onPointerDown, onPointerUp, onPointerLeave, onPointerEnter, ...props }, ref) => {
+>(({ className = "", children, variant = "primary", href, onPointerDown, onPointerUp, onPointerLeave, onPointerEnter, type, ...props }, ref) => {
   const [pressed, setPressed] = React.useState(false);
   const [hovered, setHovered] = React.useState(false);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    // Defer so the browser paints the current state before we change it;
-    // otherwise the transition from hover/rest → pressed is skipped and looks instant.
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement & HTMLAnchorElement>) => {
     requestAnimationFrame(() => setPressed(true));
     onPointerDown?.(e);
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement & HTMLAnchorElement>) => {
     setPressed(false);
     onPointerUp?.(e);
   };
 
-  const handlePointerLeave = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const handlePointerLeave = (e: React.PointerEvent<HTMLButtonElement & HTMLAnchorElement>) => {
     setPressed(false);
     setHovered(false);
     onPointerLeave?.(e);
   };
 
-  const handlePointerEnter = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const handlePointerEnter = (e: React.PointerEvent<HTMLButtonElement & HTMLAnchorElement>) => {
     setHovered(true);
     onPointerEnter?.(e);
   };
 
-  // Rest: up (-6px), Hover: halfway (-3px), Pressed: fully down (0)
   const offset = -6;
   const frontTransform = pressed
     ? "translateY(0)"
     : hovered
-      ? `translateY(${offset/1.5}px)`
+      ? `translateY(${offset / 1.5}px)`
       : `translateY(${offset}px)`;
 
-  return (
-    <button
-      ref={ref}
-      type="button"
-      className={cn(
-        "group relative block w-fit cursor-pointer rounded-lg border-none p-0 font-bold outline-none overflow-visible",
-        className
-      )}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-      onPointerEnter={handlePointerEnter}
-      {...props}
-    >
-      {/* Invisible strut: sets button size (both divs are absolute) */}
+  const sharedClassName = cn(
+    "group relative block w-fit cursor-pointer rounded-lg border-none p-0 font-bold outline-none overflow-visible",
+    className
+  );
+
+  const inner = (
+    <>
       <span
         className="pointer-events-none invisible block py-3 px-3.5 font-bold whitespace-nowrap"
         aria-hidden
       >
         {children}
       </span>
-
-      {/* Back div: border / shadow layer (no CSS border) */}
       <div
         className={cn(
           "absolute inset-0 rounded-lg",
           variant === "primary" && "bg-brand-secondary",
-          variant === "outline" && "border bg-brand-black border-brand-secondary"
+          variant === "outline" && "border bg-brand-black border-brand-secondary",
+          variant === "outline-white" && "border bg-brand-black border-white"
         )}
         aria-hidden
       />
-
-      {/* Front div: face layer on top, moves on hover (halfway) and click (fully down) */}
       <div
         className={cn(
           "absolute left-0 top-0 flex items-center justify-center rounded-lg py-3 px-3.5 text-black transition-transform duration-75 ease-out whitespace-nowrap",
           variant === "primary" && "right-0 bg-brand-primary",
-          variant === "outline" && "right-0 bg-brand-black text-brand-primary border border-brand-primary"
+          variant === "outline" && "right-0 bg-brand-black text-brand-primary border border-brand-primary",
+          variant === "outline-white" && "right-0 bg-brand-black text-brand-primary border border-white"
         )}
         style={{ transform: frontTransform }}
         aria-hidden
       >
         {children}
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        target={href.startsWith("http") ? "_blank" : undefined}
+        className={sharedClassName}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onPointerEnter={handlePointerEnter}
+        {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      ref={ref as React.Ref<HTMLButtonElement>}
+      type={type ?? "button"}
+      className={sharedClassName}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onPointerEnter={handlePointerEnter}
+      {...props}
+    >
+      {inner}
     </button>
   );
 });

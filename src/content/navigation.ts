@@ -7,7 +7,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     label: "Hyperblogs",
-    href: "/hyperblogs",
+    href: "/hyperblogs-2",
   },
   {
     label: "Graph Explorer",

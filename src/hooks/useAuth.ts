@@ -24,12 +24,8 @@ export function useAuth(): AuthState & {
   canCreateDataRoom: boolean;
 } {
   const { user, isLoaded: userLoaded, isSignedIn } = useUser();
-  // const { organization, membership, isLoaded: orgLoaded } = useOrganization();
+  const { organization, membership, isLoaded: orgLoaded } = useOrganization();
   const { has } = useClerkAuth();
-
-  const organization = null;
-  const orgLoaded = true;
-  const membership = null;
 
   const isLoaded = userLoaded && orgLoaded;
   const orgRole = (membership?.role as BonfireRole) ?? null;

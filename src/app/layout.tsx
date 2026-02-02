@@ -11,7 +11,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 
 import { cn } from "@/lib/cn";
 
-import "./globals.css";
+import "./(styles)/globals.css";
 import { Providers } from "./providers";
 import { Background } from "@/components/background";
 import { Navbar } from "@/components/navbar";

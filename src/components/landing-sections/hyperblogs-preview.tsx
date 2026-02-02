@@ -7,14 +7,12 @@ import Image from "next/image";
 import { usePublicHyperBlogsFeed } from "@/hooks";
 import { HyperBlogInfo } from "@/types";
 
-import { calculateReadingTime } from "@/lib/utils";
-
 import { Button } from "../ui/button";
 import HyperBlogCard from "./ui/hyperblog-card";
-
-const LOADING_DELAY_MS = 2000;
+import { hyperblogsPreviewSectionCopy } from "@/content/landing-page";
 
 export default function HyperBlogsPreview() {
+  const { title, tooltipIcon, tooltipAlt, description, cta, ctaHref, featuredBlogTitle, latestBlogsTitle, viewMoreCtaTitle, viewMoreCtaHref } = hyperblogsPreviewSectionCopy;
   const { data, isLoading, error } = usePublicHyperBlogsFeed({ limit: 5 });
 
   const [featuredBlogData, setFeaturedBlogData] = useState<
@@ -36,30 +34,32 @@ export default function HyperBlogsPreview() {
   }, [data]);
 
   return (
-    <div className="flex flex-col px-20 py-20 min-h-screen">
+    <div className="flex flex-col px-6 lg:px-20 py-7 lg:py-20 min-h-screen">
       <div className="flex flex-col">
         <div className="flex items-center gap-4">
-          <div className="font-montserrat text-5xl font-black">Hyperblogs</div>
+          <div className="font-montserrat text-2xl lg:text-5xl font-black">{title}</div>
           <Image
-            src="/icons/tooltip.svg"
-            alt="Hyperblogs Info"
+            src={tooltipIcon}
+            alt={tooltipAlt}
             width={34}
             height={34}
+            className="hidden lg:block"
           />
-          <Button variant="primary" className="ml-auto">
-            Create your own
+          <Button variant="primary" className="ml-auto hidden lg:block" href={ctaHref}>
+            {cta}
           </Button>
         </div>
 
-        <div className="font-laro-soft mt-4">
-          Hyperblogs are a long forms information format, which is generated
-          from the context of the information already stored in the knowledge
-          graph. It’s a way for users to potentially monetize their contributed
-          pieces of knowledge.
+        <div className="font-laro-soft mt-2 lg:mt-4 text-sm lg:text-base">
+          {description}
         </div>
 
-        <div className="font-montserrat text-[2rem] mt-6 font-bold">
-          Featured Hyperblog
+        <Button variant="primary" className="mt-7 lg:hidden" href={ctaHref}>
+          {cta}
+        </Button>
+
+        <div className="font-montserrat text-lg lg:text-[2rem] mt-10 lg:mt-6 font-black lg:font-bold">
+          {featuredBlogTitle}
         </div>
 
         <HyperBlogCard
@@ -67,25 +67,27 @@ export default function HyperBlogsPreview() {
           data={featuredBlogData}
           variant="featured"
           isLoading={featuredBlogData === undefined}
+          href={`/hyperblogs/${featuredBlogData?.id}`}
         />
 
-        <div className="font-montserrat text-[2rem] mt-6 font-bold">
-          Latest Hyperblogs
+        <div className="font-montserrat text-lg lg:text-[2rem] mt-6 font-bold">
+          {latestBlogsTitle}
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-6">
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
           {latestBlogsData.map((blog, index) => (
             <HyperBlogCard
               key={`latest-blog-${index}`}
               data={blog.data}
               isLoading={blog.isLoading}
+              href={`/hyperblogs/${blog.data?.id}`}
             />
           ))}
         </div>
 
         <div className="mt-7 flex gap-6 w-full justify-center">
-          <Button variant="primary" className="z-10">
-            View More
+          <Button variant="primary" className="z-10" href={viewMoreCtaHref}>
+            {viewMoreCtaTitle}
           </Button>
         </div>
       </div>

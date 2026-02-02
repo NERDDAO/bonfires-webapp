@@ -63,7 +63,7 @@ export function NavbarButton({
           />
         </button>
       )}
-    >
+    > 
 
       {dropdownItems && (
         <ul
@@ -77,7 +77,6 @@ export function NavbarButton({
               <Link
                 href={item.href}
                 role="menuitem"
-                onClick={close}
                 className="block px-6 py-3 text-dark-s-0/90 no-underline transition-colors hover:bg-[#1A1C1F] hover:text-dark-s-0"
               >
                 {item.label}

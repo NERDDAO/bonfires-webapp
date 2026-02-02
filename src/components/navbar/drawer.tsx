@@ -1,6 +1,9 @@
 import { Drawer as DrawerComponent } from "@/components/ui/drawer";
 import { navigationItems } from "@/content";
+import Image from "next/image";
 import Link from "next/link";
+import Signin from "./signin";
+import ConnectWallet from "./connect-wallet";
 
 const drawerLinkClass =
   "block px-6 py-3 text-dark-s-0/90 no-underline transition-colors hover:bg-[#1A1C1F] hover:text-dark-s-0";
@@ -8,25 +11,21 @@ const drawerLinkClass =
 export default function Drawer({ drawerOpen, closeDrawer }: { drawerOpen: boolean, closeDrawer: () => void }) {
   return (
     <DrawerComponent isOpen={drawerOpen} onClose={closeDrawer} side="right">
-      <div className="flex items-center justify-between border-b border-dark-s-700 px-4 py-3">
-        <span className="font-semibold text-dark-s-0">Menu</span>
+      <div className="flex items-center justify-between px-4 py-3">
         <button
           type="button"
           onClick={closeDrawer}
-          className="p-2 text-dark-s-100 hover:bg-dark-s-700 hover:text-dark-s-30 transition-colors rounded-lg -mr-2"
+          className="mr-auto p-2 text-dark-s-100 hover:bg-dark-s-700 hover:text-dark-s-30 transition-colors rounded-lg"
           aria-label="Close menu"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <Image src="/icons/close.svg" alt="Close" width={12} height={12} />
         </button>
+
+        <div className="flex items-center gap-2">
+          <Signin />
+          <ConnectWallet />
+        </div>
+
       </div>
 
       <nav className="flex flex-col py-2" aria-label="Mobile navigation">

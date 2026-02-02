@@ -3,7 +3,16 @@ import { NavigationItem } from "@/components/navbar";
 export const navigationItems: NavigationItem[] = [
   {
     label: "Home",
-    href: "/",
+    dropdownItems: [
+      {
+        label: "Home",
+        href: "/",
+      },
+      {
+        label: "Data Rooms",
+        href: "/datarooms",
+      },
+    ],
   },
   {
     label: "Hyperblogs",

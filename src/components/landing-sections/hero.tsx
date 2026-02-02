@@ -15,9 +15,9 @@ export default function Hero() {
           className="w-[251px] lg:w-[517px] h-auto"
         />
         <div className="font-montserrat text-2xl lg:text-5xl font-black max-w-[348px] lg:max-w-none">
-          {heroCopy.title}
+          {title}
         </div>
-        <div className="font-laro-soft text-sm lg:text-base max-w-[348px] lg:max-w-none">{heroCopy.description}</div>
+        <div className="font-laro-soft text-sm lg:text-base max-w-[348px] lg:max-w-none">{description}</div>
 
         <div className="mt-auto lg:mt-3 flex gap-6 flex-col lg:flex-row lg:max-w-none">
           <Button variant="primary" className="z-10 w-full lg:w-auto" href={primaryCtaHref}>{primaryCta}</Button>

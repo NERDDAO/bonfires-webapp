@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import "./palette.css";
+@import "tailwindcss";
 
 /* DaisyUI configuration */
 @plugin "daisyui" {

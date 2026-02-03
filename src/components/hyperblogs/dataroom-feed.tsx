@@ -7,7 +7,7 @@ import DataroomCard from "./dataroom-card";
 
 const PAGE_SIZE = 4;
 
-export default function DataroomsFeed() {
+export default function DataroomFeed() {
   const {
     data,
     isLoading,
@@ -44,7 +44,7 @@ export default function DataroomsFeed() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {Array.from({ length: totalCount }, (_, index) => {
+        {Array.from({ length: totalCount || PAGE_SIZE }, (_, index) => {
           const dataroom = dataRooms[index];
           return index < dataRooms.length && dataroom ? (
             <DataroomCard key={dataroom.id} data={dataroom} />

@@ -4,18 +4,12 @@ import { HyperBlogInfo } from "@/types";
 
 import { cn } from "@/lib/cn";
 import {
-  calculateReadingTime,
   formatNumber,
   truncateAddress,
   getTextFromMarkdown,
+  formatReadingTime,
 } from "@/lib/utils";
 import Link from "next/link";
-
-const getBlogLength = (wordCount: number) => {
-  if (wordCount < 1000) return "Short";
-  if (wordCount < 2000) return "Medium";
-  return "Long";
-};
 
 function HyperBlogCardSkeleton({
   className,
@@ -88,9 +82,7 @@ export default function HyperBlogCard({
     minute: "numeric",
     hour12: true,
   });
-  const formattedBlogLength = getBlogLength(data?.word_count || 0);
-  const formattedWordCount = `${data?.word_count || 0} words`;
-  const readingTime = calculateReadingTime(data?.word_count || 0);
+  const { formattedBlogLength, formattedWordCount, formattedReadingTime } = formatReadingTime(data?.word_count || 0);
   const imageSrc = data?.banner_url || "";
   const likes = data?.upvotes || 0;
   const dislikes = data?.downvotes || 0;
@@ -115,7 +107,7 @@ export default function HyperBlogCard({
           { value: formattedTimestamp, className: "w-full lg:w-auto flex-auto" },
           { value: formattedBlogLength, className: "" },
           { value: formattedWordCount, className: "" },
-          { value: readingTime, className: "" },
+          { value: formattedReadingTime, className: "" },
         ].map((item) => (
           <span
             key={item.value}

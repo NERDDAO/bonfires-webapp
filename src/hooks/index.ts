@@ -48,6 +48,7 @@ export {
   nodeEpisodesQueryKey,
   // Data Rooms
   useDataRoomsQuery,
+  useDataRoomsInfiniteQuery,
   useDataRoomById,
   useMyCreatedDataRooms,
   useMySubscribedDataRooms,
@@ -58,6 +59,7 @@ export {
   useMyHyperBlogs,
   usePublicHyperBlogsFeed,
   useDataRoomHyperBlogs,
+  useDataRoomHyperBlogsInfiniteQuery,
   hyperBlogsQueryKey,
   // Documents
   useDocumentsQuery,

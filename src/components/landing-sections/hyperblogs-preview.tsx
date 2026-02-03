@@ -8,7 +8,7 @@ import { usePublicHyperBlogsFeed } from "@/hooks";
 import { HyperBlogInfo } from "@/types";
 
 import { Button } from "../ui/button";
-import HyperBlogCard from "./ui/hyperblog-card";
+import HyperBlogCard from "../hyperblogs/hyperblog-card";
 import { hyperblogsPreviewSectionCopy } from "@/content/landing-page";
 
 export default function HyperBlogsPreview() {

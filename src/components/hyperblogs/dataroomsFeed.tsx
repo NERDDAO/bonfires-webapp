@@ -1,29 +1,42 @@
 "use client";
 
 import { hyperblogsCopy } from "@/content/hyperblogs";
-import { Button } from "../ui/button";
-import { useDataRoomsQuery } from "@/hooks";
-import { useCallback, useEffect, useState } from "react";
-import { DataRoomInfo, DataRoomListResponse } from "@/types";
+import { useDataRoomsInfiniteQuery } from "@/hooks";
+import { useEffect, useRef } from "react";
+import DataroomCard from "./dataroom-card";
 
+const PAGE_SIZE = 4;
 
 export default function DataroomsFeed() {
-  const { data, isLoading, isError, error } = useDataRoomsQuery();
-  const { title, description, dataroomTitle } = hyperblogsCopy;
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE });
 
-  const [dataRooms, setDataRooms] = useState<DataRoomInfo[]>([]);
-
-  const fetchDataRooms = useCallback(async () => {
-    const response = await fetch("/api/datarooms?limit=50&offset=0");
-    const data: DataRoomListResponse = await response.json();
-    console.log("dataRooms", data);
-    setDataRooms(data.datarooms);
-  }, []);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { dataroomTitle } = hyperblogsCopy;
+  const dataRooms = data?.pages.flatMap((page) => page.datarooms) ?? [];
+  const placeholderCount = isFetchingNextPage ? PAGE_SIZE : 0;
+  const totalCount = dataRooms.length + placeholderCount;
 
   useEffect(() => {
-    fetchDataRooms();
-  }, [fetchDataRooms]);
-  
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) fetchNextPage();
+      },
+      { rootMargin: "200px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   return (
     <>
       <div className="mt-6 font-montserrat text-lg lg:text-[2rem] font-black lg:font-bold">
@@ -31,12 +44,23 @@ export default function DataroomsFeed() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {dataRooms?.map((dataroom) => (
-          <div key={dataroom.id}>
-            <h3>{dataroom.description}</h3>
-          </div>
-        ))}
+        {Array.from({ length: totalCount }, (_, index) => {
+          const dataroom = dataRooms[index];
+          return index < dataRooms.length && dataroom ? (
+            <DataroomCard key={dataroom.id} data={dataroom} />
+          ) : (
+            <DataroomCard key={`skeleton-${index}`} isLoading />
+          );
+        })}
       </div>
+
+      <div ref={sentinelRef} className="h-1 min-h-1" aria-hidden="true" />
+
+      {isError && (
+        <div className="mt-4 text-center text-sm text-destructive">
+          {error instanceof Error ? error.message : "Failed to load datarooms"}
+        </div>
+      )}
     </>
   );
 }

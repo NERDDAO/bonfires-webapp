@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import type { DataRoomListResponse, DataRoomInfo } from "@/types";
 
@@ -82,6 +82,62 @@ export function useDataRoomsQuery(params: UseDataRoomsQueryParams = {}) {
     },
     enabled,
     staleTime: 3 * 60 * 1000, // 3 minutes
+  });
+}
+
+const DEFAULT_PAGE_SIZE = 12;
+
+interface UseDataRoomsInfiniteQueryParams {
+  /** Filter by bonfire ID */
+  bonfireId?: string | null;
+  /** Filter by creator wallet address */
+  creatorWallet?: string | null;
+  /** Filter by subscriber wallet address */
+  subscriberWallet?: string | null;
+  /** Page size (limit per request) */
+  pageSize?: number;
+  /** Enable/disable the query */
+  enabled?: boolean;
+}
+
+/**
+ * Infinite query for data rooms (load more via button).
+ * Next page is requested when we received a full page (received >= limit); otherwise no next page.
+ */
+export function useDataRoomsInfiniteQuery(params: UseDataRoomsInfiniteQueryParams = {}) {
+  const {
+    enabled = true,
+    pageSize = DEFAULT_PAGE_SIZE,
+    bonfireId,
+    creatorWallet,
+    subscriberWallet,
+  } = params;
+
+  return useInfiniteQuery({
+    queryKey: [
+      "datarooms",
+      "infinite",
+      { bonfireId: bonfireId ?? null, creatorWallet: creatorWallet ?? null, subscriberWallet: subscriberWallet ?? null, pageSize },
+    ],
+    queryFn: async ({ pageParam }) => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("limit", String(pageSize));
+      searchParams.set("offset", String(pageParam));
+      if (bonfireId) searchParams.set("bonfire_id", bonfireId);
+      if (creatorWallet) searchParams.set("creator_wallet", creatorWallet);
+      if (subscriberWallet) searchParams.set("subscriber_wallet", subscriberWallet);
+      const queryString = searchParams.toString();
+      return apiClient.get<DataRoomListResponse>(`/api/datarooms?${queryString}`);
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const received = lastPage.datarooms.length;
+      const requested = lastPage.limit;
+      if (received < requested) return undefined;
+      return lastPage.offset + received;
+    },
+    enabled,
+    staleTime: 3 * 60 * 1000,
   });
 }
 

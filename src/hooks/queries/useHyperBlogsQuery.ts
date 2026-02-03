@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import type { HyperBlogListResponse, HyperBlogInfo } from "@/types";
 
@@ -125,5 +125,44 @@ export function useDataRoomHyperBlogs(dataroomId: string | null) {
   return useHyperBlogsQuery({
     dataroomId,
     enabled: !!dataroomId,
+  });
+}
+
+const DEFAULT_HYPERBLOGS_PAGE_SIZE = 8;
+
+interface UseDataRoomHyperBlogsInfiniteQueryParams {
+  dataroomId: string | null;
+  pageSize?: number;
+  enabled?: boolean;
+}
+
+/**
+ * Infinite query for hyperblogs in a specific data room.
+ * Next page is requested when a full page was received.
+ */
+export function useDataRoomHyperBlogsInfiniteQuery({
+  dataroomId,
+  pageSize = DEFAULT_HYPERBLOGS_PAGE_SIZE,
+  enabled = true,
+}: UseDataRoomHyperBlogsInfiniteQueryParams) {
+  return useInfiniteQuery({
+    queryKey: ["hyperblogs", "infinite", "dataroom", dataroomId, pageSize],
+    queryFn: async ({ pageParam }) => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("limit", String(pageSize));
+      searchParams.set("offset", String(pageParam));
+      if (dataroomId) searchParams.set("dataroom_id", dataroomId);
+      const queryString = searchParams.toString();
+      return apiClient.get<HyperBlogListResponse>(`/api/hyperblogs?${queryString}`);
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const received = lastPage.hyperblogs.length;
+      const requested = lastPage.limit;
+      if (received < requested) return undefined;
+      return lastPage.offset + received;
+    },
+    enabled: !!dataroomId && enabled,
+    staleTime: 2 * 60 * 1000,
   });
 }

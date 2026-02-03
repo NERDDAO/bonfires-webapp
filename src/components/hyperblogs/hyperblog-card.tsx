@@ -137,7 +137,7 @@ export default function HyperBlogCard({
             src={imageSrc}
             alt={title}
             fill
-            className="object-contain rounded-lg"
+            className="object-cover rounded-lg"
           />
         )}
       </div>

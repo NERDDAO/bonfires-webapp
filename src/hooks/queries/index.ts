@@ -30,6 +30,7 @@ export {
 // Data Rooms
 export {
   useDataRoomsQuery,
+  useDataRoomsInfiniteQuery,
   useDataRoomById,
   useMyCreatedDataRooms,
   useMySubscribedDataRooms,
@@ -43,6 +44,7 @@ export {
   useMyHyperBlogs,
   usePublicHyperBlogsFeed,
   useDataRoomHyperBlogs,
+  useDataRoomHyperBlogsInfiniteQuery,
   hyperBlogsQueryKey,
 } from "./useHyperBlogsQuery";
 

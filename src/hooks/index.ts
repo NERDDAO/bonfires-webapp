@@ -38,6 +38,8 @@ export {
   useAgentById,
   useActiveAgents,
   agentsQueryKey,
+  // Agent selection (React Query)
+  useAgentSelectionQuery,
   // Graph
   useGraphQuery,
   useGraphExpand,

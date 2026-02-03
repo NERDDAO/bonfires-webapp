@@ -110,7 +110,7 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
           })}
 
           {isFetchingNextPage && (
-            <div className="text-xs text-[#A9A9A9] py-1">Loading…</div>
+            <div className="text-xs text-[#A9A9A9] py-1 w-full text-center">Loading…</div>
           )}
           <div ref={sentinelRef} className="h-2 min-h-2 shrink-0" aria-hidden="true" />
         </div>

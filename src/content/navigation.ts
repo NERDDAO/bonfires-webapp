@@ -11,7 +11,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     label: "Graph Explorer",
-    href: "/graph",
+    href: "/graph-2",
   },
   {
     label: "Docs",

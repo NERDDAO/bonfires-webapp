@@ -191,6 +191,33 @@ export function calculateReadingTime(wordCount: number): string {
 }
 
 /**
+ * Return formatted blog length information from word count
+ * @param wordCount 
+ * @returns 
+ */
+export function formatBlogLength(wordCount: number): string {
+  if (wordCount < 1000) return "Short";
+  if (wordCount < 2000) return "Medium";
+  return "Long";
+};
+
+/**
+ * Return formatted reading time information from word count
+ * @param price 
+ * @returns 
+ */
+export function formatReadingTime(wordCount: number): { 
+  formattedBlogLength: string, 
+  formattedWordCount: string, 
+  formattedReadingTime: string,
+} {
+  const formattedBlogLength = formatBlogLength(wordCount);
+  const formattedWordCount = `${wordCount} words`;
+  const formattedReadingTime = calculateReadingTime(wordCount);
+  return { formattedBlogLength, formattedWordCount, formattedReadingTime };
+}
+
+/**
  * Format USD price for display
  */
 export function formatUsdPrice(price: number): string {

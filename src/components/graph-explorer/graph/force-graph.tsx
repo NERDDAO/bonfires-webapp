@@ -370,6 +370,8 @@ export interface ForceGraphProps {
   selectedEdgeId?: string | null;
   /** Node IDs to highlight */
   highlightedNodeIds?: string[];
+  /** Center node ID: when set, the view is panned so this node is at the viewport center on load */
+  centerNodeId?: string | null;
   /** Additional CSS class */
   className?: string;
 }
@@ -381,6 +383,7 @@ export default function ForceGraph({
   selectedNodeId,
   selectedEdgeId,
   highlightedNodeIds = [],
+  centerNodeId,
   className,
 }: ForceGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -508,11 +511,23 @@ export default function ForceGraph({
           node.y0 = node.y;
         }
 
-        transformRef.current = {
-          x: width / 2 - graphWidth / 2,
-          y: height / 2 - graphHeight / 2,
-          k: 1,
-        };
+        const centerId = centerNodeId?.replace(/^n:/, "") ?? null;
+        const centerNode = centerId
+          ? nodes.find((n) => n.id === centerId)
+          : null;
+        if (centerNode && centerNode.x != null && centerNode.y != null) {
+          transformRef.current = {
+            x: width / 2 - centerNode.x,
+            y: height / 2 - centerNode.y,
+            k: 1,
+          };
+        } else {
+          transformRef.current = {
+            x: width / 2 - graphWidth / 2,
+            y: height / 2 - graphHeight / 2,
+            k: 1,
+          };
+        }
       }
 
       sizeRef.current = { width, height };
@@ -652,7 +667,7 @@ export default function ForceGraph({
       canvas.removeEventListener("wheel", handleWheel);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [elements, redraw]);
+  }, [elements, centerNodeId, redraw]);
 
   // Redraw when tick or highlighted set changes
   useEffect(() => {

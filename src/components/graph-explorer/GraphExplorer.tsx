@@ -6,7 +6,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useWalletAccount } from "@/lib/wallet/e2e";
 
 import { cn } from "@/lib/cn";
@@ -30,7 +30,7 @@ import { GraphExplorerPanel } from "./panel/graph-explorer-panel";
 import { SearchModal } from "./SearchModal";
 import { EpisodeListModal } from "./EpisodeListModal";
 import type { EpisodeTimelineItem } from "./Timeline";
-import { WikiPanel, type WikiNodeData, type WikiEdgeData } from "./WikiPanel";
+import { WikiPanelContainer, type WikiNodeData, type WikiEdgeData } from "./panel/wiki-panel-container";
 import { ChatPanel, FloatingChatButton, type ChatMessage } from "./ChatPanel";
 import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
@@ -192,7 +192,8 @@ export function GraphExplorer({
   const router = useRouter();
   const { address: walletAddress, isConnected: isWalletConnected } = useWalletAccount();
 
-  // URL parameters
+  // URL parameters and path
+  const pathname = usePathname();
   const urlBonfireId = searchParams.get("bonfireId") ?? initialBonfireId;
   const urlAgentId = searchParams.get("agentId") ?? initialAgentId;
   const urlCenterNode = searchParams.get("centerNode");
@@ -737,6 +738,25 @@ export function GraphExplorer({
       }));
   }, [selection.selectedNodeId, elements]);
 
+  // Map node id -> display title (name/label) for relationship targets
+  const getRelatedNodeTitle = useCallback(
+    (nodeId: string): string | undefined => {
+      const normalizedId = nodeId.replace(/^n:/, "");
+      const element = elements.find(
+        (el) =>
+          el.data?.node_type != null &&
+          (el.data?.id === normalizedId ||
+            el.data?.id === `n:${normalizedId}`)
+      );
+      if (!element?.data) return undefined;
+      const title =
+        (element.data.label as string | undefined) ??
+        (element.data.name as string | undefined);
+      return title ?? undefined;
+    },
+    [elements]
+  );
+
   const highlightedNodeIds = useMemo(() => {
     const ids = new Set<string>();
     if (selection.selectedNodeId) {
@@ -813,8 +833,8 @@ export function GraphExplorer({
       params.set("agentId", agentSelection.selectedAgentId);
     }
     params.set("q", searchQuery);
-    router.push(`/graph?${params.toString()}`);
-  }, [searchQuery, searchParams, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]);
+    router.push(`${pathname}?${params.toString()}`);
+  }, [searchQuery, searchParams, pathname, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]);
 
   const handleSearchAroundNode = useCallback(
     (nodeUuid: string) => {
@@ -829,9 +849,9 @@ export function GraphExplorer({
       }
       params.set("q", nextQuery);
       params.set("centerNode", nodeUuid);
-      router.push(`/graph?${params.toString()}`);
+      router.push(`${pathname}?${params.toString()}`);
     },
-    [searchQuery, searchParams, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]
+    [searchQuery, searchParams, pathname, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]
   );
 
   const handleContextMenu = useCallback(
@@ -1009,14 +1029,15 @@ export function GraphExplorer({
               selectedNodeId={selection.selectedNodeId}
               selectedEdgeId={selection.selectedEdgeId}
               highlightedNodeIds={highlightedNodeIds}
+              centerNodeId={urlCenterNode}
               onNodeClick={handleNodeClick}
               onEdgeClick={handleEdgeClick}
             />
           </div>
 
-          {/* Wiki Panel */}
+          {/* Wiki Panel (draggable container) */}
           {panel.rightPanelMode === "wiki" && (
-            <WikiPanel
+            <WikiPanelContainer
               node={selectedNode}
               edge={selectedEdge}
               edgeSourceNode={null} // TODO: Implement
@@ -1041,6 +1062,7 @@ export function GraphExplorer({
               onForward={wikiNav.forward}
               onNodeSelect={handleNodeClick}
               onSearchAroundNode={handleSearchAroundNode}
+              getRelatedNodeTitle={getRelatedNodeTitle}
             />
           )}
         </div>

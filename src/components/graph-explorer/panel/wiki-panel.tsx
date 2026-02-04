@@ -6,13 +6,7 @@
 "use client";
 
 import React from "react";
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
@@ -75,6 +69,8 @@ export interface WikiPanelProps {
   onNodeSelect: (nodeId: string) => void;
   /** Callback to search around selected node */
   onSearchAroundNode?: (nodeUuid: string) => void;
+  /** Resolve a node id to its display title (e.g. name). Used for relationship targets. */
+  getRelatedNodeTitle?: (nodeId: string) => string | undefined;
   /** Additional CSS classes */
   className?: string;
 }
@@ -89,6 +85,36 @@ function formatDate(dateStr?: string): string {
   } catch {
     return dateStr;
   }
+}
+
+/**
+ * Format CAPITAL_SNAKE_CASE or snake_case to "Capital snake case"
+ */
+function formatLabel(str?: string): string {
+  if (!str) return "";
+  return str
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Format a value for attribute display (no JSON brackets/syntax)
+ */
+function formatAttributeValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => formatAttributeValue(v)).join(", ");
+  }
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([k, v]) => `${k}: ${formatAttributeValue(v)}`)
+      .join(" · ");
+  }
+  return String(value);
 }
 
 /**
@@ -111,6 +137,7 @@ export function WikiPanel({
   onForward,
   onNodeSelect,
   onSearchAroundNode,
+  getRelatedNodeTitle,
   className,
 }: WikiPanelProps) {
   // Don't render if not enabled or no selection
@@ -118,7 +145,6 @@ export function WikiPanel({
     return null;
   }
 
-  const isFullMode = mode === "full";
   const nodeType = node?.type || node?.node_type;
   const isEpisode = nodeType === "episode";
 
@@ -199,10 +225,13 @@ export function WikiPanel({
               <h3 className="text-sm font-semibold text-base-content/70 mb-2">
                 Attributes
               </h3>
-              <div className="bg-base-200 rounded-lg p-3 overflow-auto max-h-48">
-                <pre className="text-xs text-base-content/80">
-                  {JSON.stringify(edge.attributes, null, 2)}
-                </pre>
+              <div className="bg-base-200 rounded-lg p-3 overflow-auto max-h-48 space-y-1">
+                {Object.entries(edge.attributes).map(([key, val]) => (
+                  <div key={key} className="text-xs text-base-content/80">
+                    <span className="font-medium text-base-content/90">{key}:</span>{" "}
+                    {formatAttributeValue(val)}
+                  </div>
+                ))}
               </div>
             </section>
           )}
@@ -240,32 +269,19 @@ export function WikiPanel({
             </section>
           )}
 
-          {/* Labels (for entities) */}
-          {node.labels && node.labels.length > 0 && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                Labels
-              </h3>
-              <div className="flex flex-wrap gap-1">
-                {node.labels.map((label, idx) => (
-                  <span key={idx} className="badge badge-primary badge-sm">
-                    {label}
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Attributes */}
           {node.attributes && Object.keys(node.attributes).length > 0 && (
             <section>
               <h3 className="text-sm font-semibold text-base-content/70 mb-2">
                 Attributes
               </h3>
-              <div className="bg-base-200 rounded-lg p-3 overflow-auto max-h-48">
-                <pre className="text-xs text-base-content/80">
-                  {JSON.stringify(node.attributes, null, 2)}
-                </pre>
+              <div className="bg-base-200 rounded-lg p-3 overflow-auto max-h-48 space-y-1">
+                {Object.entries(node.attributes).map(([key, val]) => (
+                  <div key={key} className="text-xs text-base-content/80">
+                    <span className="font-medium text-base-content/90">{key}:</span>{" "}
+                    {formatAttributeValue(val)}
+                  </div>
+                ))}
               </div>
             </section>
           )}
@@ -283,16 +299,22 @@ export function WikiPanel({
                       ? rel.target
                       : rel.source;
                   const cleanId = otherNodeId.replace(/^n:/, "");
+                  const title = getRelatedNodeTitle?.(cleanId) ?? cleanId;
+                  const relationLabel = formatLabel(
+                    rel.label || rel.relation_type || "Related"
+                  );
                   return (
                     <button
                       key={`${rel.id}-${idx}`}
                       onClick={() => onNodeSelect(cleanId)}
                       className="flex items-center gap-2 text-sm w-full p-2 rounded hover:bg-base-200 transition-colors text-left"
                     >
-                      <span className="badge badge-ghost badge-xs">
-                        {rel.label || rel.relation_type || "related"}
+                      <span className="text-base-content/70 shrink-0">
+                        {relationLabel}
                       </span>
-                      <span className="text-primary truncate">{cleanId}</span>
+                      <span className="font-bold text-base-content truncate min-w-0">
+                        {title}
+                      </span>
                     </button>
                   );
                 })}
@@ -311,26 +333,21 @@ export function WikiPanel({
     return null;
   };
 
-  const title = edge
-    ? edge.label || edge.relation_type || "Relationship"
-    : node?.name || node?.label || node?.uuid?.slice(0, 8) || "Node";
-
-  const typeBadge = edge ? "edge" : isEpisode ? "episode" : "entity";
   const canSearchAroundNode = !!node?.uuid && !!onSearchAroundNode;
 
-  const panelContent = (
-    <div
-      className={cn(
-        "flex flex-col h-full bg-base-100",
-        isFullMode ? "rounded-lg shadow-xl" : "border-l border-base-300",
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-base-300">
-        <div className="flex items-center gap-2 min-w-0">
-          {/* Navigation buttons */}
-          <div className="flex items-center gap-1">
+  // Header badges: node labels, or for edges the relation type; fallback to type badge
+  const headerBadges = edge
+    ? [edge.label || edge.relation_type || "Relationship"]
+    : (node?.labels && node.labels.length > 0)
+      ? node.labels
+      : [isEpisode ? "episode" : "entity"];
+
+  return (
+    <div className={cn("flex flex-col h-full min-h-0 bg-base-100", className)}>
+      {/* Header: nav (sr-only) + labels as badges (title is on container) */}
+      <div className="flex items-center justify-between p-3 border-b border-base-300 shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <div className="sr-only flex items-center gap-1">
             <button
               onClick={onBack}
               disabled={!canGoBack}
@@ -348,49 +365,25 @@ export function WikiPanel({
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Title */}
-          <div className="flex items-center gap-2 min-w-0">
+          {headerBadges.map((label, idx) => (
             <span
+              key={idx}
               className={cn(
                 "badge badge-sm",
-                typeBadge === "episode" && "badge-info",
-                typeBadge === "entity" && "badge-success",
-                typeBadge === "edge" && "badge-warning"
+                edge && "badge-warning",
+                !edge && isEpisode && "badge-info",
+                !edge && !isEpisode && "badge-success"
               )}
             >
-              {typeBadge}
+              {label}
             </span>
-            <h2 className="font-medium truncate">{title}</h2>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onToggleMode}
-            className="btn btn-ghost btn-xs btn-square"
-            aria-label={isFullMode ? "Minimize" : "Maximize"}
-          >
-            {isFullMode ? (
-              <Minimize2 className="w-4 h-4" />
-            ) : (
-              <Maximize2 className="w-4 h-4" />
-            )}
-          </button>
-          <button
-            onClick={onClose}
-            className="btn btn-ghost btn-xs btn-square"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          ))}
         </div>
       </div>
 
-      {/* Breadcrumbs */}
+      {/* Breadcrumbs (hidden, functionality preserved) */}
       {breadcrumbs.length > 1 && (
-        <div className="px-4 py-2 border-b border-base-300 overflow-x-auto">
+        <div className="sr-only px-3 py-2 border-b border-base-300 overflow-x-auto shrink-0">
           <div className="breadcrumbs text-xs">
             <ul>
               {breadcrumbs.map((crumb, idx) => (
@@ -410,9 +403,9 @@ export function WikiPanel({
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">{renderContent()}</div>
+      <div className="flex-1 overflow-y-auto p-3 min-h-0">{renderContent()}</div>
       {canSearchAroundNode && (
-        <div className="p-4 border-t border-base-300">
+        <div className="p-3 border-t border-base-300 shrink-0">
           <button
             onClick={() => onSearchAroundNode?.(node.uuid)}
             className="btn btn-primary btn-sm w-full"
@@ -425,20 +418,6 @@ export function WikiPanel({
         </div>
       )}
     </div>
-  );
-
-  // Full mode: overlay
-  if (isFullMode) {
-    return (
-      <div className="absolute inset-0 z-20 bg-base-100/95 backdrop-blur-sm rounded-lg overflow-hidden">
-        {panelContent}
-      </div>
-    );
-  }
-
-  // Sidebar mode
-  return (
-    <div className="w-80 h-full flex-shrink-0">{panelContent}</div>
   );
 }
 

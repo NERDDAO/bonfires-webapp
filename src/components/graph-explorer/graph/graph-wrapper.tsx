@@ -30,6 +30,8 @@ interface GraphVisualizationProps {
   selectedEdgeId?: string | null;
   /** Highlighted node IDs */
   highlightedNodeIds?: string[];
+  /** Center node ID: when set, the graph view is panned so this node is at the viewport center on load */
+  centerNodeId?: string | null;
   /** Additional CSS class */
   className?: string;
 }
@@ -47,6 +49,7 @@ export const GraphWrapper = memo(function GraphWrapper({
   selectedNodeId,
   selectedEdgeId,
   highlightedNodeIds,
+  centerNodeId,
   className,
 }: GraphVisualizationProps) {
   // Track whether we've completed at least one load cycle
@@ -122,6 +125,7 @@ export const GraphWrapper = memo(function GraphWrapper({
         selectedNodeId={selectedNodeId}
         selectedEdgeId={selectedEdgeId}
         highlightedNodeIds={highlightedNodeIds}
+        centerNodeId={centerNodeId}
       />
     </div>
   );

@@ -14,7 +14,7 @@ import Image from "next/image";
 import { IconButton } from "./ui/icon-button";
 
 const width = "w-50";
-const border = "bg-[#181818]/60 border-[0.78px] border-[#333333]";
+const border = "bg-[#181818]/80 border-[0.78px] border-[#333333]";
 const labelClass =
   "font-montserrat text-sm lg:text-base font-bold text-white mb-2";
 const skeletonClass =

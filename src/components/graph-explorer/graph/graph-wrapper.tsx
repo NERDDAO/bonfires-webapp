@@ -11,6 +11,7 @@ import React, { useCallback, useMemo, memo, useRef, useEffect } from "react";
 import { ErrorMessage, LoadingSpinner } from "@/components/common";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import ForceGraph from "./force-graph";
+import GraphStatusOverlay from "../ui/graph-status-overlay";
 
 interface GraphVisualizationProps {
   /** Graph elements to display */
@@ -37,7 +38,7 @@ interface GraphVisualizationProps {
  * GraphVisualization - High-level graph rendering component
  * Handles transformation, loading states, and error display
  */
-export const GraphVisualization = memo(function GraphVisualization({
+export const GraphWrapper = memo(function GraphWrapper({
   elements,
   loading = false,
   error,
@@ -76,50 +77,26 @@ export const GraphVisualization = memo(function GraphVisualization({
     [onEdgeClick]
   );
 
-  // Derive node/edge counts from elements for accessibility
-  const { nodeCount, edgeCount } = useMemo(() => {
-    const nodes = elements.filter(
-      (el) =>
-        el.data &&
-        !(
-          "source" in el.data &&
-          "target" in el.data &&
-          el.data.source != null &&
-          el.data.target != null
-        )
-    ).length;
-    const edges = elements.filter(
-      (el) =>
-        el.data &&
-        "source" in el.data &&
-        "target" in el.data &&
-        el.data.source != null &&
-        el.data.target != null
-    ).length;
-    return { nodeCount: nodes, edgeCount: edges };
-  }, [elements]);
-
   // Error state
   if (error) {
     const errorMessage = typeof error === "string" ? error : error.message;
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
-        <ErrorMessage message={errorMessage ?? "Failed to load graph"} variant="card" />
-      </div>
+      <GraphStatusOverlay
+        isLoading={false}
+        isError={true}
+        errorMessage={errorMessage}
+      />
     );
   }
 
   // Empty state (only after loading completed once)
   if (!loading && hasLoadedOnceRef.current && elements.length === 0) {
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-center text-base-content/60">
-          <p className="text-lg font-medium">No graph data</p>
-          <p className="text-sm mt-1">
-            Select an agent and bonfire to explore the knowledge graph
-          </p>
-        </div>
-      </div>
+      <GraphStatusOverlay
+        isLoading={false}
+        isError={true}
+        errorMessage="Graph data not found"
+      />
     );
   }
 
@@ -127,20 +104,15 @@ export const GraphVisualization = memo(function GraphVisualization({
     <div
       className={`relative w-full h-full ${className}`}
       role="application"
-      aria-label={`Interactive knowledge graph with ${nodeCount} nodes and ${edgeCount} edges`}
       tabIndex={0}
     >
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/50">
-          <LoadingSpinner size="lg" text="Loading graph..." />
-        </div>
+        <GraphStatusOverlay
+          isLoading={true}
+          message="Loading graph..."
+        />
       )}
-
-      {/* Accessibility summary */}
-      <div className="sr-only" aria-live="polite">
-        Graph summary: {nodeCount} nodes, {edgeCount} edges.
-      </div>
 
       {/* Graph canvas (static-graph-view style) */}
       <ForceGraph
@@ -155,6 +127,6 @@ export const GraphVisualization = memo(function GraphVisualization({
   );
 });
 
-GraphVisualization.displayName = "GraphVisualization";
+GraphWrapper.displayName = "GraphWrapper";
 
-export default GraphVisualization;
+export default GraphWrapper;

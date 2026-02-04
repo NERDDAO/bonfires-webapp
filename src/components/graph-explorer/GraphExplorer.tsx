@@ -25,7 +25,7 @@ import {
   type PanelMode,
 } from "@/hooks";
 
-import { GraphVisualization } from "./GraphVisualization";
+import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./graph-explorer-panel";
 import { SearchModal } from "./SearchModal";
 import { EpisodeListModal } from "./EpisodeListModal";
@@ -43,6 +43,7 @@ import type {
   GraphStatePayload,
   NodeType,
 } from "@/types";
+import GraphStatusOverlay from "./ui/graph-status-overlay";
 
 function resolveNodeType(rawType: unknown, labels: string[]): NodeType {
   const normalized = typeof rawType === "string" ? rawType.toLowerCase() : "";
@@ -933,9 +934,10 @@ export function GraphExplorer({
   // Loading state
   if (!agentSelection.isInitialized) {
     return (
-      <main className={cn("flex flex-col items-center justify-center h-full", className)}>
-        <LoadingSpinner size="lg" text="Initializing..." />
-      </main>
+      <GraphStatusOverlay
+        isLoading={true}
+        message="Initializing..."
+      />
     );
   }
 
@@ -1000,7 +1002,7 @@ export function GraphExplorer({
               </div>
             )}
 
-            <GraphVisualization
+            <GraphWrapper
               elements={elements}
               loading={isGraphLoading}
               error={graphError}

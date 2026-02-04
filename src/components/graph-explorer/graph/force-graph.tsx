@@ -11,7 +11,7 @@
 import * as d3 from "d3";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
-import { IconButton } from "./ui/icon-button";
+import { IconButton } from "../ui/icon-button";
 
 const RADIUS_BY_SIZE: Record<number, number> = {
   1: 8,

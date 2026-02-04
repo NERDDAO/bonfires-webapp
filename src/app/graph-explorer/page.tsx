@@ -1,7 +1,7 @@
 "use client";
 
 import { NodeData } from "@/components";
-import { GraphExplorer } from "@/components/graph-explorer";
+import { GraphExplorer } from "@/components/graph-explorer/GraphExplorer";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 

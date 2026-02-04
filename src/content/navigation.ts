@@ -15,6 +15,6 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     label: "Docs",
-    href: "/documents",
+    href: "https://docs.bonfires.ai/bonfires/docs/docs26/Welcome",
   },
 ] as const;

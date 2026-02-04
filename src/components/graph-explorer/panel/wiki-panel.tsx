@@ -9,32 +9,12 @@ import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
-import type { GraphElement } from "@/lib/utils/sigma-adapter";
+import type { WikiNodeData, WikiEdgeData } from "./wiki-panel-utils";
+import { EntityContent } from "./entity-content";
+import { EpisodeContent } from "./episode-content";
+import { EdgeContent } from "./edge-content";
 
-// Types for wiki content
-export interface WikiNodeData {
-  uuid: string;
-  name?: string;
-  label?: string;
-  type?: "episode" | "entity";
-  node_type?: "episode" | "entity";
-  summary?: string;
-  content?: string;
-  valid_at?: string;
-  attributes?: Record<string, unknown>;
-  labels?: string[];
-}
-
-export interface WikiEdgeData {
-  id: string;
-  label?: string;
-  relation_type?: string;
-  source: string;
-  target: string;
-  strength?: number;
-  fact?: string;
-  attributes?: Record<string, unknown>;
-}
+export type { WikiNodeData, WikiEdgeData };
 
 export interface WikiPanelProps {
   /** Selected node data */
@@ -76,48 +56,6 @@ export interface WikiPanelProps {
 }
 
 /**
- * Format a date string for display
- */
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return "Unknown date";
-  try {
-    return new Date(dateStr).toLocaleString();
-  } catch {
-    return dateStr;
-  }
-}
-
-/**
- * Format CAPITAL_SNAKE_CASE or snake_case to "Capital snake case"
- */
-function formatLabel(str?: string): string {
-  if (!str) return "";
-  return str
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-/**
- * Format a value for attribute display (no JSON brackets/syntax)
- */
-function formatAttributeValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map((v) => formatAttributeValue(v)).join(", ");
-  }
-  if (typeof value === "object") {
-    return Object.entries(value as Record<string, unknown>)
-      .map(([k, v]) => `${k}: ${formatAttributeValue(v)}`)
-      .join(" · ");
-  }
-  return String(value);
-}
-
-/**
  * WikiPanel - Content panel for nodes and edges
  */
 export function WikiPanel({
@@ -148,199 +86,57 @@ export function WikiPanel({
   const nodeType = node?.type || node?.node_type;
   const isEpisode = nodeType === "episode";
 
-  // Determine what to render
+  // Determine what to render using dedicated content components
   const renderContent = () => {
-    // Edge content
     if (edge) {
       return (
-        <div className="space-y-4">
-          {/* Connection */}
-          <section>
-            <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-              Connection
-            </h3>
-            <div className="flex items-center gap-2 text-sm">
-              <button
-                onClick={() => edgeSourceNode && onNodeSelect(edgeSourceNode.uuid)}
-                className="link text-base-content"
-              >
-                {edgeSourceNode?.name || edgeSourceNode?.label || edge.source}
-              </button>
-              <span className="text-base-content/50">→</span>
-              <span className="badge badge-outline">
-                {edge.label || edge.relation_type || "relates to"}
-              </span>
-              <span className="text-base-content/50">→</span>
-              <button
-                onClick={() => edgeTargetNode && onNodeSelect(edgeTargetNode.uuid)}
-                className="link text-base-content"
-              >
-                {edgeTargetNode?.name || edgeTargetNode?.label || edge.target}
-              </button>
-            </div>
-          </section>
-
-          {/* Strength */}
-          {typeof edge.strength === "number" && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                Strength
-              </h3>
-              <div className="flex items-center gap-2">
-                <progress
-                  className="progress progress-primary w-32"
-                  value={edge.strength * 100}
-                  max="100"
-                />
-                <span className="text-sm">{(edge.strength * 100).toFixed(0)}%</span>
-              </div>
-            </section>
-          )}
-
-          {/* Fact */}
-          {(() => {
-            const attributeFact = edge.attributes?.["fact"];
-            const fact =
-              typeof edge.fact === "string"
-                ? edge.fact
-                : typeof attributeFact === "string"
-                  ? attributeFact
-                  : undefined;
-            if (!fact) return null;
-            return (
-              <section>
-                <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                  Fact
-                </h3>
-                <p className="text-sm text-base-content/80 leading-relaxed">
-                  {fact}
-                </p>
-              </section>
-            );
-          })()}
-
-          {/* Attributes */}
-          {edge.attributes && Object.keys(edge.attributes).length > 0 && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                Attributes
-              </h3>
-              <div className="bg-base-200 rounded-lg p-3 overflow-auto max-h-48 space-y-1">
-                {Object.entries(edge.attributes).map(([key, val]) => (
-                  <div key={key} className="text-xs text-base-content/80">
-                    <span className="font-medium text-base-content/90">{key}:</span>{" "}
-                    {formatAttributeValue(val)}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
+        <EdgeContent
+          edge={edge}
+          edgeSourceNode={edgeSourceNode}
+          edgeTargetNode={edgeTargetNode}
+          onNodeSelect={onNodeSelect}
+          getRelatedNodeTitle={getRelatedNodeTitle}
+        />
       );
     }
-
-    // Node content (episode or entity)
     if (node) {
+      if (isEpisode) {
+        const episodeContent = node.content ? JSON.parse(node.content) : null;
+        return (
+          <EpisodeContent
+            episode={episodeContent}
+          />
+        );
+      }
       return (
-        <div className="space-y-4">
-          {/* Summary/Content */}
-          {(node.summary || node.content) && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                {isEpisode ? "Summary" : "Description"}
-              </h3>
-              <p className="text-sm text-base-content/80 leading-relaxed">
-                {node.summary || node.content}
-              </p>
-            </section>
-          )}
-
-          {/* Timeline (for episodes) */}
-          {isEpisode && node.valid_at && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                Timeline
-              </h3>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="badge badge-outline badge-sm">
-                  {formatDate(node.valid_at)}
-                </span>
-              </div>
-            </section>
-          )}
-
-          {/* Attributes */}
-          {node.attributes && Object.keys(node.attributes).length > 0 && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                Attributes
-              </h3>
-              <div className="bg-base-200 rounded-lg p-3 overflow-auto max-h-48 space-y-1">
-                {Object.entries(node.attributes).map(([key, val]) => (
-                  <div key={key} className="text-xs text-base-content/80">
-                    <span className="font-medium text-base-content/90">{key}:</span>{" "}
-                    {formatAttributeValue(val)}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Related (edges) */}
-          {nodeRelationships.length > 0 && (
-            <section>
-              <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-                Relationships ({nodeRelationships.length})
-              </h3>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {nodeRelationships.slice(0, 12).map((rel, idx) => {
-                  const otherNodeId =
-                    rel.source === `n:${node.uuid}` || rel.source === node.uuid
-                      ? rel.target
-                      : rel.source;
-                  const cleanId = otherNodeId.replace(/^n:/, "");
-                  const title = getRelatedNodeTitle?.(cleanId) ?? cleanId;
-                  const relationLabel = formatLabel(
-                    rel.label || rel.relation_type || "Related"
-                  );
-                  return (
-                    <button
-                      key={`${rel.id}-${idx}`}
-                      onClick={() => onNodeSelect(cleanId)}
-                      className="flex items-center gap-2 text-sm w-full p-2 rounded hover:bg-base-200 transition-colors text-left"
-                    >
-                      <span className="text-base-content/70 shrink-0">
-                        {relationLabel}
-                      </span>
-                      <span className="font-bold text-base-content truncate min-w-0">
-                        {title}
-                      </span>
-                    </button>
-                  );
-                })}
-                {nodeRelationships.length > 12 && (
-                  <div className="text-xs text-base-content/50 p-2">
-                    + {nodeRelationships.length - 12} more
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-        </div>
+        <EntityContent
+          node={node}
+          nodeRelationships={nodeRelationships}
+          onNodeSelect={onNodeSelect}
+          getRelatedNodeTitle={getRelatedNodeTitle}
+        />
       );
     }
-
     return null;
   };
 
   const canSearchAroundNode = !!node?.uuid && !!onSearchAroundNode;
 
   // Header badges: node labels, or for edges the relation type; fallback to type badge
-  const headerBadges = edge
-    ? [edge.label || edge.relation_type || "Relationship"]
-    : (node?.labels && node.labels.length > 0)
-      ? node.labels
-      : [isEpisode ? "episode" : "entity"];
+  const getHeaderBadges = () => {
+    if (edge) {
+      return ["Relationship"];
+    }
+    if (node?.labels && node.labels.length > 0) {
+      return node.labels;
+    }
+    if (isEpisode) {
+      return ["episode"];
+    }
+    return ["entity"];
+  }
+
+  const headerBadges = getHeaderBadges();
 
   return (
     <div className={cn("flex flex-col h-full min-h-0 bg-base-100", className)}>
@@ -365,6 +161,7 @@ export function WikiPanel({
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+          
           {headerBadges.map((label, idx) => (
             <span
               key={idx}

@@ -77,7 +77,14 @@ export function WikiPanelContainer({
     e.preventDefault();
     const { startX, startY, startLeft, startTop } = dragRef.current;
     const newLeft = Math.max(MIN_LEFT, startLeft + (e.clientX - startX));
-    const newTop = Math.max(MIN_TOP, startTop + (e.clientY - startY));
+    const maxTop =
+      typeof window !== "undefined"
+        ? window.innerHeight - DEFAULT_HEIGHT
+        : Infinity;
+    const newTop = Math.max(
+      MIN_TOP,
+      Math.min(maxTop, startTop + (e.clientY - startY))
+    );
     setPosition({ left: newLeft, top: newTop });
   }, []);
 
@@ -107,7 +114,7 @@ export function WikiPanelContainer({
         top: position.top,
         width: DEFAULT_WIDTH,
         maxWidth: `calc(100vw - ${OFFSET_RIGHT}px)`,
-        height: isMinimized ? undefined : Math.min(DEFAULT_HEIGHT, typeof window !== "undefined" ? window.innerHeight - position.top - OFFSET_TOP : DEFAULT_HEIGHT),
+        height: isMinimized ? undefined : DEFAULT_HEIGHT,
         maxHeight: isMinimized ? undefined : `calc(100vh - ${OFFSET_TOP}px)`,
       }}
       onPointerDown={handlePointerDown}

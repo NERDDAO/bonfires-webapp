@@ -196,7 +196,7 @@ export function GraphExplorer({
   const urlSearchQuery = searchParams.get("q") ?? "";
 
   // State management
-  const { state, actions } = useGraphExplorerState();
+  const { state, actions } = useGraphExplorerState(); 
   const { selection, panel, timeline } = state;
   const { dispatchSelection, dispatchPanel, dispatchTimeline } = actions;
 
@@ -204,7 +204,7 @@ export function GraphExplorer({
   const wikiNav = useWikiNavigation();
 
   // Agent selection
-  const agentSelection = useAgentSelection({
+  const agentSelection = useAgentSelection({ 
     initialBonfireId: urlBonfireId,
     initialAgentId: urlAgentId,
   });

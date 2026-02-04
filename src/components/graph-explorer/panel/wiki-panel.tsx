@@ -9,7 +9,7 @@ import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
-import type { WikiNodeData, WikiEdgeData } from "./wiki-panel-utils";
+import { WikiNodeData, WikiEdgeData, parseEpisodeContent } from "./wiki-panel-utils";
 import { EntityContent } from "./entity-content";
 import { EpisodeContent } from "./episode-content";
 import { EdgeContent } from "./edge-content";
@@ -101,7 +101,7 @@ export function WikiPanel({
     }
     if (node) {
       if (isEpisode) {
-        const episodeContent = node.content ? JSON.parse(node.content) : null;
+        const episodeContent = parseEpisodeContent(node);
         return (
           <EpisodeContent
             episode={episodeContent}

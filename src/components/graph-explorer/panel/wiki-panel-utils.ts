@@ -76,3 +76,14 @@ export function formatAttributeValue(value: unknown): string {
   }
   return String(value);
 }
+
+export function parseEpisodeContent(node?: WikiNodeData): WikiEpisodeContent {
+  try {
+    return JSON.parse(node?.content ?? "");
+  } catch {
+    return {
+      name: node?.name ?? "",
+      content: node?.content ?? "No summary available",
+    };
+  }
+}

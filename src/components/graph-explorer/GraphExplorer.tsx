@@ -481,15 +481,16 @@ export function GraphExplorer({
   const isGraphLoading = graphQuery.isLoading || isHydrating;
   const graphError = graphQuery.error ?? (hydrationError ? new Error(hydrationError) : null);
 
-  // Convert graph data to elements
+  // Convert graph data to elements (match graph/GraphExplorer + Sigma: duplicate nodes get unique ids so display matches)
   const elements: GraphElement[] = useMemo(() => {
     if (!combinedGraphData) return [];
 
     const result: GraphElement[] = [];
     const nodeIds = new Set<string>();
+    const usedNodeIds = new Map<string, number>();
     const cachedNodes = nodeCacheRef.current;
 
-    // Convert nodes
+    // Convert nodes — assign unique ids for duplicates like sigma-adapter so ForceGraph shows same node count as Sigma
     for (const node of combinedGraphData.nodes) {
       const nodeRecord = asRecord(node);
       const rawLabels = nodeRecord["labels"];
@@ -502,6 +503,9 @@ export function GraphExplorer({
       );
       const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
       if (!nodeId) continue;
+      const seen = usedNodeIds.get(nodeId) ?? 0;
+      const uniqueId = seen === 0 ? nodeId : `${nodeId}__dup_${seen + 1}`;
+      usedNodeIds.set(nodeId, seen + 1);
       nodeIds.add(nodeId);
       const properties =
         (nodeRecord["properties"] as Record<string, unknown> | undefined) ??
@@ -519,7 +523,7 @@ export function GraphExplorer({
 
       result.push({
         data: {
-          id: `n:${nodeId}`,
+          id: `n:${uniqueId}`,
           label: (nodeRecord["name"] ?? nodeRecord["label"] ?? nodeRecord["title"] ?? "") as
             | string
             | undefined,
@@ -530,7 +534,8 @@ export function GraphExplorer({
       });
     }
 
-    // Convert edges
+    // Convert edges (match Sigma: only include when both endpoints exist; assign unique ids for duplicates)
+    const usedEdgeIds = new Map<string, number>();
     for (const edge of combinedGraphData.edges) {
       const edgeRecord = asRecord(edge);
       const sourceValue =
@@ -548,8 +553,14 @@ export function GraphExplorer({
       if (!sourceValue || !targetValue) continue;
       const sourceId = String(sourceValue).replace(/^n:/, "");
       const targetId = String(targetValue).replace(/^n:/, "");
+      // Only include edge if both endpoints exist (same rule as Sigma adaptToSigma)
+      if (!nodeIds.has(sourceId) || !nodeIds.has(targetId)) continue;
       nodeIds.add(sourceId);
       nodeIds.add(targetId);
+      const baseEdgeId = `e:${sourceId}-${targetId}`;
+      const seen = usedEdgeIds.get(baseEdgeId) ?? 0;
+      const uniqueEdgeId = seen === 0 ? baseEdgeId : `${baseEdgeId}__dup_${seen + 1}`;
+      usedEdgeIds.set(baseEdgeId, seen + 1);
       const edgeType =
         (edgeRecord["type"] ??
           edgeRecord["relationship"] ??
@@ -564,7 +575,7 @@ export function GraphExplorer({
 
       result.push({
         data: {
-          id: `e:${sourceId}-${targetId}`,
+          id: uniqueEdgeId,
           source: `n:${sourceId}`,
           target: `n:${targetId}`,
           label: edgeName ?? edgeType ?? edgeFact,

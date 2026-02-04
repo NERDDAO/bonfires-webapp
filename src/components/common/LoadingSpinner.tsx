@@ -5,6 +5,7 @@
 
 import React from "react";
 import { cn } from "@/lib/cn";
+import Image from "next/image";
 
 interface LoadingSpinnerProps {
   /** Size of the spinner */
@@ -17,11 +18,11 @@ interface LoadingSpinnerProps {
   center?: boolean;
 }
 
-const sizeClasses = {
-  xs: "loading-xs",
-  sm: "loading-sm",
-  md: "loading-md",
-  lg: "loading-lg",
+const sizePixels: Record<"xs" | "sm" | "md" | "lg", number> = {
+  xs: 12,
+  sm: 16,
+  md: 24,
+  lg: 32,
 };
 
 export function LoadingSpinner({
@@ -30,17 +31,23 @@ export function LoadingSpinner({
   className,
   center = false,
 }: LoadingSpinnerProps) {
+  const dimension = sizePixels[size];
+
   const spinner = (
     <span
-      className={cn(
-        "loading loading-spinner text-primary",
-        sizeClasses[size],
-        className
-      )}
       role="status"
       aria-live="polite"
       aria-label="Loading"
-    />
+      className={cn("inline-flex shrink-0", className)}
+    >
+      <Image
+        src="/icons/loader-circle.svg"
+        height={dimension}
+        width={dimension}
+        alt=""
+        className="animate-spin"
+      />
+    </span>
   );
 
   if (text || center) {

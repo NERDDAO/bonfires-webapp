@@ -4,7 +4,7 @@ import {
   GraphSelect,
   StaticGraphView,
   useGraphContext,
-} from "@/components/graph-explorer";
+} from "@/components/graph-explorer-2";
 import { LoadingSpinner, ErrorMessage } from "@/components/common";
 import { useLatestEpisodesGraph } from "@/hooks/queries";
 

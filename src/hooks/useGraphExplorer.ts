@@ -20,9 +20,12 @@ export interface SelectionState {
   autoSelected: boolean;
 }
 
-// Panel state
+// Panel state (wiki = right sidebar, chat = floating overlay; independent)
 export interface PanelState {
-  rightPanelMode: PanelMode;
+  /** Right sidebar: wiki or none */
+  rightPanelMode: "none" | "wiki";
+  /** Floating chat overlay open/closed (independent of wiki) */
+  chatOpen: boolean;
   wikiEnabled: boolean;
   wikiMode: WikiMode;
 }
@@ -50,6 +53,7 @@ export enum SelectionActionType {
 
 export enum PanelActionType {
   SET_PANEL_MODE = "SET_PANEL_MODE",
+  SET_CHAT_OPEN = "SET_CHAT_OPEN",
   SET_WIKI_ENABLED = "SET_WIKI_ENABLED",
   SET_WIKI_MODE = "SET_WIKI_MODE",
   TOGGLE_WIKI = "TOGGLE_WIKI",
@@ -70,6 +74,7 @@ type SelectionAction =
 // Panel actions
 type PanelAction =
   | { type: PanelActionType.SET_PANEL_MODE; mode: PanelMode }
+  | { type: PanelActionType.SET_CHAT_OPEN; open: boolean }
   | { type: PanelActionType.SET_WIKI_ENABLED; enabled: boolean }
   | { type: PanelActionType.SET_WIKI_MODE; mode: WikiMode }
   | { type: PanelActionType.TOGGLE_WIKI };
@@ -117,8 +122,19 @@ function selectionReducer(state: SelectionState, action: SelectionAction): Selec
 
 function panelReducer(state: PanelState, action: PanelAction): PanelState {
   switch (action.type) {
-    case PanelActionType.SET_PANEL_MODE:
-      return { ...state, rightPanelMode: action.mode };
+    case PanelActionType.SET_PANEL_MODE: {
+      const mode = action.mode;
+      // Only "wiki" and "none" control the right sidebar; "chat" only opens chat overlay
+      if (mode === "wiki" || mode === "none") {
+        return { ...state, rightPanelMode: mode };
+      }
+      if (mode === "chat") {
+        return { ...state, chatOpen: true };
+      }
+      return state;
+    }
+    case PanelActionType.SET_CHAT_OPEN:
+      return { ...state, chatOpen: action.open };
     case PanelActionType.SET_WIKI_ENABLED:
       return { ...state, wikiEnabled: action.enabled };
     case PanelActionType.SET_WIKI_MODE:
@@ -155,6 +171,7 @@ const initialSelectionState: SelectionState = {
 
 const initialPanelState: PanelState = {
   rightPanelMode: "none",
+  chatOpen: false,
   wikiEnabled: true,
   wikiMode: "sidebar",
 };

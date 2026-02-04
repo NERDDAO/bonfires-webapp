@@ -22,12 +22,11 @@ import {
   useSendChatMessage,
   SelectionActionType,
   PanelActionType,
-  type PanelMode,
 } from "@/hooks";
 
 import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
-import type { EpisodeTimelineItem } from "./Timeline";
+import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
 import { WikiPanelContainer, type WikiNodeData, type WikiEdgeData } from "./wiki/wiki-panel-container";
 import { ChatPanel, FloatingChatButton, type ChatMessage } from "./ChatPanel";
 import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
@@ -946,9 +945,8 @@ export function GraphExplorer({
   );
 
   const handleToggleChatPanel = useCallback(() => {
-    const newMode: PanelMode = panel.rightPanelMode === "chat" ? "none" : "chat";
-    dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: newMode });
-  }, [panel.rightPanelMode, dispatchPanel]);
+    dispatchPanel({ type: PanelActionType.SET_CHAT_OPEN, open: !panel.chatOpen });
+  }, [panel.chatOpen, dispatchPanel]);
 
   const handleRetry = useCallback(() => {
     if (shouldRunGraphQuery) {
@@ -1064,17 +1062,17 @@ export function GraphExplorer({
             agentName={agentSelection.selectedAgent?.name}
             messages={chatMessages}
             isSending={chatMutation.isPending}
-            mode={panel.rightPanelMode === "chat" ? "chat" : "none"}
+            mode={panel.chatOpen ? "chat" : "none"}
             error={chatMutation.error?.message}
             onSendMessage={handleSendChatMessage}
             onModeChange={(mode) =>
-              dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode })
+              dispatchPanel({ type: PanelActionType.SET_CHAT_OPEN, open: mode === "chat" })
             }
             onClearError={() => chatMutation.reset()}
           />
 
           <FloatingChatButton
-            mode={panel.rightPanelMode}
+            mode={panel.chatOpen ? "chat" : "none"}
             onToggle={handleToggleChatPanel}
           />
         </>

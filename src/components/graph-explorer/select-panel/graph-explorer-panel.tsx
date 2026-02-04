@@ -11,7 +11,6 @@ import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { SkeletonLoader } from "@/components/common";
 import { cn } from "@/lib/cn";
 import type { AgentInfo, BonfireInfo } from "@/types";
-import type { EpisodeTimelineItem } from "../Timeline";
 import EpisodesList from "./episodes-list";
 import Image from "next/image";
 
@@ -29,6 +28,13 @@ export const panelContainerClass = cn(
   border,
   "rounded-2xl w-full w-[468px] px-4 lg:px-5 py-4"
 )
+
+export interface EpisodeTimelineItem {
+  uuid: string;
+  name?: string;
+  valid_at?: string;
+  content?: string;
+}
 
 export interface GraphExplorerPanelProps {
   availableBonfires: BonfireInfo[];

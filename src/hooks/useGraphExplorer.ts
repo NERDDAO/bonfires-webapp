@@ -20,11 +20,11 @@ export interface SelectionState {
   autoSelected: boolean;
 }
 
-// Panel state (wiki = right sidebar, chat = floating overlay; independent)
+// Panel state (wiki = right sidebar, chat = right panel or overlay)
 export interface PanelState {
-  /** Right sidebar: wiki or none */
-  rightPanelMode: "none" | "wiki";
-  /** Floating chat overlay open/closed (independent of wiki) */
+  /** Right panel: none, wiki, or chat */
+  rightPanelMode: PanelMode;
+  /** Floating chat overlay open/closed (synced when rightPanelMode === "chat") */
   chatOpen: boolean;
   wikiEnabled: boolean;
   wikiMode: WikiMode;
@@ -128,14 +128,11 @@ function panelReducer(state: PanelState, action: PanelAction): PanelState {
   switch (action.type) {
     case PanelActionType.SET_PANEL_MODE: {
       const mode = action.mode;
-      // Only "wiki" and "none" control the right sidebar; "chat" only opens chat overlay
-      if (mode === "wiki" || mode === "none") {
-        return { ...state, rightPanelMode: mode };
-      }
-      if (mode === "chat") {
-        return { ...state, chatOpen: true };
-      }
-      return state;
+      return {
+        ...state,
+        rightPanelMode: mode,
+        chatOpen: mode === "chat",
+      };
     }
     case PanelActionType.SET_CHAT_OPEN:
       return { ...state, chatOpen: action.open };

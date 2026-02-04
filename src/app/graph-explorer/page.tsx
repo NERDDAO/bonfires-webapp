@@ -3,9 +3,9 @@
 import { NodeData } from "@/components";
 import { GraphExplorer } from "@/components/graph-explorer/GraphExplorer";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense } from "react";
 
-export default function GraphExplorerPage() {
+function GraphExplorerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -32,5 +32,21 @@ export default function GraphExplorerPage() {
         className="flex-1"
       />
     </div>
+  );
+}
+
+export default function GraphExplorerPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[calc(100vh-5rem)] flex flex-col relative items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">
+            Loading graph explorer…
+          </div>
+        </div>
+      }
+    >
+      <GraphExplorerContent />
+    </Suspense>
   );
 }

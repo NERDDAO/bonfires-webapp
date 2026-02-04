@@ -28,6 +28,8 @@ export interface PanelState {
   chatOpen: boolean;
   wikiEnabled: boolean;
   wikiMode: WikiMode;
+  /** Wiki panel container minimized (header only) vs expanded (contents visible) */
+  wikiMinimized: boolean;
 }
 
 // Timeline state
@@ -56,6 +58,7 @@ export enum PanelActionType {
   SET_CHAT_OPEN = "SET_CHAT_OPEN",
   SET_WIKI_ENABLED = "SET_WIKI_ENABLED",
   SET_WIKI_MODE = "SET_WIKI_MODE",
+  SET_WIKI_MINIMIZED = "SET_WIKI_MINIMIZED",
   TOGGLE_WIKI = "TOGGLE_WIKI",
 }
 
@@ -77,6 +80,7 @@ type PanelAction =
   | { type: PanelActionType.SET_CHAT_OPEN; open: boolean }
   | { type: PanelActionType.SET_WIKI_ENABLED; enabled: boolean }
   | { type: PanelActionType.SET_WIKI_MODE; mode: WikiMode }
+  | { type: PanelActionType.SET_WIKI_MINIMIZED; minimized: boolean }
   | { type: PanelActionType.TOGGLE_WIKI };
 
 // Timeline actions
@@ -139,6 +143,8 @@ function panelReducer(state: PanelState, action: PanelAction): PanelState {
       return { ...state, wikiEnabled: action.enabled };
     case PanelActionType.SET_WIKI_MODE:
       return { ...state, wikiMode: action.mode };
+    case PanelActionType.SET_WIKI_MINIMIZED:
+      return { ...state, wikiMinimized: action.minimized };
     case PanelActionType.TOGGLE_WIKI:
       return {
         ...state,
@@ -174,6 +180,7 @@ const initialPanelState: PanelState = {
   chatOpen: false,
   wikiEnabled: true,
   wikiMode: "sidebar",
+  wikiMinimized: false,
 };
 
 const initialTimelineState: TimelineState = {

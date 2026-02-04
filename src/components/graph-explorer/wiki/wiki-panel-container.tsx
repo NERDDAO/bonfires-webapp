@@ -29,19 +29,27 @@ export interface WikiPanelContainerProps extends WikiPanelProps {
   defaultTop?: number;
   /** Optional class for the container. */
   className?: string;
+  /** Controlled minimized state (header only vs contents visible). When set, onMinimizedChange must be provided. */
+  minimized?: boolean;
+  /** Called when user toggles minimize. Required when minimized is controlled. */
+  onMinimizedChange?: (minimized: boolean) => void;
 }
 
 export function WikiPanelContainer({
   defaultLeft,
   defaultTop,
   className,
+  minimized: controlledMinimized,
+  onMinimizedChange,
   ...wikiPanelProps
 }: WikiPanelContainerProps) {
   const [position, setPosition] = useState(() => ({
     left: defaultLeft ?? (typeof window !== "undefined" ? Math.max(MIN_LEFT, window.innerWidth - DEFAULT_WIDTH - OFFSET_RIGHT) : 100),
     top: defaultTop ?? OFFSET_TOP,
   }));
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [internalMinimized, setInternalMinimized] = useState(false);
+  const isControlled = controlledMinimized !== undefined;
+  const isMinimized = isControlled ? controlledMinimized : internalMinimized;
   const dragRef = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -96,8 +104,12 @@ export function WikiPanelContainer({
   }, []);
 
   const handleToggleMinimize = useCallback(() => {
-    setIsMinimized((prev) => !prev);
-  }, []);
+    if (isControlled && onMinimizedChange) {
+      onMinimizedChange(!isMinimized);
+    } else {
+      setInternalMinimized((prev) => !prev);
+    }
+  }, [isControlled, isMinimized, onMinimizedChange]);
 
   const { enabled, onClose } = wikiPanelProps;
 

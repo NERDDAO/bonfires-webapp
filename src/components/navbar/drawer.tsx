@@ -39,6 +39,7 @@ export default function Drawer({ drawerOpen, closeDrawer }: { drawerOpen: boolea
                     href={sub.href}
                     onClick={closeDrawer}
                     className={drawerLinkClass}
+                    target={sub.href.startsWith("http") ? "_blank" : undefined}
                   >
                     {sub.label}
                   </Link>
@@ -52,6 +53,7 @@ export default function Drawer({ drawerOpen, closeDrawer }: { drawerOpen: boolea
                     href={href}
                     onClick={closeDrawer}
                     className={drawerLinkClass}
+                    target={href.startsWith("http") ? "_blank" : undefined}
                   >
                     {label}
                   </Link>

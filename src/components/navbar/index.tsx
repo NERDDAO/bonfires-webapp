@@ -23,9 +23,11 @@ export function Navbar() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeSection = useMemo((): NavigationItem => {
-    const matched = navigationItems
-      .filter((item) => item.href !== "/")
-      .find((item) => pathname.split("/")[1] === item.href?.split("/")[1]);
+    const segment = pathname.split("/")[1];
+    if (!segment) return navigationItems[0] ?? { label: "Home", dropdownItems: [] };
+    const matched = navigationItems.find(
+      (item) => item.href?.startsWith("/") && item.href.split("/")[1] === segment
+    );
     return matched ?? navigationItems[0] ?? { label: "Home", dropdownItems: [] };
   }, [pathname]);
 

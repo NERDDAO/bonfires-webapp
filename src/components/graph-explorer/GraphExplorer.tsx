@@ -217,13 +217,18 @@ export function GraphExplorer({
   const [searchLimit, setSearchLimit] = useState(30);
 
   // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
-  const shouldRunGraphQuery = !!agentSelection.selectedBonfireId && effectiveSearchQuery.trim().length > 0;
+  // Use "relationships" only as API fallback when center node is set and search is empty (do not put in search bar)
+  const queryForApi =
+    effectiveSearchQuery.trim() ||
+    (effectiveCenterNode ? "relationships" : "");
+  const shouldRunGraphQuery =
+    !!agentSelection.selectedBonfireId && queryForApi.length > 0;
   const graphQuery = useGraphQuery({
     bonfire_id: agentSelection.selectedBonfireId ?? "",
     agent_id: agentSelection.selectedAgentId ?? undefined,
     center_uuid: effectiveCenterNode ?? undefined,
     limit: searchLimit,
-    search_query: effectiveSearchQuery.trim() || undefined,
+    search_query: queryForApi || undefined,
     enabled: shouldRunGraphQuery,
     useAsyncPolling: true,
   });
@@ -793,8 +798,11 @@ export function GraphExplorer({
     (nodeId: string) => {
       if (!nodeId) {
         dispatchSelection({ type: SelectionActionType.CLEAR_SELECTION });
+        setSelectedEpisodeId(null);
         return;
       }
+
+      setSelectedEpisodeId(null);
 
       dispatchSelection({
         type: SelectionActionType.SELECT_NODE,
@@ -815,9 +823,13 @@ export function GraphExplorer({
         });
       }
 
-      // Open wiki panel if enabled
-      if (panel.wikiEnabled && panel.rightPanelMode === "none") {
-        dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
+      // Open wiki panel if minimized and expand so contents are visible
+      if (panel.wikiEnabled) {
+        if (panel.rightPanelMode === "none") {
+          dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
+        }
+        dispatchPanel({ type: PanelActionType.SET_WIKI_MODE, mode: "full" });
+        dispatchPanel({ type: PanelActionType.SET_WIKI_MINIMIZED, minimized: false });
       }
     },
     [dispatchSelection, dispatchPanel, elements, panel.wikiEnabled, panel.rightPanelMode, wikiNav]
@@ -850,15 +862,12 @@ export function GraphExplorer({
     setEffectiveCenterNode(null);
   }, [searchQuery]);
 
-  const handleSearchAroundNode = useCallback(
-    (nodeUuid: string) => {
-      const nextQuery = searchQuery.trim() || "relationships";
-      setSearchQuery(nextQuery);
-      setEffectiveSearchQuery(nextQuery);
-      setEffectiveCenterNode(nodeUuid);
-    },
-    [searchQuery]
-  );
+  const handleSearchAroundNode = useCallback((nodeUuid: string) => {
+    const trimmed = searchQuery.trim();
+    setSearchQuery(trimmed);
+    setEffectiveSearchQuery(trimmed);
+    setEffectiveCenterNode(nodeUuid);
+  }, [searchQuery]);
 
   const handleContextMenu = useCallback(
     (nodeData: NodeData, position: { x: number; y: number }) => {
@@ -1031,6 +1040,10 @@ export function GraphExplorer({
               nodeRelationships={nodeRelationships}
               enabled={panel.wikiEnabled}
               mode={panel.wikiMode}
+              minimized={panel.wikiMinimized}
+              onMinimizedChange={(minimized) =>
+                dispatchPanel({ type: PanelActionType.SET_WIKI_MINIMIZED, minimized })
+              }
               breadcrumbs={wikiNav.breadcrumbs}
               canGoBack={wikiNav.canGoBack}
               canGoForward={wikiNav.canGoForward}

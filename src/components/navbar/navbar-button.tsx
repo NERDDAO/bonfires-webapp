@@ -35,6 +35,7 @@ export function NavbarButton({
       <Link
         href={href}
         className={cn(buttonClasses, "cursor-pointer no-underline")}
+        target={href.startsWith("http") ? "_blank" : undefined}
       >
         {label}
       </Link>
@@ -78,6 +79,7 @@ export function NavbarButton({
                 href={item.href}
                 role="menuitem"
                 className="block px-6 py-3 text-dark-s-0/90 no-underline transition-colors hover:bg-[#1A1C1F] hover:text-dark-s-0"
+                target={item.href.startsWith("http") ? "_blank" : undefined}
               >
                 {item.label}
               </Link>

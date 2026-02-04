@@ -13,7 +13,7 @@ export interface EpisodeTimelineItem {
   uuid: string;
   name?: string;
   valid_at?: string;
-  summary?: string;
+  content?: string;
 }
 
 interface TimelineProps {
@@ -162,7 +162,7 @@ export function Timeline({
               role="listitem"
               aria-pressed={isSelected}
               aria-label={`${label}${timestamp ? `, ${timestamp}` : ""}`}
-              title={`${label}${timestamp ? ` • ${timestamp}` : ""}${episode.summary ? `\n${episode.summary}` : ""}`}
+              title={`${label}${timestamp ? ` • ${timestamp}` : ""}${episode.content ? `\n${episode.content}` : ""}`}
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full shrink-0",
                 "text-sm transition-all duration-200",

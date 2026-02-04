@@ -372,6 +372,10 @@ export interface ForceGraphProps {
   highlightedNodeIds?: string[];
   /** Center node ID: when set, the view is panned so this node is at the viewport center on load */
   centerNodeId?: string | null;
+  /** One-shot: when set, pan the view so this node is at center (no graph update). Cleared via onPanToNodeComplete */
+  panToNodeId?: string | null;
+  /** Called after panning to panToNodeId so the parent can clear it */
+  onPanToNodeComplete?: () => void;
   /** Additional CSS class */
   className?: string;
 }
@@ -384,6 +388,8 @@ export default function ForceGraph({
   selectedEdgeId,
   highlightedNodeIds = [],
   centerNodeId,
+  panToNodeId,
+  onPanToNodeComplete,
   className,
 }: ForceGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -434,6 +440,31 @@ export default function ForceGraph({
     },
     [redraw]
   );
+
+  // One-shot pan to node (e.g. when episode is selected from list) — only updates view transform
+  useEffect(() => {
+    if (!panToNodeId) return;
+    const nodes = nodesRef.current;
+    const { width, height } = sizeRef.current;
+    if (!nodes || width <= 0 || height <= 0) {
+      onPanToNodeComplete?.();
+      return;
+    }
+    const normalizedId = panToNodeId.replace(/^n:/, "");
+    const node = nodes.find((n) => n.id === normalizedId || n.id === panToNodeId);
+    if (!node || node.x == null || node.y == null) {
+      onPanToNodeComplete?.();
+      return;
+    }
+    const t = transformRef.current;
+    transformRef.current = {
+      x: width / 2 - node.x * t.k,
+      y: height / 2 - node.y * t.k,
+      k: t.k,
+    };
+    redraw();
+    onPanToNodeComplete?.();
+  }, [panToNodeId, redraw, onPanToNodeComplete]);
 
   useEffect(() => {
     const container = containerRef.current;

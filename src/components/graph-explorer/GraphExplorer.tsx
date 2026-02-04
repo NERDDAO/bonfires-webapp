@@ -6,7 +6,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useWalletAccount } from "@/lib/wallet/e2e";
 
 import { cn } from "@/lib/cn";
@@ -189,15 +189,17 @@ export function GraphExplorer({
   className,
 }: GraphExplorerProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { address: walletAddress, isConnected: isWalletConnected } = useWalletAccount();
 
-  // URL parameters and path
-  const pathname = usePathname();
+  // URL parameters
   const urlBonfireId = searchParams.get("bonfireId") ?? initialBonfireId;
   const urlAgentId = searchParams.get("agentId") ?? initialAgentId;
   const urlCenterNode = searchParams.get("centerNode");
   const urlSearchQuery = searchParams.get("q") ?? "";
+
+  // Effective search/center (from URL or from in-page "Search around this node" — no navigation)
+  const [effectiveSearchQuery, setEffectiveSearchQuery] = useState(urlSearchQuery);
+  const [effectiveCenterNode, setEffectiveCenterNode] = useState<string | null>(urlCenterNode);
 
   // State management
   const { state, actions } = useGraphExplorerState(); 
@@ -219,14 +221,14 @@ export function GraphExplorer({
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [episodeModalOpen, setEpisodeModalOpen] = useState(false);
 
-  // Graph data - using the graph query hook
-  const shouldRunGraphQuery = !!agentSelection.selectedBonfireId && urlSearchQuery.trim().length > 0;
+  // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
+  const shouldRunGraphQuery = !!agentSelection.selectedBonfireId && effectiveSearchQuery.trim().length > 0;
   const graphQuery = useGraphQuery({
     bonfire_id: agentSelection.selectedBonfireId ?? "",
     agent_id: agentSelection.selectedAgentId ?? undefined,
-    center_uuid: urlCenterNode ?? undefined,
+    center_uuid: effectiveCenterNode ?? undefined,
     limit: searchLimit,
-    search_query: urlSearchQuery.trim() || undefined,
+    search_query: effectiveSearchQuery.trim() || undefined,
     enabled: shouldRunGraphQuery,
     useAsyncPolling: true,
   });
@@ -346,7 +348,7 @@ export function GraphExplorer({
       setEpisodes(episodeItems);
 
       const preferredCenter =
-        urlCenterNode ??
+        effectiveCenterNode ??
         latestEpisodeUuids[latestEpisodeUuids.length - 1] ??
         episodeItems[episodeItems.length - 1]?.uuid ??
         null;
@@ -374,9 +376,15 @@ export function GraphExplorer({
     agentSelection.selectedAgentId,
     agentSelection.selectedBonfireId,
     latestEpisodeUuids,
-    urlCenterNode,
+    effectiveCenterNode,
     dispatchSelection,
   ]);
+
+  // Sync effective search/center from URL (e.g. after search bar submit or initial load)
+  useEffect(() => {
+    setEffectiveSearchQuery(urlSearchQuery);
+    setEffectiveCenterNode(urlCenterNode);
+  }, [urlSearchQuery, urlCenterNode]);
 
   useEffect(() => {
     setSearchQuery(urlSearchQuery);
@@ -389,18 +397,20 @@ export function GraphExplorer({
     setSelectedEpisodeId(null);
     setHydrationError(null);
     expandCenterRef.current = null;
+    setEffectiveSearchQuery(searchParams.get("q") ?? "");
+    setEffectiveCenterNode(searchParams.get("centerNode"));
   }, [agentSelection.selectedAgentId, agentSelection.selectedBonfireId]);
 
   useEffect(() => {
     if (!agentSelection.selectedAgentId || !agentSelection.selectedBonfireId) return;
-    if (urlSearchQuery.trim()) return;
+    if (effectiveSearchQuery.trim()) return;
     if (isHydrating || initialGraphData) return;
 
     void hydrateLatestEpisodes();
   }, [
     agentSelection.selectedAgentId,
     agentSelection.selectedBonfireId,
-    urlSearchQuery,
+    effectiveSearchQuery,
     isHydrating,
     initialGraphData,
     hydrateLatestEpisodes,
@@ -588,7 +598,7 @@ export function GraphExplorer({
       });
     }
 
-    const centerId = urlCenterNode?.replace(/^n:/, "");
+    const centerId = effectiveCenterNode?.replace(/^n:/, "");
     if (centerId && !nodeIds.has(centerId)) {
       const cached = cachedNodes.get(centerId);
       const cachedLabel =
@@ -610,16 +620,16 @@ export function GraphExplorer({
     }
 
     return result;
-  }, [combinedGraphData, urlCenterNode]);
+  }, [combinedGraphData, effectiveCenterNode]);
 
   useEffect(() => {
-    if (!agentSelection.selectedBonfireId || !urlCenterNode) return;
+    if (!agentSelection.selectedBonfireId || !effectiveCenterNode) return;
     if (!activeGraphData) return;
 
-    const centerId = urlCenterNode.replace(/^n:/, "");
+    const centerId = effectiveCenterNode.replace(/^n:/, "");
     if (!centerId) return;
 
-    const expandKey = `${agentSelection.selectedBonfireId}:${centerId}:${urlSearchQuery}`;
+    const expandKey = `${agentSelection.selectedBonfireId}:${centerId}:${effectiveSearchQuery}`;
     if (expandCenterRef.current === expandKey) return;
 
     expandCenterRef.current = expandKey;
@@ -640,8 +650,8 @@ export function GraphExplorer({
     agentSelection.selectedBonfireId,
     expand,
     mergeGraphData,
-    urlCenterNode,
-    urlSearchQuery,
+    effectiveCenterNode,
+    effectiveSearchQuery,
   ]);
 
   useEffect(() => {
@@ -773,11 +783,11 @@ export function GraphExplorer({
     if (selection.selectedNodeId) {
       ids.add(selection.selectedNodeId.replace(/^n:/, ""));
     }
-    if (urlCenterNode) {
-      ids.add(urlCenterNode.replace(/^n:/, ""));
+    if (effectiveCenterNode) {
+      ids.add(effectiveCenterNode.replace(/^n:/, ""));
     }
     return Array.from(ids);
-  }, [selection.selectedNodeId, urlCenterNode]);
+  }, [selection.selectedNodeId, effectiveCenterNode]);
 
   // Handlers
   const handleNodeClick = useCallback(
@@ -833,36 +843,21 @@ export function GraphExplorer({
     [handleNodeClick]
   );
 
-  const handleSearch = useCallback(async () => {
+  const handleSearch = useCallback(() => {
     if (!searchQuery.trim()) return;
-    // The search will be triggered by URL params change
-    const params = new URLSearchParams(searchParams.toString());
-    if (agentSelection.selectedBonfireId) {
-      params.set("bonfireId", agentSelection.selectedBonfireId);
-    }
-    if (agentSelection.selectedAgentId) {
-      params.set("agentId", agentSelection.selectedAgentId);
-    }
-    params.set("q", searchQuery);
-    router.push(`${pathname}?${params.toString()}`);
-  }, [searchQuery, searchParams, pathname, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]);
+    const nextQuery = searchQuery.trim();
+    setEffectiveSearchQuery(nextQuery);
+    setEffectiveCenterNode(null);
+  }, [searchQuery]);
 
   const handleSearchAroundNode = useCallback(
     (nodeUuid: string) => {
       const nextQuery = searchQuery.trim() || "relationships";
       setSearchQuery(nextQuery);
-      const params = new URLSearchParams(searchParams.toString());
-      if (agentSelection.selectedBonfireId) {
-        params.set("bonfireId", agentSelection.selectedBonfireId);
-      }
-      if (agentSelection.selectedAgentId) {
-        params.set("agentId", agentSelection.selectedAgentId);
-      }
-      params.set("q", nextQuery);
-      params.set("centerNode", nodeUuid);
-      router.push(`${pathname}?${params.toString()}`);
+      setEffectiveSearchQuery(nextQuery);
+      setEffectiveCenterNode(nodeUuid);
     },
-    [searchQuery, searchParams, pathname, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]
+    [searchQuery]
   );
 
   const handleContextMenu = useCallback(
@@ -920,7 +915,7 @@ export function GraphExplorer({
       setChatMessages((prev) => [...prev, userMessage]);
 
       try {
-        const centerNodeId = selection.selectedNodeId ?? urlCenterNode ?? null;
+        const centerNodeId = selection.selectedNodeId ?? effectiveCenterNode ?? null;
         const graphState = buildGraphStatePayload(elements, centerNodeId);
         const response = await chatMutation.mutateAsync({
           agentId: agentSelection.selectedAgentId,
@@ -1040,7 +1035,7 @@ export function GraphExplorer({
               selectedNodeId={selection.selectedNodeId}
               selectedEdgeId={selection.selectedEdgeId}
               highlightedNodeIds={highlightedNodeIds}
-              centerNodeId={urlCenterNode}
+              centerNodeId={effectiveCenterNode}
               onNodeClick={handleNodeClick}
               onEdgeClick={handleEdgeClick}
             />

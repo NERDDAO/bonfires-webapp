@@ -26,7 +26,7 @@ import {
 } from "@/hooks";
 
 import GraphWrapper from "./graph/graph-wrapper";
-import { GraphExplorerPanel } from "./graph-explorer-panel";
+import { GraphExplorerPanel } from "./panel/graph-explorer-panel";
 import { SearchModal } from "./SearchModal";
 import { EpisodeListModal } from "./EpisodeListModal";
 import type { EpisodeTimelineItem } from "./Timeline";

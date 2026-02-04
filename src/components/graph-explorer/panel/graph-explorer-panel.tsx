@@ -11,7 +11,7 @@ import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { cn } from "@/lib/cn";
 import type { AgentInfo, BonfireInfo } from "@/types";
 import Image from "next/image";
-import { IconButton } from "./ui/icon-button";
+import { IconButton } from "../ui/icon-button";
 
 const width = "w-50";
 const border = "bg-[#181818]/80 border-[0.78px] border-[#333333]";

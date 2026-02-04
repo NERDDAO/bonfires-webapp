@@ -78,7 +78,7 @@ export function SelectDropdown({
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn("relative", className ?? "w-full")}
       ref={containerRef}
       role="combobox"
       aria-expanded={open}
@@ -89,7 +89,7 @@ export function SelectDropdown({
       <button
         type="button"
         className={cn(
-          "w-full text-left rounded-xl px-3 py-2.5 text-sm lg:text-base",
+          "w-full min-w-0 text-left rounded-xl px-3 py-2.5 text-sm lg:text-base",
           "bg-[#181818] border border-[#333333] text-white",
           "focus:outline-none focus:ring-1 focus:ring-white/30 focus:border-[#646464]",
           "disabled:opacity-50 disabled:cursor-not-allowed",

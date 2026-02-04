@@ -10,7 +10,7 @@
  */
 
 import { SelectDropdown } from "@/components/ui/select-dropdown";
-import { useGraphContext } from "@/components/graph-explorer/graph-context";
+import { useGraphContext } from "@/components/graph-explorer-2/graph-context";
 import { useAgentsQuery } from "@/hooks/queries/useAgentsQuery";
 import { useBonfiresQuery } from "@/hooks/queries/useBonfiresQuery";
 import { cn } from "@/lib/cn";

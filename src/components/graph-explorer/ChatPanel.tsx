@@ -145,18 +145,11 @@ export function ChatPanel({
             </div>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => onModeChange("none")}
-                className="btn btn-ghost btn-xs btn-square"
-                aria-label="Minimize chat"
-              >
-                <Minimize2 className="w-4 h-4" />
-              </button>
-              <button
                 onClick={handleClose}
                 className="btn btn-ghost btn-xs btn-square"
                 aria-label="Close chat"
               >
-                <X className="w-4 h-4" />
+                —
               </button>
             </div>
           </div>

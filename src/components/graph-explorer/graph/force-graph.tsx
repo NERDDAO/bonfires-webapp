@@ -11,6 +11,7 @@
 import * as d3 from "d3";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
+import { NODE_COLOR_DEFAULTS } from "@/lib/utils/graph-theme";
 import { IconButton } from "../ui/icon-button";
 
 const RADIUS_BY_SIZE: Record<number, number> = {
@@ -67,10 +68,42 @@ function truncateLabel(
   return s + ellipsis;
 }
 
+// Convert snake case to title case
+function getEdgeLabel(edgeLabel: string): string {
+  const lowerCaseLabel = edgeLabel.toLowerCase();
+  const sentenceCaseLabel = lowerCaseLabel.replace(/_/g, " ");
+  return sentenceCaseLabel;
+}
+
+/** Entity-based node color (aligned with SigmaGraph / graph-theme) */
+const NODE_TYPE_COLORS = {
+  episode: NODE_COLOR_DEFAULTS.episodeColor,
+  entity: NODE_COLOR_DEFAULTS.entityColor,
+  user: NODE_COLOR_DEFAULTS.userColor,
+  unknown: NODE_COLOR_DEFAULTS.unknownColor,
+} as const;
+
+function getNodeColor(
+  nodeType: string | undefined,
+  labels: string[] | undefined
+): string {
+  const hasUserLabel =
+    labels?.some(
+      (lbl) => typeof lbl === "string" && lbl.toLowerCase() === "user"
+    ) ?? false;
+  if (hasUserLabel) return NODE_TYPE_COLORS.user;
+  const type = (nodeType ?? "entity").toLowerCase();
+  if (type === "episode") return NODE_TYPE_COLORS.episode;
+  if (type === "entity") return NODE_TYPE_COLORS.entity;
+  return NODE_TYPE_COLORS.unknown;
+}
+
 interface ViewNode {
   id: string;
   label: string;
   size: number;
+  /** Fill color by entity type (episode / entity / user / unknown) */
+  color: string;
   x?: number;
   y?: number;
   x0?: number;
@@ -109,7 +142,11 @@ function elementsToView(elements: GraphElement[]): {
     );
     const type = (data.node_type ?? "entity") as string;
     const size = String(type).toLowerCase().includes("episode") ? 4 : 3;
-    nodeById.set(rawId, { id: rawId, label, size });
+    const color = getNodeColor(
+      data.node_type,
+      data.labels as string[] | undefined
+    );
+    nodeById.set(rawId, { id: rawId, label, size, color });
   }
 
   const usedEdgeIds = new Map<string, number>();
@@ -158,9 +195,11 @@ function drawNode(
 
   ctx.beginPath();
   ctx.arc(x, y, r, 0, 2 * Math.PI);
-  ctx.fillStyle = active ? (isSelectedOrHighlighted ? colors.nodeFillSelected : colors.nodeFillHover) : colors.nodeFill;
+  const baseFill = node.color ?? colors.nodeFill;
+  const baseStroke = node.color ?? colors.nodeStroke;
+  ctx.fillStyle = active ? (isSelectedOrHighlighted ? colors.nodeFillSelected : colors.nodeFillHover) : baseFill;
   ctx.fill();
-  ctx.strokeStyle = active ? (isSelectedOrHighlighted ? colors.nodeStrokeSelected : colors.nodeStrokeHover) : colors.nodeStroke;
+  ctx.strokeStyle = active ? (isSelectedOrHighlighted ? colors.nodeStrokeSelected : colors.nodeStrokeHover) : baseStroke;
   ctx.lineWidth = active ? 2.5 : 1.5;
   ctx.stroke();
 
@@ -190,11 +229,11 @@ function drawEdgeLabel(
   if (!link.label) return;
   const fontSize = isActive ? 10 : 9;
   const fontWeight = isActive ? "600" : "500";
-  ctx.font = `${fontWeight} ${fontSize}px system-ui, sans-serif`;
+  ctx.font = `italic ${fontWeight} ${fontSize}px system-ui, sans-serif`;
   ctx.fillStyle = isActive ? colors.linkLabelFillActive : colors.linkLabelFill;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const displayLabel = isActive ? link.label : "";
+  const displayLabel = isActive ? getEdgeLabel(link.label) : "";
   ctx.fillText(displayLabel, mx, my);
 }
 
@@ -368,6 +407,11 @@ export default function ForceGraph({
     highlightedSet.current.add(selectedNodeId.replace(/^n:/, ""));
   }
 
+  const onNodeClickRef = useRef(onNodeClick);
+  const onEdgeClickRef = useRef(onEdgeClick);
+  onNodeClickRef.current = onNodeClick;
+  onEdgeClickRef.current = onEdgeClick;
+
   const redraw = useCallback(() => setTick((t) => t + 1), []);
 
   const zoomBy = useCallback(
@@ -411,7 +455,7 @@ export default function ForceGraph({
     nodesRef.current = nodes;
     linksRef.current = links;
 
-    const resize = () => {
+    const resize = (isInitialLayout: boolean) => {
       const width = container.clientWidth;
       const height = container.clientHeight;
       if (width <= 0 || height <= 0) return;
@@ -431,49 +475,52 @@ export default function ForceGraph({
       const graphHeight = GRAPH_HEIGHT;
       graphSizeRef.current = { graphWidth, graphHeight };
 
-      const simulation = d3.forceSimulation(nodes);
-      simulation
-        .force(
-          "link",
-          d3
-            .forceLink(links)
-            .id((d) => (d as ViewNode).id)
-            .distance(LINK_DISTANCE)
-            .strength(LINK_STRENGTH)
-        )
-        .force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH))
-        .force("center", d3.forceCenter(graphWidth / 2, graphHeight / 2))
-        .force("x", d3.forceX(graphWidth / 2).strength(CENTER_STRENGTH))
-        .force("y", d3.forceY(graphHeight / 2).strength(CENTER_STRENGTH))
-        .force(
-          "collision",
-          d3
-            .forceCollide<ViewNode>()
-            .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 20) + COLLISION_PADDING)
-        );
+      if (isInitialLayout) {
+        const simulation = d3.forceSimulation(nodes);
+        simulation
+          .force(
+            "link",
+            d3
+              .forceLink(links)
+              .id((d) => (d as ViewNode).id)
+              .distance(LINK_DISTANCE)
+              .strength(LINK_STRENGTH)
+          )
+          .force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH))
+          .force("center", d3.forceCenter(graphWidth / 2, graphHeight / 2))
+          .force("x", d3.forceX(graphWidth / 2).strength(CENTER_STRENGTH))
+          .force("y", d3.forceY(graphHeight / 2).strength(CENTER_STRENGTH))
+          .force(
+            "collision",
+            d3
+              .forceCollide<ViewNode>()
+              .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 20) + COLLISION_PADDING)
+          );
 
-      while (simulation.alpha() > LAYOUT_ALPHA_MIN) {
-        simulation.tick();
-      }
-      simulation.stop();
+        while (simulation.alpha() > LAYOUT_ALPHA_MIN) {
+          simulation.tick();
+        }
+        simulation.stop();
 
-      clampNodesToBounds(nodes, graphWidth, graphHeight);
-      for (const node of nodes) {
-        node.x0 = node.x;
-        node.y0 = node.y;
+        clampNodesToBounds(nodes, graphWidth, graphHeight);
+        for (const node of nodes) {
+          node.x0 = node.x;
+          node.y0 = node.y;
+        }
+
+        transformRef.current = {
+          x: width / 2 - graphWidth / 2,
+          y: height / 2 - graphHeight / 2,
+          k: 1,
+        };
       }
 
       sizeRef.current = { width, height };
-      transformRef.current = {
-        x: width / 2 - graphWidth / 2,
-        y: height / 2 - graphHeight / 2,
-        k: 1,
-      };
       draw(ctx, nodes, links, width, height, null, null, null, highlightedSet.current, transformRef.current);
     };
 
-    resize();
-    const ro = new ResizeObserver(resize);
+    resize(true);
+    const ro = new ResizeObserver(() => resize(false));
     ro.observe(container);
 
     const toLogical = (
@@ -555,12 +602,12 @@ export default function ForceGraph({
     const handleMouseUp = () => {
       const node = draggedNodeRef.current;
       if (node && !didDragRef.current) {
-        onNodeClick?.(node.id);
+        onNodeClickRef.current?.(node.id);
       } else if (!didDragRef.current && linksRef.current) {
         const { x, y } = lastLogicalRef.current;
         const edgeUnder = edgeUnderPoint(linksRef.current, x, y);
         if (edgeUnder) {
-          onEdgeClick?.(edgeUnder.id);
+          onEdgeClickRef.current?.(edgeUnder.id);
         }
       }
       draggedNodeRef.current = null;
@@ -605,7 +652,7 @@ export default function ForceGraph({
       canvas.removeEventListener("wheel", handleWheel);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [elements, redraw, onNodeClick, onEdgeClick]);
+  }, [elements, redraw]);
 
   // Redraw when tick or highlighted set changes
   useEffect(() => {

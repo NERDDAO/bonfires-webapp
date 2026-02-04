@@ -26,11 +26,9 @@ import {
 } from "@/hooks";
 
 import GraphWrapper from "./graph/graph-wrapper";
-import { GraphExplorerPanel } from "./panel/graph-explorer-panel";
-import { SearchModal } from "./SearchModal";
-import { EpisodeListModal } from "./EpisodeListModal";
+import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./Timeline";
-import { WikiPanelContainer, type WikiNodeData, type WikiEdgeData } from "./panel/wiki-panel-container";
+import { WikiPanelContainer, type WikiNodeData, type WikiEdgeData } from "./wiki/wiki-panel-container";
 import { ChatPanel, FloatingChatButton, type ChatMessage } from "./ChatPanel";
 import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
@@ -218,8 +216,6 @@ export function GraphExplorer({
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLimit, setSearchLimit] = useState(30);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [episodeModalOpen, setEpisodeModalOpen] = useState(false);
 
   // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
   const shouldRunGraphQuery = !!agentSelection.selectedBonfireId && effectiveSearchQuery.trim().length > 0;
@@ -259,6 +255,8 @@ export function GraphExplorer({
   // Mock episodes for timeline (will be populated from graph data)
   const [episodes, setEpisodes] = useState<EpisodeTimelineItem[]>([]);
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
+  /** One-shot: when set, graph pans to this node (no graph data update). Cleared by GraphWrapper. */
+  const [panToNodeId, setPanToNodeId] = useState<string | null>(null);
 
   const latestEpisodeUuids = useMemo(() => {
     const episodeUuids = agentSelection.selectedAgent?.episode_uuids;
@@ -395,6 +393,7 @@ export function GraphExplorer({
     setExtraGraphData(null);
     setEpisodes([]);
     setSelectedEpisodeId(null);
+    setPanToNodeId(null);
     setHydrationError(null);
     expandCenterRef.current = null;
     setEffectiveSearchQuery(searchParams.get("q") ?? "");
@@ -687,8 +686,9 @@ export function GraphExplorer({
           name: nodeRecord["name"] as string | undefined,
           valid_at: (properties["valid_at"] ??
             nodeRecord["valid_at"]) as string | undefined,
-          summary: (properties["summary"] ??
-            nodeRecord["summary"]) as string | undefined,
+          content: (properties["content"] ??
+            nodeRecord["content"]) as string | undefined,
+          
         };
       });
 
@@ -838,6 +838,7 @@ export function GraphExplorer({
   const handleEpisodeSelect = useCallback(
     (episodeUuid: string) => {
       setSelectedEpisodeId(episodeUuid);
+      setPanToNodeId(episodeUuid);
       handleNodeClick(`n:${episodeUuid}`);
     },
     [handleNodeClick]
@@ -979,36 +980,15 @@ export function GraphExplorer({
         error={agentSelection.error}
         onSelectBonfire={agentSelection.selectBonfire}
         onSelectAgent={agentSelection.selectAgent}
-        onOpenSearch={() => setSearchModalOpen(true)}
-        onOpenEpisodes={() => setEpisodeModalOpen(true)}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        onSearch={handleSearch}
+        isSearching={isGraphLoading}
+        episodes={episodes}
+        selectedEpisodeId={selectedEpisodeId}
+        onEpisodeSelect={handleEpisodeSelect}
+        episodesLoading={isGraphLoading}
       />
-
-      {/* Search modal */}
-      {!embedded && (
-        <SearchModal
-          isOpen={searchModalOpen}
-          onClose={() => setSearchModalOpen(false)}
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          onSearch={() => {
-            handleSearch();
-            setSearchModalOpen(false);
-          }}
-          isSearching={isGraphLoading}
-        />
-      )}
-
-      {/* Episode list modal */}
-      {!embedded && (
-        <EpisodeListModal
-          isOpen={episodeModalOpen}
-          onClose={() => setEpisodeModalOpen(false)}
-          episodes={episodes}
-          selectedEpisodeId={selectedEpisodeId}
-          onEpisodeSelect={handleEpisodeSelect}
-          loading={isGraphLoading}
-        />
-      )}
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -1036,6 +1016,8 @@ export function GraphExplorer({
               selectedEdgeId={selection.selectedEdgeId}
               highlightedNodeIds={highlightedNodeIds}
               centerNodeId={effectiveCenterNode}
+              panToNodeId={panToNodeId}
+              onPanToNodeComplete={() => setPanToNodeId(null)}
               onNodeClick={handleNodeClick}
               onEdgeClick={handleEdgeClick}
             />

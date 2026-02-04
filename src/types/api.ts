@@ -488,6 +488,9 @@ export interface HyperBlogInfo {
   view_count?: number;
   taxonomy_keywords?: string[] | null;
   dataroom_description?: string | null;
+  blog_content?: {
+    formatted_content?: string | null;
+  }
 }
 
 export interface HyperBlogListResponse {

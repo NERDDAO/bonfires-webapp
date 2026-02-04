@@ -10,7 +10,7 @@ import {
 
 export default function HomePage() {
   return (
-    <main className="max-w-dvw overflow-x-hidden">
+    <main className="overflow-x-hidden max-w-screen-2xl mx-auto">
       <Hero />
       <KnowledgeGraph />
       <HyperBlogsPreview />

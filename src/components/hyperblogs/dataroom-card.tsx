@@ -4,9 +4,10 @@ import { DataRoomInfo } from "@/types";
 
 import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/utils";
-import Image from "next/image";
 import { useState } from "react";
 import HyperblogFeed from "./hyperblog-feed";
+import { Button } from "../ui/button";
+import { CreateBlogModal } from "./create-blog";
 
 function DataroomCardSkeleton({
   className,
@@ -61,7 +62,7 @@ export default function DataroomCard({
   isLoading?: boolean;
   className?: string;
 }) {
-  
+  const [createBlogOpen, setCreateBlogOpen] = useState(false);
 
   if (isLoading) {
     return <DataroomCardSkeleton className={className} variant={variant} />;
@@ -101,6 +102,28 @@ export default function DataroomCard({
       </div>
 
       <HyperblogFeed dataroomId={data?.id} />
+
+      <div className="mt-4 flex gap-4">
+        <Button showElevation={false} variant="outline" className="flex-1">
+          Explore Graph
+        </Button>
+        <Button
+          showElevation={false}
+          variant="primary"
+          className="flex-1"
+          onClick={() => setCreateBlogOpen(true)}
+        >
+          Create Blog
+        </Button>
+      </div>
+
+      <CreateBlogModal
+        isOpen={createBlogOpen}
+        onClose={() => setCreateBlogOpen(false)}
+        dataroomId={data?.id ?? ""}
+        dataroomPriceUsd={data?.price_usd}
+        onSuccess={() => setCreateBlogOpen(false)}
+      />
     </div>
   );
 }

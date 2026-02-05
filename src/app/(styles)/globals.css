@@ -64,9 +64,9 @@
 }
 
 /* Selection styling */
-::selection {
+/* ::selection {
   background-color: oklch(var(--p) / 0.3);
-}
+} */
 
 /* Focus ring styling */
 :focus-visible {

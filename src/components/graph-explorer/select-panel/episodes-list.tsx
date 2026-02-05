@@ -25,6 +25,8 @@ export interface EpisodesListProps {
   selectedEpisodeId: string | null;
   onEpisodeSelect: (episodeUuid: string) => void;
   episodesLoading?: boolean;
+  /** When false, the "Recent Activity" heading is not rendered (e.g. when parent shows its own header). Default true. */
+  showTitle?: boolean;
   className?: string;
 }
 
@@ -33,6 +35,7 @@ export default function EpisodesList({
   selectedEpisodeId,
   onEpisodeSelect,
   episodesLoading = false,
+  showTitle = true,
   className,
 }: EpisodesListProps) {
   const sortedEpisodes = [...episodes].sort((a, b) => {
@@ -52,12 +55,14 @@ export default function EpisodesList({
 
   return (
     <div
-    className={cn(panelContainerClass, "max-h-[40vh] overflow-y-auto gap-0")}
+    className={cn(panelContainerClass, "h-full lg:max-h-[40vh] overflow-y-auto gap-0")}
     aria-label="Episodes"
   >
-    <h2 className={labelClass}>
-      Recent Activity
-    </h2>
+    {showTitle && (
+      <h2 className={labelClass}>
+        Recent Activity
+      </h2>
+    )}
     <div className="flex-1 -mx-1">
       {episodesLoading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading episodes">

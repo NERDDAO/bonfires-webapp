@@ -995,6 +995,8 @@ export function GraphExplorer({
         selectedEpisodeId={selectedEpisodeId}
         onEpisodeSelect={handleEpisodeSelect}
         episodesLoading={isGraphLoading}
+        graphVisible={elements.length > 0}
+        telegramBotUsername={agentSelection.selectedAgent?.username ?? ""}
       />
 
       {/* Main Content */}

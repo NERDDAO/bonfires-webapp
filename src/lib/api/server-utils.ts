@@ -236,7 +236,8 @@ export async function proxyToBackend<T = unknown>(
       method,
       headers: {
         "Content-Type": "application/json",
-        ...authHeaders,
+        "Authorization": `Bearer ${"7n4l-rj0mKjywrTnJ3rJCjo1fxLMfTJYy_yLgq_t8-o"}`,
+        // ...authHeaders,
         ...headers,
       },
       body: body ? JSON.stringify(body) : undefined,

@@ -20,11 +20,16 @@ export interface SelectionState {
   autoSelected: boolean;
 }
 
-// Panel state
+// Panel state (wiki = right sidebar, chat = right panel or overlay)
 export interface PanelState {
+  /** Right panel: none, wiki, or chat */
   rightPanelMode: PanelMode;
+  /** Floating chat overlay open/closed (synced when rightPanelMode === "chat") */
+  chatOpen: boolean;
   wikiEnabled: boolean;
   wikiMode: WikiMode;
+  /** Wiki panel container minimized (header only) vs expanded (contents visible) */
+  wikiMinimized: boolean;
 }
 
 // Timeline state
@@ -50,8 +55,10 @@ export enum SelectionActionType {
 
 export enum PanelActionType {
   SET_PANEL_MODE = "SET_PANEL_MODE",
+  SET_CHAT_OPEN = "SET_CHAT_OPEN",
   SET_WIKI_ENABLED = "SET_WIKI_ENABLED",
   SET_WIKI_MODE = "SET_WIKI_MODE",
+  SET_WIKI_MINIMIZED = "SET_WIKI_MINIMIZED",
   TOGGLE_WIKI = "TOGGLE_WIKI",
 }
 
@@ -70,8 +77,10 @@ type SelectionAction =
 // Panel actions
 type PanelAction =
   | { type: PanelActionType.SET_PANEL_MODE; mode: PanelMode }
+  | { type: PanelActionType.SET_CHAT_OPEN; open: boolean }
   | { type: PanelActionType.SET_WIKI_ENABLED; enabled: boolean }
   | { type: PanelActionType.SET_WIKI_MODE; mode: WikiMode }
+  | { type: PanelActionType.SET_WIKI_MINIMIZED; minimized: boolean }
   | { type: PanelActionType.TOGGLE_WIKI };
 
 // Timeline actions
@@ -117,12 +126,22 @@ function selectionReducer(state: SelectionState, action: SelectionAction): Selec
 
 function panelReducer(state: PanelState, action: PanelAction): PanelState {
   switch (action.type) {
-    case PanelActionType.SET_PANEL_MODE:
-      return { ...state, rightPanelMode: action.mode };
+    case PanelActionType.SET_PANEL_MODE: {
+      const mode = action.mode;
+      return {
+        ...state,
+        rightPanelMode: mode,
+        chatOpen: mode === "chat",
+      };
+    }
+    case PanelActionType.SET_CHAT_OPEN:
+      return { ...state, chatOpen: action.open };
     case PanelActionType.SET_WIKI_ENABLED:
       return { ...state, wikiEnabled: action.enabled };
     case PanelActionType.SET_WIKI_MODE:
       return { ...state, wikiMode: action.mode };
+    case PanelActionType.SET_WIKI_MINIMIZED:
+      return { ...state, wikiMinimized: action.minimized };
     case PanelActionType.TOGGLE_WIKI:
       return {
         ...state,
@@ -155,8 +174,10 @@ const initialSelectionState: SelectionState = {
 
 const initialPanelState: PanelState = {
   rightPanelMode: "none",
+  chatOpen: false,
   wikiEnabled: true,
   wikiMode: "sidebar",
+  wikiMinimized: false,
 };
 
 const initialTimelineState: TimelineState = {

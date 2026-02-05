@@ -19,6 +19,9 @@ export {
   agentsQueryKey,
 } from "./useAgentsQuery";
 
+// Agent selection (React Query–based; use with AgentSelector)
+export { useAgentSelectionQuery } from "./useAgentSelectionQuery";
+
 // Graph
 export {
   useGraphQuery,
@@ -27,9 +30,16 @@ export {
   graphQueryKey,
 } from "./useGraphQuery";
 
+// Latest episodes graph (graph-2)
+export {
+  useLatestEpisodesGraph,
+  latestEpisodesGraphQueryKey,
+} from "./useLatestEpisodesGraph";
+
 // Data Rooms
 export {
   useDataRoomsQuery,
+  useDataRoomsInfiniteQuery,
   useDataRoomById,
   useMyCreatedDataRooms,
   useMySubscribedDataRooms,
@@ -43,6 +53,7 @@ export {
   useMyHyperBlogs,
   usePublicHyperBlogsFeed,
   useDataRoomHyperBlogs,
+  useDataRoomHyperBlogsInfiniteQuery,
   hyperBlogsQueryKey,
 } from "./useHyperBlogsQuery";
 

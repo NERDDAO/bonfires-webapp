@@ -2,6 +2,7 @@
 node_modules/
 .pnp
 .pnp.js
+.pnpm-store/
 
 # Build outputs
 .next/
@@ -48,3 +49,6 @@ blob-report/
 # Misc
 *.log
 *.local
+
+# clerk configuration (can include secrets)
+/.clerk/

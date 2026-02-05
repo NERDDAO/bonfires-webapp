@@ -8,6 +8,8 @@ import { cn } from "@/lib/cn";
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   href?: string;
+  /** When true (default), the button shows a raised/elevated front panel. */
+  showElevation?: boolean;
 }
 
 type ButtonVariant = "primary" | "outline" | "outline-white";
@@ -17,7 +19,7 @@ type ButtonRef = HTMLButtonElement | HTMLAnchorElement;
 const Button = React.forwardRef<
   ButtonRef,
   ButtonProps & { variant?: ButtonVariant }
->(({ className = "", children, variant = "primary", href, onPointerDown, onPointerUp, onPointerLeave, onPointerEnter, type, ...props }, ref) => {
+>(({ className = "", children, variant = "primary", href, showElevation = true, onPointerDown, onPointerUp, onPointerLeave, onPointerEnter, type, ...props }, ref) => {
   const [pressed, setPressed] = React.useState(false);
   const [hovered, setHovered] = React.useState(false);
 
@@ -43,11 +45,13 @@ const Button = React.forwardRef<
   };
 
   const offset = -6;
-  const frontTransform = pressed
-    ? "translateY(0)"
-    : hovered
-      ? `translateY(${offset / 1.5}px)`
-      : `translateY(${offset}px)`;
+  const frontTransform = showElevation
+    ? pressed
+      ? "translateY(0)"
+      : hovered
+        ? `translateY(${offset / 1.5}px)`
+        : `translateY(${offset}px)`
+    : "translateY(0)";
 
   const sharedClassName = cn(
     "group relative block w-fit cursor-pointer rounded-lg border-none p-0 font-bold outline-none overflow-visible",

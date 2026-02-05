@@ -22,6 +22,8 @@ const OFFSET_RIGHT = 64;
 /** Offset from the top edge when placing the panel in the top-right corner (px). */
 const OFFSET_TOP = 94;
 
+const MOBILE_BREAKPOINT = 768;
+
 export interface WikiPanelContainerProps extends WikiPanelProps {
   /** Initial position (left in px). If not set, derived from viewport. */
   defaultLeft?: number;
@@ -48,10 +50,20 @@ export function WikiPanelContainer({
     top: defaultTop ?? OFFSET_TOP,
   }));
   const [internalMinimized, setInternalMinimized] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false
+  );
   const isControlled = controlledMinimized !== undefined;
   const isMinimized = isControlled ? controlledMinimized : internalMinimized;
   const dragRef = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const handler = () => setIsMobile(mql.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   // Default position on mount (for SSR-safe initial)
   useEffect(() => {
@@ -66,6 +78,7 @@ export function WikiPanelContainer({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (isMobile) return;
       const target = e.target as HTMLElement;
       if (!target.closest("[data-drag-handle]") || target.closest("button")) return;
       e.preventDefault();
@@ -77,7 +90,7 @@ export function WikiPanelContainer({
       };
       containerRef.current?.setPointerCapture(e.pointerId);
     },
-    [position]
+    [position, isMobile]
   );
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -117,6 +130,82 @@ export function WikiPanelContainer({
     return null;
   }
 
+  const headerContent = (
+    <div
+      data-drag-handle
+      className={cn(
+        "flex items-center justify-between gap-2 px-3 py-2 border-b border-base-300 bg-base-200 select-none",
+        !isMobile && "cursor-grab active:cursor-grabbing"
+      )}
+    >
+      <span className="text-sm font-medium truncate flex-1 min-w-0">
+        {wikiPanelProps.edge
+          ? wikiPanelProps.edge.label || wikiPanelProps.edge.relation_type || "Relationship"
+          : wikiPanelProps.node?.name || wikiPanelProps.node?.label || wikiPanelProps.node?.uuid?.slice(0, 8) || "Node"}
+      </span>
+      <div className="flex items-center gap-0.5 shrink-0">
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={handleToggleMinimize}
+            className="btn btn-ghost btn-xs btn-square"
+            aria-label={isMinimized ? "Maximize" : "Minimize"}
+          >
+            {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn btn-ghost btn-xs btn-square"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const showBody = isMobile ? true : !isMinimized;
+  const panelContent = (
+    <>
+      {headerContent}
+      {showBody && (
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <WikiPanel {...wikiPanelProps} />
+        </div>
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <div
+        className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/25 backdrop-blur-sm"
+        onClick={(e) => e.target === e.currentTarget && onClose?.()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div
+          ref={containerRef}
+          className={cn(
+            "flex flex-col rounded-lg shadow-xl border border-base-300 bg-base-100 overflow-hidden w-full max-h-[85vh]",
+            className
+          )}
+          style={{
+            width: DEFAULT_WIDTH,
+            maxWidth: "calc(100vw - 2rem)",
+            height: DEFAULT_HEIGHT,
+            maxHeight: "85vh",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {panelContent}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -135,41 +224,7 @@ export function WikiPanelContainer({
       onPointerLeave={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Header bar: drag handle + title area + minimize/maximize + close */}
-      <div
-        data-drag-handle
-        className="flex items-center justify-between gap-2 px-3 py-2 border-b border-base-300 bg-base-200 cursor-grab active:cursor-grabbing select-none"
-      >
-        <span className="text-sm font-medium truncate flex-1 min-w-0">
-          {wikiPanelProps.edge
-            ? wikiPanelProps.edge.label || wikiPanelProps.edge.relation_type || "Relationship"
-            : wikiPanelProps.node?.name || wikiPanelProps.node?.label || wikiPanelProps.node?.uuid?.slice(0, 8) || "Node"}
-        </span>
-        <div className="flex items-center gap-0.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleToggleMinimize}
-            className="btn btn-ghost btn-xs btn-square"
-            aria-label={isMinimized ? "Maximize" : "Minimize"}
-          >
-            {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-ghost btn-xs btn-square"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {!isMinimized && (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <WikiPanel {...wikiPanelProps} />
-        </div>
-      )}
+      {panelContent}
     </div>
   );
 }

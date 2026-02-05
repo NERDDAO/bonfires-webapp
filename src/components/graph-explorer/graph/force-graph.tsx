@@ -406,6 +406,15 @@ export default function ForceGraph({
   const transformRef = useRef({ x: 0, y: 0, k: 1 });
   const panStartRef = useRef<{ clientX: number; clientY: number; tx: number; ty: number } | null>(null);
   const lastLogicalRef = useRef({ x: 0, y: 0 });
+  const touchStartRef = useRef<{
+    clientX: number;
+    clientY: number;
+    tx: number;
+    ty: number;
+    nodeId: string | null;
+    edgeId: string | null;
+  } | null>(null);
+  const TOUCH_PAN_THRESHOLD_PX = 10;
   const [, setTick] = useState(0);
 
   const highlightedSet = useRef(new Set<string>());
@@ -569,15 +578,26 @@ export default function ForceGraph({
     const ro = new ResizeObserver(() => resize(false));
     ro.observe(container);
 
+    // Normalize client coords to layout viewport (fixes tap offset on mobile when
+    // touch events are in visual viewport but getBoundingClientRect is layout).
+    const toLayoutClient = (clientX: number, clientY: number) => {
+      const vv = typeof window !== "undefined" ? window.visualViewport : null;
+      if (vv) {
+        return { x: clientX + vv.offsetLeft, y: clientY + vv.offsetTop };
+      }
+      return { x: clientX, y: clientY };
+    };
+
     const toLogical = (
       e: { clientX: number; clientY: number }
     ): { x: number; y: number } => {
+      const { width, height } = sizeRef.current;
       const rect = canvas.getBoundingClientRect();
-      const scaleX = (canvas.width / (window.devicePixelRatio ?? 1)) / rect.width;
-      const scaleY =
-        (canvas.height / (window.devicePixelRatio ?? 1)) / rect.height;
-      const canvasX = (e.clientX - rect.left) * scaleX;
-      const canvasY = (e.clientY - rect.top) * scaleY;
+      const { x: layoutX, y: layoutY } = toLayoutClient(e.clientX, e.clientY);
+      const scaleX = width / rect.width;
+      const scaleY = height / rect.height;
+      const canvasX = (layoutX - rect.left) * scaleX;
+      const canvasY = (layoutY - rect.top) * scaleY;
       const t = transformRef.current;
       return {
         x: (canvasX - t.x) / t.k,
@@ -684,11 +704,82 @@ export default function ForceGraph({
       redraw();
     };
 
+    const getTouchCoords = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return null;
+      return { clientX: t.clientX, clientY: t.clientY };
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1 || panStartRef.current || touchStartRef.current) return;
+      e.preventDefault(); // claim touch so browser doesn't scroll/zoom; enables reliable pan + tap
+      const coords = getTouchCoords(e);
+      if (!coords) return;
+      const { x, y } = toLogical(coords);
+      const node = nodeUnderPoint(nodes, x, y);
+      const edge = edgeUnderPoint(links, x, y);
+      touchStartRef.current = {
+        clientX: coords.clientX,
+        clientY: coords.clientY,
+        tx: transformRef.current.x,
+        ty: transformRef.current.y,
+        nodeId: node?.id ?? null,
+        edgeId: edge?.id ?? null,
+      };
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const coords = getTouchCoords(e);
+      if (!coords) return;
+      const start = touchStartRef.current;
+      if (start && !panStartRef.current) {
+        const dx = coords.clientX - start.clientX;
+        const dy = coords.clientY - start.clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > TOUCH_PAN_THRESHOLD_PX) {
+          panStartRef.current = {
+            clientX: start.clientX,
+            clientY: start.clientY,
+            tx: start.tx,
+            ty: start.ty,
+          };
+          touchStartRef.current = null; // only clear when we commit to pan, so tap still fires if no pan
+        }
+      }
+      const panStart = panStartRef.current;
+      if (panStart) {
+        e.preventDefault();
+        transformRef.current.x = panStart.tx + (coords.clientX - panStart.clientX);
+        transformRef.current.y = panStart.ty + (coords.clientY - panStart.clientY);
+        redraw();
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length > 0) return;
+      const start = touchStartRef.current;
+      const didPan = panStartRef.current != null;
+      if (!didPan && start) {
+        if (start.nodeId) {
+          onNodeClickRef.current?.(start.nodeId);
+        } else if (start.edgeId) {
+          onEdgeClickRef.current?.(start.edgeId);
+        }
+      }
+      touchStartRef.current = null;
+      panStartRef.current = null;
+      redraw();
+    };
+
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseleave", handleMouseLeave);
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("mouseup", handleMouseUp);
+    canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+    canvas.addEventListener("touchend", handleTouchEnd, { passive: true });
+    canvas.addEventListener("touchcancel", handleTouchEnd, { passive: true });
 
     return () => {
       ro.disconnect();
@@ -697,6 +788,10 @@ export default function ForceGraph({
       canvas.removeEventListener("mouseleave", handleMouseLeave);
       canvas.removeEventListener("wheel", handleWheel);
       window.removeEventListener("mouseup", handleMouseUp);
+      canvas.removeEventListener("touchstart", handleTouchStart);
+      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchend", handleTouchEnd);
+      canvas.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [elements, centerNodeId, redraw]);
 
@@ -734,13 +829,14 @@ export default function ForceGraph({
   return (
     <div
       ref={containerRef}
-      className={className ?? "absolute inset-0 min-h-0"}
+      className={className ?? "absolute inset-0 min-h-0 touch-none"}
+      style={{ touchAction: "none" }}
       aria-label="Force-directed graph (drag nodes to reposition)"
     >
       <canvas
         ref={canvasRef}
-        className="block w-full h-full"
-        style={{ display: "block" }}
+        className="block w-full h-full touch-none select-none"
+        style={{ display: "block", touchAction: "none" }}
       />
       <div
         className="absolute top-3 right-3 z-10 hidden lg:flex flex-col gap-1 rounded-md border border-neutral-700 bg-neutral-900/90 p-1 shadow-md"

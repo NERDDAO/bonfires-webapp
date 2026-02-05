@@ -5,7 +5,7 @@ import { heroCopy } from "@/content";
 export default function Hero() {
   const { logo, logoAlt, title, description, primaryCta, primaryCtaHref, secondaryCta, secondaryCtaHref } = heroCopy;
   return (
-    <div className="flex flex-col px-7 lg:px-20 py-10.5 lg:justify-center min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-5rem)]">
+    <div className="flex flex-col px-7 lg:px-20 py-10.5 lg:justify-center min-h-[calc(100svh-4rem)] lg:min-h-[calc(100dvh-5rem)]">
       <div className="flex flex-col flex-1 lg:flex-auto justify-center gap-2 lg:gap-4 lg:max-w-[682px] z-10">
         <Image
           src={logo}

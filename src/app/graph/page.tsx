@@ -24,7 +24,7 @@ function GraphExplorerContent() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex flex-col relative">
+    <div className="min-h-[calc(100dvh-5rem)] flex flex-col relative">
       <GraphExplorer
         initialBonfireId={bonfireId}
         initialAgentId={agentId}
@@ -39,7 +39,7 @@ export default function GraphExplorerPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[calc(100vh-5rem)] flex flex-col relative items-center justify-center">
+        <div className="min-h-[calc(100dvh-5rem)] flex flex-col relative items-center justify-center">
           <div className="animate-pulse text-muted-foreground">
             Loading graph explorer…
           </div>

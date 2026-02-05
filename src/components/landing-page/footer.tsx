@@ -9,7 +9,7 @@ import { Button } from "../ui/button";
 export default function Footer() {
   const { title, mobileTitle, subtitle, mobileSubtitle, primaryCta, primaryCtaHref, secondaryCta, secondaryCtaHref, logo, logoAlt, socialLinks } = footerCopy;
   return (
-    <div className="flex flex-col px-6 lg:px-20 py-6.5 justify-center items-center text-center min-h-dvh lg:min-h-auto">
+    <div className="flex flex-col px-6 lg:px-20 py-6.5 justify-center items-center text-center min-h-svh lg:min-h-auto">
       <div className="flex flex-col justify-center items-center max-w-full lg:max-w-[581px] my-auto lg:my-36">
         <Image
           src="/logo-square.svg"

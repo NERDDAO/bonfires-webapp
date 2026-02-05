@@ -28,24 +28,23 @@ export default function KnowledgeGraph() {
 
   const mobilePath = useTransform(
     [spacerScrollYProgress, containerScrollYProgress],
-    // -120dvh, -110dvh, 0dvh
+    // Use svh so transform doesn't jump when mobile browser chrome shows/hides
     (values: number[]) => {
       const spacer = values[0] ?? 0;
       const section = values[1] ?? 0;
       const t = spacer < 1 ? spacer : 1 + section;
       if (t <= 1) {
         const p = t;
-        return `translateY(calc(${-120 * (1 - p) + -110 * p}dvh - ${HEIGHT * (1 - p)}px))`;
+        return `translateY(calc(${-120 * (1 - p) + -110 * p}svh - ${HEIGHT * (1 - p)}px))`;
       }
       const p = t - 1;
-      const yDvh = -110 * (1 - p);
-      return `translateY(${yDvh}dvh)`;
+      const ySvh = -110 * (1 - p);
+      return `translateY(${ySvh}svh)`;
     }
   );
 
   const path = useTransform(
     [spacerScrollYProgress, containerScrollYProgress],
-    // y: -120dvh, -100dvh, 0dvh, x: 0 %, -50%, 0%
     (values: number[]) => {
       const spacer = values[0] ?? 0;
       const section = values[1] ?? 0;
@@ -63,12 +62,12 @@ export default function KnowledgeGraph() {
 
   return (
     <>
-      {/* spacer for graph to be visible in center */}
-      <div ref={spacerRef} className="h-dvh" />
+      {/* spacer for graph to be visible in center — svh so height doesn't change when mobile chrome toggles */}
+      <div ref={spacerRef} className="h-svh" />
 
       <div
         ref={sectionRef}
-        className="relative flex flex-col px-7 lg:px-20 py-9 lg:py-0 lg:items-start min-h-[calc(100dvh-4rem)] lg:min-h-[calc(100vh-5rem)]"
+        className="relative flex flex-col px-7 lg:px-20 py-9 lg:py-0 lg:items-start min-h-[calc(100svh-4rem)] lg:min-h-[calc(100dvh-5rem)]"
       >
         <div className="flex flex-col lg:max-w-1/2 z-10 lg:my-auto">
           <div className="font-montserrat text-2xl lg:text-5xl font-black leading-[1.2]">

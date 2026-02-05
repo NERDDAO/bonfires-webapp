@@ -34,7 +34,7 @@ export default function HyperBlogsPreview() {
   }, [data]);
 
   return (
-    <div className="flex flex-col px-6 lg:px-20 py-7 lg:py-20 min-h-screen">
+    <div className="flex flex-col px-6 lg:px-20 py-7 lg:py-20 min-h-svh lg:min-h-screen">
       <div className="flex flex-col">
         <div className="flex items-center gap-4">
           <div className="font-montserrat text-2xl lg:text-5xl font-black">{title}</div>

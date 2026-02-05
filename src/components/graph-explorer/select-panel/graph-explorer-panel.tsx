@@ -105,7 +105,7 @@ export function GraphExplorerPanel({
     <>
       <div
         className={cn(
-          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100vh-10rem)] lg:max-h-[calc(100vh-2rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
+          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] lg:max-h-[calc(100dvh-2rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
           !isRecentActivityCollapsed && "h-full",
           className
         )}

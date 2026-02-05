@@ -294,7 +294,7 @@ export function FloatingChatButton({
         "bg-primary text-primary-content",
         "shadow-lg hover:shadow-xl",
         "hover:scale-105 transition-all duration-200",
-        "flex items-center justify-center",
+        "hidden lg:flex items-center justify-center",
         className
       )}
       aria-label="Open chat"

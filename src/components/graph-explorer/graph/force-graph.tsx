@@ -743,7 +743,7 @@ export default function ForceGraph({
         style={{ display: "block" }}
       />
       <div
-        className="absolute top-3 right-3 z-10 flex flex-col gap-1 rounded-md border border-neutral-700 bg-neutral-900/90 p-1 shadow-md"
+        className="absolute top-3 right-3 z-10 hidden lg:flex flex-col gap-1 rounded-md border border-neutral-700 bg-neutral-900/90 p-1 shadow-md"
         role="group"
         aria-label="Zoom controls"
       >

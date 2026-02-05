@@ -26,6 +26,10 @@ import {
   type PanelMode,
 } from "@/hooks";
 
+import {
+  GraphSearchHistoryProvider,
+  useGraphSearchHistory,
+} from "@/components/graph-explorer/graph-context";
 import { GraphVisualization } from "./GraphVisualization";
 import { Timeline, type EpisodeTimelineItem } from "./Timeline";
 import { WikiPanel, type WikiNodeData, type WikiEdgeData } from "./WikiPanel";
@@ -173,6 +177,57 @@ interface GraphExplorerProps {
   onCreateDataRoom?: (nodeData: NodeData, bonfireId: string) => void;
   /** Additional CSS classes */
   className?: string;
+}
+
+/** Bridge that uses search history context and provides breadcrumbs + wrapped handler. */
+function GraphExplorerSearchHistoryBridge({
+  handleSearchAroundNode,
+  selectedNode,
+  urlAgentId,
+  urlSearchQuery,
+  render,
+}: {
+  handleSearchAroundNode: (nodeUuid: string) => void;
+  selectedNode: WikiNodeData | null;
+  urlAgentId: string | null;
+  urlSearchQuery: string;
+  render: (props: {
+    searchHistoryBreadcrumbs: { label: string; onClick: () => void }[];
+    handleSearchAroundNode: (nodeUuid: string) => void;
+  }) => React.ReactNode;
+}) {
+  const {
+    pushSearchAround,
+    resetSearchHistory,
+    searchHistoryStack,
+    navigateToSearchHistoryIndex,
+  } = useGraphSearchHistory();
+
+  useEffect(() => {
+    resetSearchHistory();
+  }, [urlAgentId, urlSearchQuery, resetSearchHistory]);
+
+  const handleSearchAroundNodeWithPush = useCallback(
+    (nodeUuid: string) => {
+      handleSearchAroundNode(nodeUuid);
+      pushSearchAround(
+        nodeUuid,
+        selectedNode?.name ?? selectedNode?.label ?? undefined
+      );
+    },
+    [handleSearchAroundNode, pushSearchAround, selectedNode]
+  );
+
+  const searchHistoryBreadcrumbs = useMemo(
+    () =>
+      searchHistoryStack.map((item, i) => ({
+        label: item.label ?? item.nodeId.slice(0, 8),
+        onClick: () => navigateToSearchHistoryIndex(i),
+      })),
+    [searchHistoryStack, navigateToSearchHistoryIndex]
+  );
+
+  return <>{render({ searchHistoryBreadcrumbs, handleSearchAroundNode: handleSearchAroundNodeWithPush })}</>;
 }
 
 /**
@@ -829,6 +884,28 @@ export function GraphExplorer({
     [searchQuery, searchParams, router, agentSelection.selectedBonfireId, agentSelection.selectedAgentId]
   );
 
+  const onNavigateToCenter = useCallback(
+    (nodeId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (agentSelection.selectedBonfireId) {
+        params.set("bonfireId", agentSelection.selectedBonfireId);
+      }
+      if (agentSelection.selectedAgentId) {
+        params.set("agentId", agentSelection.selectedAgentId);
+      }
+      if (urlSearchQuery) params.set("q", urlSearchQuery);
+      params.set("centerNode", nodeId);
+      router.push(`/graph?${params.toString()}`);
+    },
+    [
+      searchParams,
+      router,
+      agentSelection.selectedBonfireId,
+      agentSelection.selectedAgentId,
+      urlSearchQuery,
+    ]
+  );
+
   const handleContextMenu = useCallback(
     (nodeData: NodeData, position: { x: number; y: number }) => {
       if (embedded) return; // No context menu in embedded mode
@@ -938,7 +1015,14 @@ export function GraphExplorer({
   }
 
   return (
-    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
+    <GraphSearchHistoryProvider onNavigateToCenter={onNavigateToCenter}>
+      <GraphExplorerSearchHistoryBridge
+        handleSearchAroundNode={handleSearchAroundNode}
+        selectedNode={selectedNode}
+        urlAgentId={urlAgentId ?? null}
+        urlSearchQuery={urlSearchQuery}
+        render={({ searchHistoryBreadcrumbs, handleSearchAroundNode: wrappedSearchAround }) => (
+          <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-base-300 bg-base-100 shrink-0">
         <div className="flex items-center gap-4">
@@ -1064,6 +1148,7 @@ export function GraphExplorer({
               enabled={panel.wikiEnabled}
               mode={panel.wikiMode}
               breadcrumbs={wikiNav.breadcrumbs}
+              searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
               canGoBack={wikiNav.canGoBack}
               canGoForward={wikiNav.canGoForward}
               onClose={() => {
@@ -1079,7 +1164,7 @@ export function GraphExplorer({
               onBack={wikiNav.back}
               onForward={wikiNav.forward}
               onNodeSelect={handleNodeClick}
-              onSearchAroundNode={handleSearchAroundNode}
+              onSearchAroundNode={wrappedSearchAround}
             />
           )}
         </div>
@@ -1120,7 +1205,10 @@ export function GraphExplorer({
         onCreateDataRoom={onCreateDataRoom ? handleCreateDataRoom : undefined}
         onClose={() => setContextMenu((prev) => ({ ...prev, visible: false }))}
       />
-    </div>
+        </div>
+        )}
+      />
+    </GraphSearchHistoryProvider>
   );
 }
 

@@ -24,6 +24,10 @@ import {
   PanelActionType,
 } from "@/hooks";
 
+import {
+  GraphSearchHistoryProvider,
+  useGraphSearchHistory,
+} from "./graph-context";
 import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
@@ -173,6 +177,76 @@ interface GraphExplorerProps {
   onCreateDataRoom?: (nodeData: NodeData, bonfireId: string) => void;
   /** Additional CSS classes */
   className?: string;
+}
+
+/** Bridge that uses search history context and provides breadcrumbs + wrapped handler. */
+function GraphExplorerSearchHistoryBridge({
+  handleSearchAroundNode,
+  selectedNode,
+  urlAgentId,
+  searchSubmitCount,
+  effectiveCenterNode,
+  render,
+}: {
+  handleSearchAroundNode: (nodeUuid: string) => void;
+  selectedNode: WikiNodeData | null;
+  urlAgentId: string | null | undefined;
+  searchSubmitCount: number;
+  effectiveCenterNode: string | null;
+  render: (props: {
+    searchHistoryBreadcrumbs: { label: string; onClick: () => void }[];
+    handleSearchAroundNode: (nodeUuid: string) => void;
+  }) => React.ReactNode;
+}) {
+  const {
+    pushSearchAround,
+    resetSearchHistory,
+    searchHistoryStack,
+    navigateToSearchHistoryIndex,
+  } = useGraphSearchHistory();
+
+  useEffect(() => {
+    resetSearchHistory();
+  }, [urlAgentId, searchSubmitCount, resetSearchHistory]);
+
+  // Seed stack with current center when graph has a center but stack is empty (so breadcrumbs show on load)
+  useEffect(() => {
+    if (!effectiveCenterNode || searchHistoryStack.length > 0) return;
+    const label =
+      selectedNode?.uuid === effectiveCenterNode
+        ? selectedNode?.name ?? selectedNode?.label
+        : undefined;
+    pushSearchAround(effectiveCenterNode, label);
+  }, [effectiveCenterNode, searchHistoryStack.length, pushSearchAround, selectedNode]);
+
+  const handleSearchAroundNodeWithPush = useCallback(
+    (nodeUuid: string) => {
+      handleSearchAroundNode(nodeUuid);
+      pushSearchAround(
+        nodeUuid,
+        selectedNode?.name ?? selectedNode?.label ?? undefined
+      );
+    },
+    [handleSearchAroundNode, pushSearchAround, selectedNode]
+  );
+
+  const searchHistoryBreadcrumbs = useMemo(
+    () =>
+      searchHistoryStack.map((item, i) => ({
+        label: item.label ?? item.nodeId.slice(0, 8),
+        onClick: () => navigateToSearchHistoryIndex(i),
+      })),
+    [searchHistoryStack, navigateToSearchHistoryIndex]
+  );
+
+  return (
+    <>
+      {render({
+        searchHistoryBreadcrumbs,
+        handleSearchAroundNode: handleSearchAroundNodeWithPush,
+      })}
+    </>
+  );
 }
 
 /**
@@ -855,11 +929,14 @@ export function GraphExplorer({
     [handleNodeClick]
   );
 
+  const [searchSubmitCount, setSearchSubmitCount] = useState(0);
+
   const handleSearch = useCallback(() => {
     if (!searchQuery.trim()) return;
     const nextQuery = searchQuery.trim();
     setEffectiveSearchQuery(nextQuery);
     setEffectiveCenterNode(null);
+    setSearchSubmitCount((c) => c + 1);
   }, [searchQuery]);
 
   const handleSearchAroundNode = useCallback((nodeUuid: string) => {
@@ -868,6 +945,10 @@ export function GraphExplorer({
     setEffectiveSearchQuery(trimmed);
     setEffectiveCenterNode(nodeUuid);
   }, [searchQuery]);
+
+  const onNavigateToCenter = useCallback((nodeId: string) => {
+    setEffectiveCenterNode(nodeId);
+  }, []);
 
   const handleContextMenu = useCallback(
     (nodeData: NodeData, position: { x: number; y: number }) => {
@@ -976,6 +1057,14 @@ export function GraphExplorer({
   }
 
   return (
+    <GraphSearchHistoryProvider onNavigateToCenter={onNavigateToCenter}>
+      <GraphExplorerSearchHistoryBridge
+        handleSearchAroundNode={handleSearchAroundNode}
+        selectedNode={selectedNode}
+        urlAgentId={urlAgentId ?? null}
+        searchSubmitCount={searchSubmitCount}
+        effectiveCenterNode={effectiveCenterNode}
+        render={({ searchHistoryBreadcrumbs, handleSearchAroundNode: wrappedSearchAround }) => (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Header */}
       <GraphExplorerPanel
@@ -991,6 +1080,7 @@ export function GraphExplorer({
         onSearchQueryChange={setSearchQuery}
         onSearch={handleSearch}
         isSearching={isGraphLoading}
+        searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
         episodes={episodes}
         selectedEpisodeId={selectedEpisodeId}
         onEpisodeSelect={handleEpisodeSelect}
@@ -1062,7 +1152,7 @@ export function GraphExplorer({
               onBack={wikiNav.back}
               onForward={wikiNav.forward}
               onNodeSelect={handleNodeClick}
-              onSearchAroundNode={handleSearchAroundNode}
+              onSearchAroundNode={wrappedSearchAround}
               getRelatedNodeTitle={getRelatedNodeTitle}
             />
           )}
@@ -1105,6 +1195,9 @@ export function GraphExplorer({
         onClose={() => setContextMenu((prev) => ({ ...prev, visible: false }))}
       />
     </div>
+        )}
+      />
+    </GraphSearchHistoryProvider>
   );
 }
 

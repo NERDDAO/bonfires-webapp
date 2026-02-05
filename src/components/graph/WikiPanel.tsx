@@ -59,6 +59,8 @@ export interface WikiPanelProps {
   mode: WikiMode;
   /** Navigation breadcrumbs */
   breadcrumbs: WikiBreadcrumb[];
+  /** Search-around history as breadcrumbs (clickable to navigate to that center) */
+  searchHistoryBreadcrumbs?: { label: string; onClick: () => void }[];
   /** Whether back navigation is available */
   canGoBack: boolean;
   /** Whether forward navigation is available */
@@ -103,6 +105,7 @@ export function WikiPanel({
   enabled,
   mode,
   breadcrumbs,
+  searchHistoryBreadcrumbs = [],
   canGoBack,
   canGoForward,
   onClose,
@@ -388,7 +391,28 @@ export function WikiPanel({
         </div>
       </div>
 
-      {/* Breadcrumbs */}
+      {/* Search history breadcrumbs (path of "search around" centers) */}
+      {searchHistoryBreadcrumbs.length > 0 && (
+        <div className="px-4 py-2 border-b border-base-300 overflow-x-auto">
+          <div className="breadcrumbs text-xs">
+            <ul>
+              {searchHistoryBreadcrumbs.map((crumb, idx) => (
+                <li key={idx}>
+                  <button
+                    type="button"
+                    onClick={crumb.onClick}
+                    className="link text-primary hover:underline"
+                  >
+                    {crumb.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Wiki navigation breadcrumbs */}
       {breadcrumbs.length > 1 && (
         <div className="px-4 py-2 border-b border-base-300 overflow-x-auto">
           <div className="breadcrumbs text-xs">
@@ -438,7 +462,7 @@ export function WikiPanel({
 
   // Sidebar mode
   return (
-    <div className="w-80 h-full flex-shrink-0">{panelContent}</div>
+    <div className="w-80 h-full shrink-0">{panelContent}</div>
   );
 }
 

@@ -178,7 +178,7 @@ export function WikiPanel({
         </div>
       </div>
 
-      {/* Breadcrumbs (hidden, functionality preserved) */}
+      {/* Wiki navigation breadcrumbs (sr-only) */}
       {breadcrumbs.length > 1 && (
         <div className="sr-only px-3 py-2 border-b border-base-300 overflow-x-auto shrink-0">
           <div className="breadcrumbs text-xs">

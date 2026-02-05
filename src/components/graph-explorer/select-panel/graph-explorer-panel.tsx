@@ -52,6 +52,8 @@ export interface GraphExplorerPanelProps {
   onSearchQueryChange: (value: string) => void;
   onSearch: () => void;
   isSearching?: boolean;
+  /** Search-around history as breadcrumbs (clickable to navigate to that center) */
+  searchHistoryBreadcrumbs?: { label: string; onClick: () => void }[];
   /** Episodes list (vertical column below panel) */
   episodes: EpisodeTimelineItem[];
   selectedEpisodeId: string | null;
@@ -77,6 +79,7 @@ export function GraphExplorerPanel({
   onSearchQueryChange,
   onSearch,
   isSearching = false,
+  searchHistoryBreadcrumbs = [],
   episodes,
   selectedEpisodeId,
   onEpisodeSelect,
@@ -247,6 +250,27 @@ export function GraphExplorerPanel({
                   </button>
                 )}
               </div>
+
+              {/* Search history breadcrumbs (path of "search around" centers) */}
+              {searchHistoryBreadcrumbs.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-[#333333] overflow-x-auto">
+                  <div className="breadcrumbs text-xs text-white/90">
+                    <ul>
+                      {searchHistoryBreadcrumbs.map((crumb, idx) => (
+                        <li key={idx}>
+                          <button
+                            type="button"
+                            onClick={crumb.onClick}
+                            className="link link-hover text-primary hover:underline"
+                          >
+                            {crumb.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </header>
 
             {!isRecentActivityCollapsed && (

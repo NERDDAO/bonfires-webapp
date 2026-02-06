@@ -10,6 +10,7 @@ export const heroCopy = {
   primaryCta: "Explore Graph",
   primaryCtaHref: "/graph",
   secondaryCta: "Join ETH Boulder Telegram group",
+  secondaryCtaMobile: "Join TG",
   secondaryCtaHref: siteCopy.telegramGroupUrl,
 };
 

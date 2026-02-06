@@ -32,7 +32,7 @@ import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
 import { WikiPanelContainer, type WikiNodeData, type WikiEdgeData } from "./wiki/wiki-panel-container";
-import { ChatPanel, FloatingChatButton, type ChatMessage } from "./ChatPanel";
+import { ChatPanel, FloatingChatButton, type ChatMessage } from "./chat";
 import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import type {
@@ -166,11 +166,19 @@ function buildGraphStatePayload(
   };
 }
 
+/** When provided, bonfire/agent are fixed; URL and initial props are ignored and graph selector is hidden. */
+export interface StaticGraphConfig {
+  staticBonfireId: string;
+  staticAgentId: string;
+}
+
 interface GraphExplorerProps {
   /** Initial bonfire ID from URL */
   initialBonfireId?: string | null;
   /** Initial agent ID from URL */
   initialAgentId?: string | null;
+  /** When set, use only these IDs (ignore URL/initial) and hide graph selector dropdowns */
+  staticGraph?: StaticGraphConfig | null;
   /** Whether to run in embedded mode (limited interactions) */
   embedded?: boolean;
   /** Callback when "Create Data Room" is clicked */
@@ -195,6 +203,7 @@ function GraphExplorerSearchHistoryBridge({
   effectiveCenterNode: string | null;
   render: (props: {
     searchHistoryBreadcrumbs: { label: string; onClick: () => void }[];
+    activeBreadcrumb: string | null;
     handleSearchAroundNode: (nodeUuid: string) => void;
   }) => React.ReactNode;
 }) {
@@ -202,6 +211,7 @@ function GraphExplorerSearchHistoryBridge({
     pushSearchAround,
     resetSearchHistory,
     searchHistoryStack,
+    currentIndex,
     navigateToSearchHistoryIndex,
   } = useGraphSearchHistory();
 
@@ -239,10 +249,18 @@ function GraphExplorerSearchHistoryBridge({
     [searchHistoryStack, navigateToSearchHistoryIndex]
   );
 
+  const activeBreadcrumb =
+    currentIndex >= 0 && currentIndex < searchHistoryStack.length
+      ? searchHistoryStack[currentIndex]?.label ??
+        searchHistoryStack[currentIndex]?.nodeId.slice(0, 8) ??
+        null
+      : null;
+
   return (
     <>
       {render({
         searchHistoryBreadcrumbs,
+        activeBreadcrumb,
         handleSearchAroundNode: handleSearchAroundNodeWithPush,
       })}
     </>
@@ -255,6 +273,7 @@ function GraphExplorerSearchHistoryBridge({
 export function GraphExplorer({
   initialBonfireId,
   initialAgentId,
+  staticGraph,
   embedded = false,
   onCreateDataRoom,
   className,
@@ -262,9 +281,16 @@ export function GraphExplorer({
   const searchParams = useSearchParams();
   const { address: walletAddress, isConnected: isWalletConnected } = useWalletAccount();
 
-  // URL parameters
-  const urlBonfireId = searchParams.get("bonfireId") ?? initialBonfireId;
-  const urlAgentId = searchParams.get("agentId") ?? initialAgentId;
+  // When staticGraph is provided, ignore URL and initial props; otherwise use URL/initial
+  const effectiveBonfireId = staticGraph
+    ? staticGraph.staticBonfireId
+    : (searchParams.get("bonfireId") ?? initialBonfireId);
+  const effectiveAgentId = staticGraph
+    ? staticGraph.staticAgentId
+    : (searchParams.get("agentId") ?? initialAgentId);
+
+  const urlBonfireId = effectiveBonfireId;
+  const urlAgentId = effectiveAgentId;
   const urlCenterNode = searchParams.get("centerNode");
   const urlSearchQuery = searchParams.get("q") ?? "";
 
@@ -280,10 +306,11 @@ export function GraphExplorer({
   // Wiki navigation
   const wikiNav = useWikiNavigation();
 
-  // Agent selection
-  const agentSelection = useAgentSelection({ 
-    initialBonfireId: urlBonfireId,
-    initialAgentId: urlAgentId,
+  // Agent selection (when staticGraph is set, force IDs even if not in fetched lists)
+  const agentSelection = useAgentSelection({
+    initialBonfireId: urlBonfireId ?? undefined,
+    initialAgentId: urlAgentId ?? undefined,
+    forceInitialSelection: !!staticGraph,
   });
 
   // Search state
@@ -1064,7 +1091,7 @@ export function GraphExplorer({
         urlAgentId={urlAgentId ?? null}
         searchSubmitCount={searchSubmitCount}
         effectiveCenterNode={effectiveCenterNode}
-        render={({ searchHistoryBreadcrumbs, handleSearchAroundNode: wrappedSearchAround }) => (
+        render={({ searchHistoryBreadcrumbs, activeBreadcrumb, handleSearchAroundNode: wrappedSearchAround }) => (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Header */}
       <GraphExplorerPanel
@@ -1081,12 +1108,14 @@ export function GraphExplorer({
         onSearch={handleSearch}
         isSearching={isGraphLoading}
         searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
+        activeBreadcrumb={activeBreadcrumb}
         episodes={episodes}
         selectedEpisodeId={selectedEpisodeId}
         onEpisodeSelect={handleEpisodeSelect}
         episodesLoading={isGraphLoading}
         graphVisible={elements.length > 0}
-        telegramBotUsername={agentSelection.selectedAgent?.username ?? ""}
+        onOpenChat={handleToggleChatPanel}
+        hideGraphSelector={!!staticGraph}
       />
 
       {/* Main Content */}

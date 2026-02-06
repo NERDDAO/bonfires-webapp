@@ -1,12 +1,6 @@
 @import "./palette.css";
 @import "tailwindcss";
 
-/* Disable overscroll bounce / rubber-band */
-html,
-body {
-  overscroll-behavior: none;
-}
-
 /* DaisyUI configuration */
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark;
@@ -17,6 +11,14 @@ body {
   --font-laro-soft: var(--font-laro-soft);
   --font-dm-sans: var(--font-dm-sans);
   --font-montserrat: var(--font-montserrat);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom CSS Variables for Graph Theme */

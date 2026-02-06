@@ -357,6 +357,25 @@ function nodeUnderPoint(
   return null;
 }
 
+function getTouchDistance(touches: TouchList): number {
+  if (touches.length < 2) return 0;
+  const a = touches[0];
+  const b = touches[1];
+  if (!a || !b) return 0;
+  return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+}
+
+function getTouchCenter(touches: TouchList): { clientX: number; clientY: number } {
+  if (touches.length < 2) return { clientX: 0, clientY: 0 };
+  const a = touches[0];
+  const b = touches[1];
+  if (!a || !b) return { clientX: 0, clientY: 0 };
+  return {
+    clientX: (a.clientX + b.clientX) / 2,
+    clientY: (a.clientY + b.clientY) / 2,
+  };
+}
+
 export interface ForceGraphProps {
   /** Graph elements (nodes + edges) from GraphExplorer */
   elements: GraphElement[];
@@ -413,6 +432,14 @@ export default function ForceGraph({
     ty: number;
     nodeId: string | null;
     edgeId: string | null;
+  } | null>(null);
+  const pinchStartRef = useRef<{
+    distance: number;
+    centerClientX: number;
+    centerClientY: number;
+    tx: number;
+    ty: number;
+    k: number;
   } | null>(null);
   const TOUCH_PAN_THRESHOLD_PX = 10;
   const [, setTick] = useState(0);
@@ -711,6 +738,23 @@ export default function ForceGraph({
     };
 
     const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Start pinch zoom
+        touchStartRef.current = null;
+        const distance = getTouchDistance(e.touches);
+        const center = getTouchCenter(e.touches);
+        const t = transformRef.current;
+        pinchStartRef.current = {
+          distance,
+          centerClientX: center.clientX,
+          centerClientY: center.clientY,
+          tx: t.x,
+          ty: t.y,
+          k: t.k,
+        };
+        e.preventDefault();
+        return;
+      }
       if (e.touches.length !== 1 || panStartRef.current || touchStartRef.current) return;
       e.preventDefault(); // claim touch so browser doesn't scroll/zoom; enables reliable pan + tap
       const coords = getTouchCoords(e);
@@ -729,6 +773,35 @@ export default function ForceGraph({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      // Two-finger pinch zoom
+      if (e.touches.length === 2 && pinchStartRef.current) {
+        e.preventDefault();
+        const pinch = pinchStartRef.current;
+        const distance = getTouchDistance(e.touches);
+        const center = getTouchCenter(e.touches);
+        if (distance <= 0) return;
+        const scale = distance / pinch.distance;
+        const newK = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, pinch.k * scale));
+        const rect = canvas.getBoundingClientRect();
+        const { width, height } = sizeRef.current;
+        const scaleX = width / rect.width;
+        const scaleY = height / rect.height;
+        const { x: layoutX0, y: layoutY0 } = toLayoutClient(pinch.centerClientX, pinch.centerClientY);
+        const centerCanvasX0 = (layoutX0 - rect.left) * scaleX;
+        const centerCanvasY0 = (layoutY0 - rect.top) * scaleY;
+        const graphX = (centerCanvasX0 - pinch.tx) / pinch.k;
+        const graphY = (centerCanvasY0 - pinch.ty) / pinch.k;
+        const { x: layoutX, y: layoutY } = toLayoutClient(center.clientX, center.clientY);
+        const centerCanvasX = (layoutX - rect.left) * scaleX;
+        const centerCanvasY = (layoutY - rect.top) * scaleY;
+        transformRef.current = {
+          x: centerCanvasX - newK * graphX,
+          y: centerCanvasY - newK * graphY,
+          k: newK,
+        };
+        redraw();
+        return;
+      }
       const coords = getTouchCoords(e);
       if (!coords) return;
       const start = touchStartRef.current;
@@ -756,6 +829,25 @@ export default function ForceGraph({
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
+      // Two fingers -> one or zero: clear pinch so next gesture is pan/tap
+      if (e.touches.length < 2) {
+        pinchStartRef.current = null;
+      }
+      // When going from 2 to 1 finger, treat remaining touch as pan start so user can pan without re-touching
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        if (t) {
+          panStartRef.current = {
+            clientX: t.clientX,
+            clientY: t.clientY,
+            tx: transformRef.current.x,
+            ty: transformRef.current.y,
+          };
+        }
+        touchStartRef.current = null;
+        redraw();
+        return;
+      }
       if (e.touches.length > 0) return;
       const start = touchStartRef.current;
       const didPan = panStartRef.current != null;
@@ -814,7 +906,8 @@ export default function ForceGraph({
     const el = canvasRef.current;
     if (el) {
       const isPanning = panStartRef.current != null;
-      if (draggedNodeRef.current || isPanning) {
+      const isPinching = pinchStartRef.current != null;
+      if (draggedNodeRef.current || isPanning || isPinching) {
         el.style.cursor = "grabbing";
       } else if (hoveredEdge) {
         el.style.cursor = "pointer";

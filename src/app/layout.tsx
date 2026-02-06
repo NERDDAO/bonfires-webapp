@@ -34,7 +34,7 @@ export default function RootLayout({
             laroSoft.variable,
             dmSans.variable,
             montserrat.variable,
-            "font-dm-sans antialiased min-h-dvh overscroll-none"
+            "font-dm-sans antialiased min-h-dvh"
           )}
         >
           <Providers>

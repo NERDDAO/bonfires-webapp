@@ -1,7 +1,7 @@
 import { SkeletonLoader } from "@/components/common";
 import { EpisodeTimelineItem } from "@/components/graph/Timeline";
 import { cn } from "@/lib/cn";
-import { labelClass, panelContainerClass } from "./graph-explorer-panel";
+import { labelClass, panelContainerClass } from "./select-panel-constants";
 import { parseEpisodeContent } from "../wiki/wiki-panel-utils";
 
 function formatEpisodeDate(dateStr?: string): string {
@@ -28,6 +28,7 @@ export interface EpisodesListProps {
   /** When false, the "Recent Activity" heading is not rendered (e.g. when parent shows its own header). Default true. */
   showTitle?: boolean;
   className?: string;
+  variant?: 'default' | 'hero';
 }
 
 export default function EpisodesList({
@@ -37,6 +38,7 @@ export default function EpisodesList({
   episodesLoading = false,
   showTitle = true,
   className,
+  variant = 'default',
 }: EpisodesListProps) {
   const sortedEpisodes = [...episodes].sort((a, b) => {
     const aTime = a.valid_at ? new Date(a.valid_at).getTime() : Infinity;
@@ -55,11 +57,14 @@ export default function EpisodesList({
 
   return (
     <div
-    className={cn(panelContainerClass, "h-full lg:max-h-[40vh] overflow-y-auto gap-0")}
+    className={cn(panelContainerClass, 
+      "h-full overflow-y-auto overscroll-x-none gap-0",
+      variant === 'hero' ? 'max-h-[412px] lg:max-h-[calc(100dvh-8rem)] lg:rounded-b-none lg:border-b-0' : 'lg:max-h-[40vh]'
+    )}
     aria-label="Episodes"
   >
     {showTitle && (
-      <h2 className={labelClass}>
+      <h2 className={cn(labelClass, variant === 'hero' ? 'text-xl lg:text-2xl font-bold mb-2 lg:mb-6' : '')}>
         Recent Activity
       </h2>
     )}

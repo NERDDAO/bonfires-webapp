@@ -3,9 +3,16 @@ import { Button } from "../ui/button";
 import { heroCopy, siteCopy } from "@/content";
 import { HeroRecentActivity } from "./hero-recent-activity";
 
-export default function Hero() {
+interface HeroProps {
+  /** Override staticGraph (e.g. from subdomain context) */
+  staticGraph?: { staticBonfireId: string; staticAgentId: string };
+}
+
+export default function Hero({ staticGraph: staticGraphProp }: HeroProps = {}) {
   const { logo, logoAlt, title, description, primaryCta, primaryCtaHref, secondaryCta, secondaryCtaMobile, secondaryCtaHref } = heroCopy;
-  const staticGraph = "staticGraph" in siteCopy ? siteCopy.staticGraph : undefined;
+  const staticGraph =
+    staticGraphProp ??
+    ("staticGraph" in siteCopy ? siteCopy.staticGraph : undefined);
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-10 px-6 lg:px-20 py-10.5 lg:justify-center min-h-[calc(100svh-4rem)] lg:min-h-[calc(100dvh-5rem)]">

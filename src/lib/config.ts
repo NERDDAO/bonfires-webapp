@@ -38,6 +38,12 @@ interface AppConfig {
     version: string;
     environment: "development" | "staging" | "production";
   };
+
+  // Subdomain / host resolution
+  subdomain: {
+    /** Hostnames that are the app root (no subdomain). Override via NEXT_PUBLIC_APP_ROOTS. */
+    appRoots: string[];
+  };
 }
 
 function getConfig(): AppConfig {
@@ -83,7 +89,23 @@ function getConfig(): AppConfig {
           ? "staging"
           : "production",
     },
+
+    subdomain: {
+      appRoots: parseAppRoots(
+        process.env["NEXT_PUBLIC_APP_ROOTS"]
+      ),
+    },
   };
+}
+
+function parseAppRoots(env: string | undefined): string[] {
+  if (env && env.trim()) {
+    return env
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return ["app.bonfires.ai", "staging-app.bonfires.ai"];
 }
 
 export const config = getConfig();

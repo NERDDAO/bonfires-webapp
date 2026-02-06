@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { staticGraphNodes } from "@/content/landing-page";
 import * as d3 from "d3";
+import { useIsMobile } from "@/hooks";
 
 // Node size tier 1–5 (1 = smallest, 5 = largest). Used for radius.
 const RADIUS_BY_SIZE: Record<number, number> = {
@@ -32,9 +33,10 @@ type D3Node = (typeof NODES_DATA)[0] & {
 };
 type D3Link = { source: D3Node; target: D3Node };
 
-const SCALE_FACTOR = 1.5;
-export const WIDTH = 700 * SCALE_FACTOR;
-export const HEIGHT = 400 * SCALE_FACTOR;
+export const SCALE_FACTOR = 1.5;
+export const MOBILE_SCALE_FACTOR = 1.25;
+export const ORIGINAL_WIDTH = 700;
+export const ORIGINAL_HEIGHT = 400;
 
 /** Alpha below which we consider the layout phase "settled". */
 const LAYOUT_ALPHA_MIN = 0.001;
@@ -208,6 +210,10 @@ function nodeUnderPoint(nodes: D3Node[], logicalX: number, logicalY: number): D3
 }
 
 export default function StaticGraph() {
+  const isMobile = useIsMobile();
+  const WIDTH = isMobile ? ORIGINAL_WIDTH * MOBILE_SCALE_FACTOR : ORIGINAL_WIDTH * SCALE_FACTOR;
+  const HEIGHT = isMobile ? ORIGINAL_HEIGHT * MOBILE_SCALE_FACTOR : ORIGINAL_HEIGHT * SCALE_FACTOR;
+  
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hoveredNodeRef = useRef<string | null>(null);
   const draggedNodeRef = useRef<D3Node | null>(null);

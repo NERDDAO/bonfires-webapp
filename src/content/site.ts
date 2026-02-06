@@ -23,4 +23,8 @@ export const siteCopy = {
   telegramGroupUrl: "https://t.me/bonfiresai",
   twitterUrl: "https://x.com/bonfiresai",
   discordUrl: "https://discord.gg/bonfiresai",
+  staticGraph: {
+    staticBonfireId: "68962cbc2c14173dafbe6dc9",
+    staticAgentId: "68cadde6d6ce58d6050e8f7a"
+  },
 } as const;

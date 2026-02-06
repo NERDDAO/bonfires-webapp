@@ -4,7 +4,7 @@ const orbBackground =
   "radial-gradient(circle at center, #B2FF00 0%, #72A300 0%, #121212 50%)";
 export function Background({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-dvh bg-brand-black">
+    <div className="relative bg-brand-black">
       {/* Orb layer — fixed to viewport so orbs stay in place regardless of scroll/content */}
       <div
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"

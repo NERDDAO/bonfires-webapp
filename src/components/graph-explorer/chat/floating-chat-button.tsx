@@ -29,7 +29,7 @@ export function FloatingChatButton({
     <Button
       variant="primary"
       onClick={onToggle}
-      className="fixed bottom-4 right-4 z-30"
+      className="fixed bottom-4 right-4 z-30 hidden lg:flex"
       aria-label="Open chat"
     >
       <MessageSquare className="w-6 h-6" />

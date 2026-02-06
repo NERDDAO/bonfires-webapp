@@ -14,7 +14,6 @@ import { cn } from "@/lib/cn";
 import type { AgentInfo, BonfireInfo } from "@/types";
 import EpisodesList from "./episodes-list";
 import Image from "next/image";
-import Link from "next/link";
 
 const width = "w-full lg:w-50";
 const border = "bg-[#181818]/80 border-[0.78px] border-[#333333]";
@@ -64,8 +63,8 @@ export interface GraphExplorerPanelProps {
   /** When true, hide Bonfire and Agent dropdowns (static graph mode). */
   hideGraphSelector?: boolean;
   className?: string;
-  /** Telegram bot username */
-  telegramBotUsername: string;
+  /** Called when user taps "Chat" (e.g. to open chat panel). When set, shows Chat button on mobile. */
+  onOpenChat?: () => void;
 }
 
 export function GraphExplorerPanel({
@@ -89,7 +88,7 @@ export function GraphExplorerPanel({
   graphVisible = true,
   hideGraphSelector = false,
   className,
-  telegramBotUsername,
+  onOpenChat,
 }: GraphExplorerPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isRecentActivityCollapsed, setIsRecentActivityCollapsed] = useState(false);
@@ -318,17 +317,19 @@ export function GraphExplorerPanel({
           {isRecentActivityCollapsed ? "Recent activity" : "Hide activity"}
         </button>
 
-        <Link
-          href={`https://t.me/${telegramBotUsername}`}
-          target="_blank"
-          className={cn(
-            "flex-1 flex items-center justify-center px-2.5 py-1.5 rounded-lg text-sm font-medium",
-            border,
-            "bg-[#1C1D21]",
-          )}
-        >
-          Chat in TG
-        </Link>
+        {onOpenChat && (
+          <button
+            type="button"
+            onClick={onOpenChat}
+            className={cn(
+              "flex-1 flex items-center justify-center px-2.5 py-1.5 rounded-lg text-sm font-medium",
+              border,
+              "bg-[#1C1D21]",
+            )}
+          >
+            Chat
+          </button>
+        )}
       </div>
     </>
   );

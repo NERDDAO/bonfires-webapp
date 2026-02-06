@@ -1103,7 +1103,7 @@ export function GraphExplorer({
         onEpisodeSelect={handleEpisodeSelect}
         episodesLoading={isGraphLoading}
         graphVisible={elements.length > 0}
-        telegramBotUsername={agentSelection.selectedAgent?.username ?? ""}
+        onOpenChat={handleToggleChatPanel}
         hideGraphSelector={!!staticGraph}
       />
 

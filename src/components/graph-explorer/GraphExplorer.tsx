@@ -32,7 +32,7 @@ import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
 import { WikiPanelContainer, type WikiNodeData, type WikiEdgeData } from "./wiki/wiki-panel-container";
-import { ChatPanel, FloatingChatButton, type ChatMessage } from "./ChatPanel";
+import { ChatPanel, FloatingChatButton, type ChatMessage } from "./chat";
 import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import type {

@@ -13,6 +13,14 @@
   --font-montserrat: var(--font-montserrat);
 }
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Custom CSS Variables for Graph Theme */
 :root {
   /* Graph canvas colors */

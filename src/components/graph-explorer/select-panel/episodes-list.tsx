@@ -1,7 +1,7 @@
 import { SkeletonLoader } from "@/components/common";
 import { EpisodeTimelineItem } from "@/components/graph/Timeline";
 import { cn } from "@/lib/cn";
-import { labelClass, panelContainerClass } from "./graph-explorer-panel";
+import { labelClass, panelContainerClass } from "./select-panel-constants";
 import { parseEpisodeContent } from "../wiki/wiki-panel-utils";
 
 function formatEpisodeDate(dateStr?: string): string {

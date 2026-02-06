@@ -167,12 +167,23 @@ export function WikiPanelContainer({
   );
 
   const showBody = isMobile ? true : !isMinimized;
+
+  const handleSearchAroundNode = useCallback(
+    (nodeUuid: string) => {
+      wikiPanelProps.onSearchAroundNode?.(nodeUuid);
+      if (isMobile) {
+        onClose?.();
+      }
+    },
+    [wikiPanelProps.onSearchAroundNode, isMobile, onClose]
+  );
+
   const panelContent = (
     <>
       {headerContent}
       {showBody && (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <WikiPanel {...wikiPanelProps} />
+          <WikiPanel {...wikiPanelProps} onSearchAroundNode={handleSearchAroundNode} />
         </div>
       )}
     </>

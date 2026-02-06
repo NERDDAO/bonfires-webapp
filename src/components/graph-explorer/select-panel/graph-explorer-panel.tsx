@@ -146,7 +146,7 @@ export function GraphExplorerPanel({
               aria-label={hideGraphSelector ? "Search" : "Bonfire, agent and search"}
             >
               {!hideGraphSelector && (
-                <div className="flex gap-4 flex-1 flex-col lg:flex-row">
+                <div className="flex gap-4 flex-1 flex-col lg:flex-row mb-2">
                   {/* Bonfire */}
                   <div className="flex-1 flex flex-col">
                     <label htmlFor="bonfire-select" className={labelClass}>
@@ -213,7 +213,7 @@ export function GraphExplorerPanel({
               )}
 
               {/* Search bar row */}
-              <div className="flex flex-col relative mt-2">
+              <div className="flex flex-col relative">
                 <label htmlFor="search-input" className={labelClass}>
                   Search the graph
                 </label>
@@ -224,7 +224,7 @@ export function GraphExplorerPanel({
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Enter search query"
                   className={cn(
-                    "flex-1 min-w-0 px-3 py-2.5 rounded-xl text-sm lg:text-base",
+                    "flex-1 min-w-0 px-3 py-2.5 rounded-xl text-base",
                     "bg-[#181818] border border-[#333333] text-white",
                     "placeholder:text-[#A9A9A9]",
                     "focus:outline-none focus:ring-1 focus:ring-white/30 focus:border-[#646464]"

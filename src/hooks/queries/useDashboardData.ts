@@ -108,14 +108,17 @@ function useRecentChatsData(bonfireId: string | null): DashboardSectionState<Rec
 /**
  * Main dashboard data hook
  * Aggregates all data sources with independent loading states
+ *
+ * @param bonfireIdOverride - When provided (e.g. from subdomain context), use for bonfire-scoped data
  */
-export function useDashboardData(): DashboardData {
+export function useDashboardData(bonfireIdOverride?: string | null): DashboardData {
   const walletAddress = useUserWallet();
   const walletState = useWalletIdentity();
 
-  // Fetch first bonfire for agent name resolution in chats
+  // Fetch first bonfire for agent name resolution in chats (or use override from subdomain)
   const { data: bonfiresData } = useBonfiresQuery();
-  const firstBonfireId = bonfiresData?.bonfires?.[0]?.id ?? null;
+  const firstBonfireId =
+    bonfireIdOverride ?? bonfiresData?.bonfires?.[0]?.id ?? null;
 
   // Recent chats from localStorage (no wallet required)
   const recentChats = useRecentChatsData(firstBonfireId);

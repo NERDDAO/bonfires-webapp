@@ -203,6 +203,7 @@ function GraphExplorerSearchHistoryBridge({
   effectiveCenterNode: string | null;
   render: (props: {
     searchHistoryBreadcrumbs: { label: string; onClick: () => void }[];
+    activeBreadcrumb: string | null;
     handleSearchAroundNode: (nodeUuid: string) => void;
   }) => React.ReactNode;
 }) {
@@ -210,6 +211,7 @@ function GraphExplorerSearchHistoryBridge({
     pushSearchAround,
     resetSearchHistory,
     searchHistoryStack,
+    currentIndex,
     navigateToSearchHistoryIndex,
   } = useGraphSearchHistory();
 
@@ -247,10 +249,18 @@ function GraphExplorerSearchHistoryBridge({
     [searchHistoryStack, navigateToSearchHistoryIndex]
   );
 
+  const activeBreadcrumb =
+    currentIndex >= 0 && currentIndex < searchHistoryStack.length
+      ? searchHistoryStack[currentIndex]?.label ??
+        searchHistoryStack[currentIndex]?.nodeId.slice(0, 8) ??
+        null
+      : null;
+
   return (
     <>
       {render({
         searchHistoryBreadcrumbs,
+        activeBreadcrumb,
         handleSearchAroundNode: handleSearchAroundNodeWithPush,
       })}
     </>
@@ -1081,7 +1091,7 @@ export function GraphExplorer({
         urlAgentId={urlAgentId ?? null}
         searchSubmitCount={searchSubmitCount}
         effectiveCenterNode={effectiveCenterNode}
-        render={({ searchHistoryBreadcrumbs, handleSearchAroundNode: wrappedSearchAround }) => (
+        render={({ searchHistoryBreadcrumbs, activeBreadcrumb, handleSearchAroundNode: wrappedSearchAround }) => (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Header */}
       <GraphExplorerPanel
@@ -1098,6 +1108,7 @@ export function GraphExplorer({
         onSearch={handleSearch}
         isSearching={isGraphLoading}
         searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
+        activeBreadcrumb={activeBreadcrumb}
         episodes={episodes}
         selectedEpisodeId={selectedEpisodeId}
         onEpisodeSelect={handleEpisodeSelect}

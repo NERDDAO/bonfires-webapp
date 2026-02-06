@@ -6,7 +6,7 @@ import { knowledgeGraphSectionCopy } from "@/content/landing-page";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 
 import { Button } from "../ui/button";
-import StaticGraph, { HEIGHT } from "./ui/static-graph";
+import StaticGraph from "./ui/static-graph";
 import { cn } from "@/lib/cn";
 
 export default function KnowledgeGraph() {

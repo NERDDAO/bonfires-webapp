@@ -2,6 +2,7 @@
 
 import { NodeData } from "@/components";
 import { GraphExplorer } from "@/components/graph-explorer/GraphExplorer";
+import { siteCopy } from "@/content";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -30,10 +31,7 @@ function GraphExplorerContent() {
         initialAgentId={agentId}
         onCreateDataRoom={handleCreateDataRoom}
         className="flex-1"
-        staticGraph={{
-          staticBonfireId: "68962cbc2c14173dafbe6dc9",
-          staticAgentId: "68cadde6d6ce58d6050e8f7a"
-        }}
+        staticGraph={siteCopy.staticGraph}
       />
     </div>
   );

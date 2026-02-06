@@ -55,7 +55,7 @@ export default function EpisodesList({
 
   return (
     <div
-    className={cn(panelContainerClass, "h-full lg:max-h-[40vh] overflow-y-auto gap-0")}
+    className={cn(panelContainerClass, "h-full lg:max-h-[40vh] overflow-y-auto overscroll-x-none gap-0")}
     aria-label="Episodes"
   >
     {showTitle && (

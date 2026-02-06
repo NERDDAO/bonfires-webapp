@@ -1,12 +1,6 @@
 @import "./palette.css";
 @import "tailwindcss";
 
-/* Disable overscroll bounce / rubber-band */
-html,
-body {
-  overscroll-behavior: none;
-}
-
 /* DaisyUI configuration */
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark;

@@ -13,6 +13,8 @@ import type { AgentInfo, AgentSelectionState, BonfireInfo } from "@/types";
 interface UseAgentSelectionConfig {
   initialBonfireId?: string | null;
   initialAgentId?: string | null;
+  /** When true, set selection to initial IDs even if not in fetched lists (e.g. static graph). */
+  forceInitialSelection?: boolean;
 }
 
 export function useAgentSelection(selectionConfig?: UseAgentSelectionConfig) {
@@ -50,14 +52,14 @@ export function useAgentSelection(selectionConfig?: UseAgentSelectionConfig) {
         const bonfires = data.bonfires || [];
         setAvailableBonfires(bonfires);
 
-        // Auto-select initial bonfire if provided
-        if (
-          selectionConfig?.initialBonfireId &&
-          bonfires.find(
+        // Auto-select initial bonfire if provided (or force when not in list)
+        if (selectionConfig?.initialBonfireId) {
+          const inList = bonfires.find(
             (b: BonfireInfo) => b.id === selectionConfig.initialBonfireId
-          )
-        ) {
-          setSelectedBonfireId(selectionConfig.initialBonfireId);
+          );
+          if (inList || selectionConfig.forceInitialSelection) {
+            setSelectedBonfireId(selectionConfig.initialBonfireId);
+          }
         }
 
         setIsInitialized(true);
@@ -117,13 +119,17 @@ export function useAgentSelection(selectionConfig?: UseAgentSelectionConfig) {
 
         setAvailableAgents(agents);
 
-        // Auto-select initial agent if provided
+        // Auto-select initial agent if provided (or force when not in list)
         if (
           selectionConfig?.initialAgentId &&
-          selectedBonfireId === selectionConfig?.initialBonfireId &&
-          agents.find((a: AgentInfo) => a.id === selectionConfig.initialAgentId)
+          selectedBonfireId === selectionConfig?.initialBonfireId
         ) {
-          setSelectedAgentId(selectionConfig.initialAgentId);
+          const inList = agents.find(
+            (a: AgentInfo) => a.id === selectionConfig.initialAgentId
+          );
+          if (inList || selectionConfig.forceInitialSelection) {
+            setSelectedAgentId(selectionConfig.initialAgentId);
+          }
         }
       })
       .catch((err) => {
@@ -143,6 +149,7 @@ export function useAgentSelection(selectionConfig?: UseAgentSelectionConfig) {
     selectedBonfireId,
     selectionConfig?.initialAgentId,
     selectionConfig?.initialBonfireId,
+    selectionConfig?.forceInitialSelection,
   ]);
 
   const selectBonfire = useCallback((bonfireId: string | null) => {

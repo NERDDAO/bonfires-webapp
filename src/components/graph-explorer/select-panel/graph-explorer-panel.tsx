@@ -61,6 +61,8 @@ export interface GraphExplorerPanelProps {
   episodesLoading?: boolean;
   /** When false, panel stays expanded (no collapse). Default true. */
   graphVisible?: boolean;
+  /** When true, hide Bonfire and Agent dropdowns (static graph mode). */
+  hideGraphSelector?: boolean;
   className?: string;
   /** Telegram bot username */
   telegramBotUsername: string;
@@ -85,6 +87,7 @@ export function GraphExplorerPanel({
   onEpisodeSelect,
   episodesLoading = false,
   graphVisible = true,
+  hideGraphSelector = false,
   className,
   telegramBotUsername,
 }: GraphExplorerPanelProps) {
@@ -108,7 +111,7 @@ export function GraphExplorerPanel({
     <>
       <div
         className={cn(
-          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] lg:max-h-[calc(100dvh-2rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
+          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] lg:max-h-[calc(100dvh-10rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
           !isRecentActivityCollapsed && "h-full",
           className
         )}
@@ -141,72 +144,74 @@ export function GraphExplorerPanel({
             {/* Panel: dropdowns + search row */}
             <header
               className={cn(panelContainerClass, "mb-3 lg:mt-2")}
-              aria-label="Bonfire, agent and search"
+              aria-label={hideGraphSelector ? "Search" : "Bonfire, agent and search"}
             >
-              <div className="flex gap-4 flex-1 flex-col lg:flex-row">
-                {/* Bonfire */}
-                <div className="flex-1 flex flex-col">
-                  <label htmlFor="bonfire-select" className={labelClass}>
-                    Bonfire
-                  </label>
-                  {loading.bonfires ? (
-                    <div className={skeletonClass} aria-hidden />
-                  ) : error.bonfires ? (
-                    <div className={errorClass} role="alert">
-                      {error.bonfires}
-                    </div>
-                  ) : (
-                    <SelectDropdown
-                      id="bonfire-select"
-                      value={selectedBonfire?.id ?? null}
-                      options={availableBonfires.map((b) => ({
-                        value: b.id,
-                        label: b.name,
-                      }))}
-                      placeholder="Select a bonfire"
-                      onChange={onSelectBonfire}
-                      aria-label="Select bonfire"
-                      className={width}
-                      contentClassName={contentClass}
-                    />
-                  )}
-                </div>
+              {!hideGraphSelector && (
+                <div className="flex gap-4 flex-1 flex-col lg:flex-row">
+                  {/* Bonfire */}
+                  <div className="flex-1 flex flex-col">
+                    <label htmlFor="bonfire-select" className={labelClass}>
+                      Bonfire
+                    </label>
+                    {loading.bonfires ? (
+                      <div className={skeletonClass} aria-hidden />
+                    ) : error.bonfires ? (
+                      <div className={errorClass} role="alert">
+                        {error.bonfires}
+                      </div>
+                    ) : (
+                      <SelectDropdown
+                        id="bonfire-select"
+                        value={selectedBonfire?.id ?? null}
+                        options={availableBonfires.map((b) => ({
+                          value: b.id,
+                          label: b.name,
+                        }))}
+                        placeholder="Select a bonfire"
+                        onChange={onSelectBonfire}
+                        aria-label="Select bonfire"
+                        className={width}
+                        contentClassName={contentClass}
+                      />
+                    )}
+                  </div>
 
-                {/* Agent */}
-                <div className="flex-1 flex flex-col">
-                  <label htmlFor="agent-select" className={labelClass}>
-                    Agent
-                  </label>
-                  {loading.agents ? (
-                    <div className={skeletonClass} aria-hidden />
-                  ) : error.agents ? (
-                    <div className={errorClass} role="alert">
-                      {error.agents}
-                    </div>
-                  ) : (
-                    <SelectDropdown
-                      id="agent-select"
-                      value={selectedAgent?.id ?? null}
-                      options={availableAgents.map((a) => ({
-                        value: a.id,
-                        label: a.name || a.username || a.id,
-                      }))}
-                      placeholder={
-                        !selectedBonfireId
-                          ? "Select a bonfire first"
-                          : availableAgents.length === 0
-                            ? "No agents available"
-                            : "Select an agent"
-                      }
-                      onChange={onSelectAgent}
-                      disabled={!selectedBonfireId || availableAgents.length === 0}
-                      aria-label="Select agent"
-                      className={width}
-                      contentClassName={contentClass}
-                    />
-                  )}
+                  {/* Agent */}
+                  <div className="flex-1 flex flex-col">
+                    <label htmlFor="agent-select" className={labelClass}>
+                      Agent
+                    </label>
+                    {loading.agents ? (
+                      <div className={skeletonClass} aria-hidden />
+                    ) : error.agents ? (
+                      <div className={errorClass} role="alert">
+                        {error.agents}
+                      </div>
+                    ) : (
+                      <SelectDropdown
+                        id="agent-select"
+                        value={selectedAgent?.id ?? null}
+                        options={availableAgents.map((a) => ({
+                          value: a.id,
+                          label: a.name || a.username || a.id,
+                        }))}
+                        placeholder={
+                          !selectedBonfireId
+                            ? "Select a bonfire first"
+                            : availableAgents.length === 0
+                              ? "No agents available"
+                              : "Select an agent"
+                        }
+                        onChange={onSelectAgent}
+                        disabled={!selectedBonfireId || availableAgents.length === 0}
+                        aria-label="Select agent"
+                        className={width}
+                        contentClassName={contentClass}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Search bar row */}
               <div className="flex flex-col relative mt-2">

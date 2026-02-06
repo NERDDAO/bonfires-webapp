@@ -166,11 +166,19 @@ function buildGraphStatePayload(
   };
 }
 
+/** When provided, bonfire/agent are fixed; URL and initial props are ignored and graph selector is hidden. */
+export interface StaticGraphConfig {
+  staticBonfireId: string;
+  staticAgentId: string;
+}
+
 interface GraphExplorerProps {
   /** Initial bonfire ID from URL */
   initialBonfireId?: string | null;
   /** Initial agent ID from URL */
   initialAgentId?: string | null;
+  /** When set, use only these IDs (ignore URL/initial) and hide graph selector dropdowns */
+  staticGraph?: StaticGraphConfig | null;
   /** Whether to run in embedded mode (limited interactions) */
   embedded?: boolean;
   /** Callback when "Create Data Room" is clicked */
@@ -255,6 +263,7 @@ function GraphExplorerSearchHistoryBridge({
 export function GraphExplorer({
   initialBonfireId,
   initialAgentId,
+  staticGraph,
   embedded = false,
   onCreateDataRoom,
   className,
@@ -262,9 +271,16 @@ export function GraphExplorer({
   const searchParams = useSearchParams();
   const { address: walletAddress, isConnected: isWalletConnected } = useWalletAccount();
 
-  // URL parameters
-  const urlBonfireId = searchParams.get("bonfireId") ?? initialBonfireId;
-  const urlAgentId = searchParams.get("agentId") ?? initialAgentId;
+  // When staticGraph is provided, ignore URL and initial props; otherwise use URL/initial
+  const effectiveBonfireId = staticGraph
+    ? staticGraph.staticBonfireId
+    : (searchParams.get("bonfireId") ?? initialBonfireId);
+  const effectiveAgentId = staticGraph
+    ? staticGraph.staticAgentId
+    : (searchParams.get("agentId") ?? initialAgentId);
+
+  const urlBonfireId = effectiveBonfireId;
+  const urlAgentId = effectiveAgentId;
   const urlCenterNode = searchParams.get("centerNode");
   const urlSearchQuery = searchParams.get("q") ?? "";
 
@@ -280,10 +296,11 @@ export function GraphExplorer({
   // Wiki navigation
   const wikiNav = useWikiNavigation();
 
-  // Agent selection
-  const agentSelection = useAgentSelection({ 
-    initialBonfireId: urlBonfireId,
-    initialAgentId: urlAgentId,
+  // Agent selection (when staticGraph is set, force IDs even if not in fetched lists)
+  const agentSelection = useAgentSelection({
+    initialBonfireId: urlBonfireId ?? undefined,
+    initialAgentId: urlAgentId ?? undefined,
+    forceInitialSelection: !!staticGraph,
   });
 
   // Search state
@@ -1087,6 +1104,7 @@ export function GraphExplorer({
         episodesLoading={isGraphLoading}
         graphVisible={elements.length > 0}
         telegramBotUsername={agentSelection.selectedAgent?.username ?? ""}
+        hideGraphSelector={!!staticGraph}
       />
 
       {/* Main Content */}

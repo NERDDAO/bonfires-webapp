@@ -12,6 +12,7 @@ import { useBonfireSelection } from "@/components/shared/BonfireSelector";
 import { BonfireSelector } from "@/components/shared/BonfireSelector";
 import { Header } from "@/components/shared/Header";
 import { Footer } from "@/components/shared/Footer";
+import { useSubdomainBonfire } from "@/contexts";
 import {
   DocumentUpload,
   DocumentsTable,
@@ -23,11 +24,16 @@ import { toast } from "@/components/common";
 import type { DocumentSummary, TaxonomyLabel } from "@/types";
 
 export default function DocumentsPage() {
+  const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const {
-    selectedBonfireId,
+    selectedBonfireId: selectionBonfireId,
     onBonfireChange,
     isLoading: isBonfiresLoading,
   } = useBonfireSelection("documents");
+
+  const selectedBonfireId = isSubdomainScoped && subdomainConfig
+    ? subdomainConfig.bonfireId
+    : selectionBonfireId;
 
   // Label filtering
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
@@ -162,20 +168,22 @@ export default function DocumentsPage() {
           </p>
         </div>
 
-        {/* Bonfire selector */}
-        <div className="mb-8">
-          <label className="label">
-            <span className="label-text font-semibold">Select Bonfire</span>
-          </label>
-          <div className="max-w-md">
-            <BonfireSelector
-              selectedBonfireId={selectedBonfireId}
-              onBonfireChange={onBonfireChange}
-              storageKey="documents"
-              placeholder="Select a bonfire to manage documents"
-            />
+        {/* Bonfire selector - hidden when scoped to subdomain */}
+        {!isSubdomainScoped && (
+          <div className="mb-8">
+            <label className="label">
+              <span className="label-text font-semibold">Select Bonfire</span>
+            </label>
+            <div className="max-w-md">
+              <BonfireSelector
+                selectedBonfireId={selectedBonfireId}
+                onBonfireChange={onBonfireChange}
+                storageKey="documents"
+                placeholder="Select a bonfire to manage documents"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {selectedBonfireId ? (
           <div className="space-y-8">

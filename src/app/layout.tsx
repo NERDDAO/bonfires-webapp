@@ -12,9 +12,6 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { cn } from "@/lib/cn";
 
 import "./(styles)/globals.css";
-import { Providers } from "./providers";
-import { Background } from "@/components/background";
-import { Navbar } from "@/components/navbar";
 
 const { laroSoft, dmSans, montserrat } = customFonts;
 
@@ -37,12 +34,7 @@ export default function RootLayout({
             "font-dm-sans antialiased min-h-dvh"
           )}
         >
-          <Providers>
-            <Background>
-              <Navbar />
-              {children}
-            </Background>
-          </Providers>
+          {children}
         </body>
       </html>
     </ClerkProvider>

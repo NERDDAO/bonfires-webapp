@@ -9,6 +9,7 @@
 "use client";
 
 import { useDashboardData } from "@/hooks";
+import { useSubdomainBonfire } from "@/contexts";
 import { Header } from "@/components/shared/Header";
 import {
   RecentChatsSection,
@@ -20,7 +21,10 @@ import {
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const dashboardData = useDashboardData();
+  const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
+  const bonfireIdOverride =
+    isSubdomainScoped && subdomainConfig ? subdomainConfig.bonfireId : undefined;
+  const dashboardData = useDashboardData(bonfireIdOverride);
   const isWalletConnected = dashboardData.wallet.isConnected;
 
   return (

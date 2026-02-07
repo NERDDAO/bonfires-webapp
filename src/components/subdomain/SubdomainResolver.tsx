@@ -63,7 +63,9 @@ export async function SubdomainResolver({ children }: SubdomainResolverProps) {
     );
   }
   const host = headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "";
-  const subdomainLabel = getSubdomainLabel(host);
+  const subdomainLabel =
+    getSubdomainLabel(host) ??
+    headersList.get("x-subdomain-override");
 
   let initialConfig: SubdomainConfig | null = null;
 

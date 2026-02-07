@@ -2,10 +2,14 @@
  * useWikiNavigation Hook
  * Navigation state management for the wiki panel
  */
-
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+
+/**
+ * useWikiNavigation Hook
+ * Navigation state management for the wiki panel
+ */
 
 export type WikiContentType = "episode" | "edge" | "entity";
 

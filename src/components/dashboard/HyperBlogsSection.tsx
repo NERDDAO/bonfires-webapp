@@ -4,13 +4,21 @@
  * Displays HyperBlogs created by the user.
  * Shows generation status, view count, and quick actions.
  */
-
 "use client";
 
 import Link from "next/link";
-import { DashboardSection } from "./DashboardSection";
-import type { DashboardSectionState } from "@/types/dashboard";
+
 import type { HyperBlogInfo } from "@/types/api";
+import type { DashboardSectionState } from "@/types/dashboard";
+
+import { DashboardSection } from "./DashboardSection";
+
+/**
+ * HyperBlogsSection Component
+ *
+ * Displays HyperBlogs created by the user.
+ * Shows generation status, view count, and quick actions.
+ */
 
 interface HyperBlogsSectionProps {
   data: DashboardSectionState<HyperBlogInfo[]>;

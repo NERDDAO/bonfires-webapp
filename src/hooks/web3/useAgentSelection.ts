@@ -6,8 +6,8 @@
  * Manages bonfire and agent selection for Web3 features.
  * Fetches bonfires on mount and agents when a bonfire is selected.
  */
-
 import { useCallback, useEffect, useMemo, useState } from "react";
+
 import type { AgentInfo, AgentSelectionState, BonfireInfo } from "@/types";
 
 interface UseAgentSelectionConfig {

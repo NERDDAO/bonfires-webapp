@@ -2,16 +2,34 @@
  * GraphVisualization Component
  * High-level graph visualization wrapper with loading states and error handling
  */
-
 "use client";
 
-import React, { useCallback, useMemo, memo, useRef, useEffect, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import dynamic from "next/dynamic";
 
 import { ErrorMessage, LoadingSpinner } from "@/components/common";
-import { adaptToSigma, type NodeTypeColors, type GraphElement } from "@/lib/utils/sigma-adapter";
+
 import { NODE_COLOR_DEFAULTS } from "@/lib/utils/graph-theme";
+import {
+  type GraphElement,
+  type NodeTypeColors,
+  adaptToSigma,
+} from "@/lib/utils/sigma-adapter";
+
 import type { SigmaGraphProps } from "./SigmaGraph";
+
+/**
+ * GraphVisualization Component
+ * High-level graph visualization wrapper with loading states and error handling
+ */
 
 // Dynamically import SigmaGraph with SSR disabled to avoid WebGL errors
 const SigmaGraph = dynamic<SigmaGraphProps>(
@@ -80,9 +98,11 @@ export const GraphVisualization = memo(function GraphVisualization({
   // Transform elements to graphology format
   const graph = useMemo(() => {
     const colors: NodeTypeColors = {
-      episodeColor: nodeColors?.episodeColor ?? NODE_COLOR_DEFAULTS.episodeColor,
+      episodeColor:
+        nodeColors?.episodeColor ?? NODE_COLOR_DEFAULTS.episodeColor,
       entityColor: nodeColors?.entityColor ?? NODE_COLOR_DEFAULTS.entityColor,
-      unknownColor: nodeColors?.unknownColor ?? NODE_COLOR_DEFAULTS.unknownColor,
+      unknownColor:
+        nodeColors?.unknownColor ?? NODE_COLOR_DEFAULTS.unknownColor,
       userColor: nodeColors?.userColor ?? NODE_COLOR_DEFAULTS.userColor,
     };
 
@@ -123,7 +143,10 @@ export const GraphVisualization = memo(function GraphVisualization({
     const errorMessage = typeof error === "string" ? error : error.message;
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
-        <ErrorMessage message={errorMessage ?? "Failed to load graph"} variant="card" />
+        <ErrorMessage
+          message={errorMessage ?? "Failed to load graph"}
+          variant="card"
+        />
       </div>
     );
   }

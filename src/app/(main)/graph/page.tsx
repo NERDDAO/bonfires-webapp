@@ -1,11 +1,14 @@
 "use client";
 
+import { Suspense, useMemo } from "react";
+
+import { useRouter, useSearchParams } from "next/navigation";
+
 import { NodeData } from "@/components";
-import { GraphExplorer } from "@/components/graph-explorer/GraphExplorer";
 import { siteCopy } from "@/content";
 import { useSubdomainBonfire } from "@/contexts";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+
+import { GraphExplorer } from "@/components/graph-explorer/GraphExplorer";
 
 function GraphExplorerContent() {
   const searchParams = useSearchParams();
@@ -25,8 +28,14 @@ function GraphExplorerContent() {
     return siteCopy.staticGraph;
   }, [isSubdomainScoped, subdomainConfig]);
 
-  const effectiveBonfireId = isSubdomainScoped && subdomainConfig ? subdomainConfig.bonfireId : bonfireId;
-  const effectiveAgentId = isSubdomainScoped && subdomainConfig ? (subdomainConfig.agentId ?? agentId) : agentId;
+  const effectiveBonfireId =
+    isSubdomainScoped && subdomainConfig
+      ? subdomainConfig.bonfireId
+      : bonfireId;
+  const effectiveAgentId =
+    isSubdomainScoped && subdomainConfig
+      ? (subdomainConfig.agentId ?? agentId)
+      : agentId;
 
   const handleCreateDataRoom = (nodeData: NodeData, bfId: string) => {
     const params = new URLSearchParams();
@@ -44,7 +53,11 @@ function GraphExplorerContent() {
         initialAgentId={effectiveAgentId ?? undefined}
         onCreateDataRoom={handleCreateDataRoom}
         className="flex-1"
-        staticGraph={isSubdomainScoped && subdomainConfig ? staticGraph : siteCopy.staticGraph}
+        staticGraph={
+          isSubdomainScoped && subdomainConfig
+            ? staticGraph
+            : siteCopy.staticGraph
+        }
       />
     </div>
   );

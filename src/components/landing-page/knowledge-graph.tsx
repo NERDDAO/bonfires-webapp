@@ -3,17 +3,20 @@
 import { useRef } from "react";
 
 import { knowledgeGraphSectionCopy } from "@/content/landing-page";
+
 import { useIsMobile } from "@/hooks/useMediaQuery";
+
+import { cn } from "@/lib/cn";
 
 import { Button } from "../ui/button";
 import StaticGraph from "./ui/static-graph";
-import { cn } from "@/lib/cn";
 
 export default function KnowledgeGraph() {
   const isMobile = useIsMobile();
   const sectionRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
-  const { title, subtitle, description, paragraphs, cta, ctaHref } = knowledgeGraphSectionCopy;
+  const { title, subtitle, description, paragraphs, cta, ctaHref } =
+    knowledgeGraphSectionCopy;
 
   return (
     <div
@@ -27,7 +30,9 @@ export default function KnowledgeGraph() {
         <div className="hidden lg:block font-laro-soft text-2xl font-bold mt-6 leading-normal">
           {subtitle}
         </div>
-        <div className="block lg:hidden font-laro-soft text-sm mt-2">{description}</div>
+        <div className="block lg:hidden font-laro-soft text-sm mt-2">
+          {description}
+        </div>
 
         <div className="hidden lg:flex flex-col gap-8 mt-4">
           {paragraphs.map((paragraph) => (
@@ -51,7 +56,9 @@ export default function KnowledgeGraph() {
         <div
           className={cn(
             "absolute bottom-0 flex items-center justify-center pointer-events-auto",
-            isMobile ? "left-1/2 -translate-x-1/2" : "bottom-0 right-0 translate-x-1/3 translate-y-1/2",
+            isMobile
+              ? "left-1/2 -translate-x-1/2"
+              : "bottom-0 right-0 translate-x-1/3 translate-y-1/2"
           )}
         >
           <StaticGraph />

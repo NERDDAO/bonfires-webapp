@@ -6,20 +6,18 @@
  * Displays a single hyperblog with full content when a hyperblog is clicked from the feed.
  * UI matches the expanded hyperblog-card: same badges, banner, footer, plus summary and full content.
  */
-
 import { useCallback, useEffect, useState } from "react";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
+import type { HyperBlogInfo } from "@/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { HyperBlogInfo } from "@/types";
-import {
-  truncateAddress,
-  formatReadingTime,
-  formatNumber,
-} from "@/lib/utils";
+
 import { cn } from "@/lib/cn";
+import { formatNumber, formatReadingTime, truncateAddress } from "@/lib/utils";
 
 export default function HyperBlogDetailPage() {
   const params = useParams();
@@ -31,21 +29,28 @@ export default function HyperBlogDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   /** Strip HTML tags so markdown renders only markdown; ignores raw HTML. */
-  const stripHtml = useCallback((text: string) =>
-    text.replace(/<\/?[a-zA-Z][^>]*>/g, ""), []);
+  const stripHtml = useCallback(
+    (text: string) => text.replace(/<\/?[a-zA-Z][^>]*>/g, ""),
+    []
+  );
 
-  const extractViewContent = useCallback((viewData: Record<string, unknown>): string | null => {
-    const raw =
-      (viewData["content"] as string | undefined) ??
-      (viewData["full_content"] as string | undefined) ??
-      (viewData["html"] as string | undefined) ??
-      (viewData["markdown"] as string | undefined) ??
-      (viewData["body"] as string | undefined) ??
-      (viewData["data"] &&
-      typeof viewData["data"] === "object" &&
-      (viewData["data"] as Record<string, unknown>)["content"] as string | undefined);
-    return typeof raw === "string" && raw.trim() ? raw : null;
-  }, []);
+  const extractViewContent = useCallback(
+    (viewData: Record<string, unknown>): string | null => {
+      const raw =
+        (viewData["content"] as string | undefined) ??
+        (viewData["full_content"] as string | undefined) ??
+        (viewData["html"] as string | undefined) ??
+        (viewData["markdown"] as string | undefined) ??
+        (viewData["body"] as string | undefined) ??
+        (viewData["data"] &&
+          typeof viewData["data"] === "object" &&
+          ((viewData["data"] as Record<string, unknown>)["content"] as
+            | string
+            | undefined));
+      return typeof raw === "string" && raw.trim() ? raw : null;
+    },
+    []
+  );
 
   const fetchBlog = useCallback(async () => {
     setIsLoading(true);
@@ -104,7 +109,10 @@ export default function HyperBlogDetailPage() {
             <div className="h-8 lg:h-10 w-full bg-[#FFFFFF10] rounded mt-1 lg:mt-2 mb-2" />
             <div className="flex gap-2 flex-wrap items-center">
               {[1, 2, 3, 4].map((i) => (
-                <span key={i} className="h-5 lg:h-6 w-20 bg-[#FFFFFF15] rounded-full shrink-0" />
+                <span
+                  key={i}
+                  className="h-5 lg:h-6 w-20 bg-[#FFFFFF15] rounded-full shrink-0"
+                />
               ))}
             </div>
             <div className="mt-4 w-full h-32 lg:h-64 bg-[#FFFFFF10] rounded-lg border-[0.78px] border-[#333333]" />
@@ -211,7 +219,10 @@ export default function HyperBlogDetailPage() {
               {blog.author_name ? `by ${blog.author_name}` : formattedAuthor}
             </span>
             {[
-              { value: formattedTimestamp, className: "w-full lg:w-auto flex-auto" },
+              {
+                value: formattedTimestamp,
+                className: "w-full lg:w-auto flex-auto",
+              },
               { value: formattedBlogLength, className: "" },
               { value: formattedWordCount, className: "" },
               { value: formattedReadingTime, className: "" },
@@ -370,7 +381,11 @@ export default function HyperBlogDetailPage() {
           <div className="mt-6 pt-4 border-t border-[#333333] flex gap-4 items-center flex-wrap">
             {[
               { icon: "/icons/like.svg", label: "likes", count: likes },
-              { icon: "/icons/dislike.svg", label: "dislikes", count: dislikes },
+              {
+                icon: "/icons/dislike.svg",
+                label: "dislikes",
+                count: dislikes,
+              },
               { icon: "/icons/view.svg", label: "views", count: views },
             ].map((item) => (
               <div key={item.icon} className="flex items-center gap-2">

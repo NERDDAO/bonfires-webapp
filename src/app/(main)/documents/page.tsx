@@ -4,24 +4,36 @@
  * Document management page with upload, list, and taxonomy features.
  * Accessible from /documents
  */
-
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, Fragment } from "react";
-import { useBonfireSelection } from "@/components/shared/BonfireSelector";
-import { BonfireSelector } from "@/components/shared/BonfireSelector";
-import { Header } from "@/components/shared/Header";
-import { Footer } from "@/components/shared/Footer";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+
 import { useSubdomainBonfire } from "@/contexts";
 import {
+  useBonfireById,
+  useLabeledChunks,
+  useTaxonomyStatsQuery,
+} from "@/hooks";
+import type { DocumentSummary, TaxonomyLabel } from "@/types";
+
+import { toast } from "@/components/common";
+import {
+  DocumentSummaryCards,
   DocumentUpload,
   DocumentsTable,
-  DocumentSummaryCards,
   TaxonomyLabelsPanel,
 } from "@/components/documents";
-import { useLabeledChunks, useBonfireById, useTaxonomyStatsQuery } from "@/hooks";
-import { toast } from "@/components/common";
-import type { DocumentSummary, TaxonomyLabel } from "@/types";
+import { useBonfireSelection } from "@/components/shared/BonfireSelector";
+import { BonfireSelector } from "@/components/shared/BonfireSelector";
+import { Footer } from "@/components/shared/Footer";
+import { Header } from "@/components/shared/Header";
+
+/**
+ * Documents Page
+ *
+ * Document management page with upload, list, and taxonomy features.
+ * Accessible from /documents
+ */
 
 export default function DocumentsPage() {
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
@@ -31,9 +43,10 @@ export default function DocumentsPage() {
     isLoading: isBonfiresLoading,
   } = useBonfireSelection("documents");
 
-  const selectedBonfireId = isSubdomainScoped && subdomainConfig
-    ? subdomainConfig.bonfireId
-    : selectionBonfireId;
+  const selectedBonfireId =
+    isSubdomainScoped && subdomainConfig
+      ? subdomainConfig.bonfireId
+      : selectionBonfireId;
 
   // Label filtering
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
@@ -69,7 +82,8 @@ export default function DocumentsPage() {
   const totalDocuments =
     chunksData?.summary?.total_documents ?? visibleDocuments.length;
   const totalPages =
-    chunksData?.total_pages ?? Math.max(1, Math.ceil(totalDocuments / pageSize));
+    chunksData?.total_pages ??
+    Math.max(1, Math.ceil(totalDocuments / pageSize));
   const canGoPrev = page > 1;
   const canGoNext = chunksData?.has_next ?? page < totalPages;
 
@@ -188,10 +202,7 @@ export default function DocumentsPage() {
         {selectedBonfireId ? (
           <div className="space-y-8">
             {/* Summary cards */}
-            <DocumentSummaryCards
-              summary={summary}
-              isLoading={isLoading}
-            />
+            <DocumentSummaryCards summary={summary} isLoading={isLoading} />
 
             {/* Main content grid */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -200,9 +211,7 @@ export default function DocumentsPage() {
                 {/* Document upload */}
                 <div className="card bg-base-200">
                   <div className="card-body p-4">
-                    <h2 className="card-title text-lg mb-3">
-                      Upload Document
-                    </h2>
+                    <h2 className="card-title text-lg mb-3">Upload Document</h2>
                     <DocumentUpload
                       bonfireId={selectedBonfireId}
                       onUploadSuccess={handleUploadSuccess}
@@ -371,7 +380,9 @@ function DocumentsListTable({ documents }: { documents: DocumentPreview[] }) {
                 <tr className="hover">
                   <td className="font-mono text-xs">
                     <div className="flex items-center gap-2">
-                      <span>{doc.doc_id ? `${doc.doc_id.slice(0, 8)}...` : "—"}</span>
+                      <span>
+                        {doc.doc_id ? `${doc.doc_id.slice(0, 8)}...` : "—"}
+                      </span>
                       <button
                         className="btn btn-ghost btn-xs"
                         onClick={() => copyToClipboard(doc.doc_id ?? "")}
@@ -395,7 +406,9 @@ function DocumentsListTable({ documents }: { documents: DocumentPreview[] }) {
                           </span>
                         ))
                       ) : (
-                        <span className="text-base-content/40">No taxonomies</span>
+                        <span className="text-base-content/40">
+                          No taxonomies
+                        </span>
                       )}
                     </div>
                   </td>
@@ -429,7 +442,8 @@ function DocumentsListTable({ documents }: { documents: DocumentPreview[] }) {
                             className="rounded-lg border border-base-300 bg-base-100 p-3"
                           >
                             <div className="text-xs text-base-content/60 mb-1">
-                              Chunk #{chunk.index ?? "—"} • {chunk.category ?? "Unlabeled"}
+                              Chunk #{chunk.index ?? "—"} •{" "}
+                              {chunk.category ?? "Unlabeled"}
                             </div>
                             <div className="text-sm whitespace-pre-wrap">
                               {chunk.content ?? ""}

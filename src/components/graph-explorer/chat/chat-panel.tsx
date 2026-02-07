@@ -2,19 +2,25 @@
  * ChatPanel - Agent chat interface
  * Composes header, message list, error banner, and input.
  */
-
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+
 import { cn } from "@/lib/cn";
 
-const MOBILE_BREAKPOINT = 768;
-import type { ChatPanelProps } from "./types";
-import { ChatPanelCollapsed } from "./chat-panel-collapsed";
-import { ChatPanelHeader } from "./chat-panel-header";
-import { ChatMessageList } from "./chat-message-list";
 import { ChatErrorBanner } from "./chat-error-banner";
 import { ChatInput } from "./chat-input";
+import { ChatMessageList } from "./chat-message-list";
+import { ChatPanelCollapsed } from "./chat-panel-collapsed";
+import { ChatPanelHeader } from "./chat-panel-header";
+import type { ChatPanelProps } from "./types";
+
+/**
+ * ChatPanel - Agent chat interface
+ * Composes header, message list, error banner, and input.
+ */
+
+const MOBILE_BREAKPOINT = 768;
 
 export function ChatPanel({
   agentId,
@@ -30,7 +36,9 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState("");
   const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false
+    typeof window !== "undefined"
+      ? window.innerWidth < MOBILE_BREAKPOINT
+      : false
   );
   const isExpanded = mode === "chat";
 
@@ -61,7 +69,8 @@ export function ChatPanel({
     return null;
   }
 
-  const panelBorder = "bg-[#181818]/80 border-[0.78px] border-[#333333] rounded-2xl";
+  const panelBorder =
+    "bg-[#181818]/80 border-[0.78px] border-[#333333] rounded-2xl";
 
   const panelContent = (
     <>
@@ -81,12 +90,7 @@ export function ChatPanel({
             messages={messages}
             isSending={isSending}
           />
-          {error && (
-            <ChatErrorBanner
-              error={error}
-              onDismiss={onClearError}
-            />
-          )}
+          {error && <ChatErrorBanner error={error} onDismiss={onClearError} />}
           <ChatInput
             value={inputValue}
             onChange={setInputValue}

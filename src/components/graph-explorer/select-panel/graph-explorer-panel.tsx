@@ -7,11 +7,13 @@
  * search bar in a row below, and episodes list in a vertical column below the panel.
  * Supports collapsed state (icon strip) when a graph is visible; collapse badge is top-left outside the panel.
  */
-
 import { useState } from "react";
-import { cn } from "@/lib/cn";
-import EpisodesList from "./episodes-list";
+
 import Image from "next/image";
+
+import { cn } from "@/lib/cn";
+
+import EpisodesList from "./episodes-list";
 import { MobileBottomButtons } from "./mobile-bottom-buttons";
 import { PanelHeader } from "./panel-header";
 import type { GraphExplorerPanelProps } from "./panel-types";
@@ -19,7 +21,10 @@ import { border } from "./select-panel-constants";
 
 // Re-export for consumers (e.g. episodes-list)
 export { labelClass, panelContainerClass } from "./select-panel-constants";
-export type { EpisodeTimelineItem, GraphExplorerPanelProps } from "./panel-types";
+export type {
+  EpisodeTimelineItem,
+  GraphExplorerPanelProps,
+} from "./panel-types";
 
 export function GraphExplorerPanel({
   availableBonfires,
@@ -46,7 +51,8 @@ export function GraphExplorerPanel({
   onOpenChat,
 }: GraphExplorerPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isRecentActivityCollapsed, setIsRecentActivityCollapsed] = useState(false);
+  const [isRecentActivityCollapsed, setIsRecentActivityCollapsed] =
+    useState(false);
   const effectiveExpanded = !graphVisible || !isCollapsed;
   const showCollapseBadge = graphVisible && effectiveExpanded;
 
@@ -73,7 +79,17 @@ export function GraphExplorerPanel({
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
               <path d="M15 18l-6-6 6-6" />
             </svg>
             <span className="text-sm text-white">Collapse</span>
@@ -115,19 +131,27 @@ export function GraphExplorerPanel({
             onClick={() => setIsCollapsed(false)}
             className={cn(
               "flex flex-col items-center gap-3 py-4 px-3 rounded-lg min-w-[56px] absolute z-50",
-              border,
+              border
             )}
             aria-label="Expand panel"
             title="Expand panel"
           >
-            <Image src="/icons/collapsed-graph-select.svg" alt="" width={20} height={20} className="opacity-80" />
+            <Image
+              src="/icons/collapsed-graph-select.svg"
+              alt=""
+              width={20}
+              height={20}
+              className="opacity-80"
+            />
           </button>
         )}
       </div>
 
       <MobileBottomButtons
         isRecentActivityCollapsed={isRecentActivityCollapsed}
-        onToggleRecentActivity={() => setIsRecentActivityCollapsed((prev) => !prev)}
+        onToggleRecentActivity={() =>
+          setIsRecentActivityCollapsed((prev) => !prev)
+        }
         onOpenChat={onOpenChat}
       />
     </>

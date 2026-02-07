@@ -3,7 +3,6 @@
  *
  * Common utility functions for formatting, validation, and error handling.
  */
-
 import removeMd from "remove-markdown";
 
 /**
@@ -37,10 +36,7 @@ export function formatTimestamp(isoString: string): string {
 /**
  * Format a number for display
  */
-export function formatNumber(
-  number: number,
-  decimals: number = 2,
-): string {
+export function formatNumber(number: number, decimals: number = 2): string {
   return new Intl.NumberFormat("en-US", {
     notation: "compact",
     maximumFractionDigits: decimals,
@@ -192,24 +188,24 @@ export function calculateReadingTime(wordCount: number): string {
 
 /**
  * Return formatted blog length information from word count
- * @param wordCount 
- * @returns 
+ * @param wordCount
+ * @returns
  */
 export function formatBlogLength(wordCount: number): string {
   if (wordCount < 1000) return "Short";
   if (wordCount < 2000) return "Medium";
   return "Long";
-};
+}
 
 /**
  * Return formatted reading time information from word count
- * @param price 
- * @returns 
+ * @param price
+ * @returns
  */
-export function formatReadingTime(wordCount: number): { 
-  formattedBlogLength: string, 
-  formattedWordCount: string, 
-  formattedReadingTime: string,
+export function formatReadingTime(wordCount: number): {
+  formattedBlogLength: string;
+  formattedWordCount: string;
+  formattedReadingTime: string;
 } {
   const formattedBlogLength = formatBlogLength(wordCount);
   const formattedWordCount = `${wordCount} words`;

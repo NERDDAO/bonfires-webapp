@@ -5,9 +5,10 @@
  *
  * Displays data room details with HyperBlog feed.
  */
-
 import { useCallback, useEffect, useState } from "react";
+
 import { useParams, useRouter } from "next/navigation";
+
 import type { DataRoomInfo } from "@/types";
 
 export default function DataRoomDetailPage() {
@@ -161,7 +162,9 @@ export default function DataRoomDetailPage() {
               </div>
               <div className="stat bg-base-200 rounded-lg">
                 <div className="stat-title">Query Limit</div>
-                <div className="stat-value text-2xl">{dataroom.query_limit}</div>
+                <div className="stat-value text-2xl">
+                  {dataroom.query_limit}
+                </div>
                 <div className="stat-desc">queries per subscription</div>
               </div>
               <div className="stat bg-base-200 rounded-lg">

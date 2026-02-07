@@ -5,11 +5,13 @@
  *
  * Payment-gated knowledge graph search.
  */
-
 import { Suspense } from "react";
+
 import { useSearchParams } from "next/navigation";
-import { PaidDelveInterface } from "@/components/web3/PaidDelveInterface";
+
 import { AgentSelector } from "@/components/shared/AgentSelector";
+import { PaidDelveInterface } from "@/components/web3/PaidDelveInterface";
+
 import { useAgentSelection } from "@/hooks/web3";
 
 function DelvePageContent() {

@@ -3,12 +3,12 @@
  *
  * GET /api/hyperblogs/[hyperblogId]/view - Get full content for a hyperblog
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 interface RouteParams {

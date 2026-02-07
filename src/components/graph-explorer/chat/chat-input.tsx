@@ -2,12 +2,18 @@
  * Chat input with textarea and send button.
  * Input styled like search query; send button like zoom (IconButton).
  */
-
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
-import { Send, Loader2 } from "lucide-react";
+import React, { useCallback, useEffect, useRef } from "react";
+
+import { Loader2, Send } from "lucide-react";
+
 import { IconButton } from "@/components/graph-explorer/ui/icon-button";
+
+/**
+ * Chat input with textarea and send button.
+ * Input styled like search query; send button like zoom (IconButton).
+ */
 
 export interface ChatInputProps {
   value: string;

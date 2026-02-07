@@ -4,12 +4,19 @@
  * React Query hook for fetching data rooms with optional filtering.
  * Supports filtering by bonfire, wallet address, and pagination.
  */
-
 "use client";
 
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import type { DataRoomInfo, DataRoomListResponse } from "@/types";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+
 import { apiClient } from "@/lib/api/client";
-import type { DataRoomListResponse, DataRoomInfo } from "@/types";
+
+/**
+ * useDataRoomsQuery Hook
+ *
+ * React Query hook for fetching data rooms with optional filtering.
+ * Supports filtering by bonfire, wallet address, and pagination.
+ */
 
 interface UseDataRoomsQueryParams {
   /** Filter by bonfire ID */
@@ -78,7 +85,9 @@ export function useDataRoomsQuery(params: UseDataRoomsQueryParams = {}) {
     queryKey: dataRoomsQueryKey(filterParams),
     queryFn: () => {
       const queryString = buildQueryString(filterParams);
-      return apiClient.get<DataRoomListResponse>(`/api/datarooms${queryString}`);
+      return apiClient.get<DataRoomListResponse>(
+        `/api/datarooms${queryString}`
+      );
     },
     enabled,
     staleTime: 3 * 60 * 1000, // 3 minutes
@@ -104,7 +113,9 @@ interface UseDataRoomsInfiniteQueryParams {
  * Infinite query for data rooms (load more via button).
  * Next page is requested when we received a full page (received >= limit); otherwise no next page.
  */
-export function useDataRoomsInfiniteQuery(params: UseDataRoomsInfiniteQueryParams = {}) {
+export function useDataRoomsInfiniteQuery(
+  params: UseDataRoomsInfiniteQueryParams = {}
+) {
   const {
     enabled = true,
     pageSize = DEFAULT_PAGE_SIZE,
@@ -117,7 +128,12 @@ export function useDataRoomsInfiniteQuery(params: UseDataRoomsInfiniteQueryParam
     queryKey: [
       "datarooms",
       "infinite",
-      { bonfireId: bonfireId ?? null, creatorWallet: creatorWallet ?? null, subscriberWallet: subscriberWallet ?? null, pageSize },
+      {
+        bonfireId: bonfireId ?? null,
+        creatorWallet: creatorWallet ?? null,
+        subscriberWallet: subscriberWallet ?? null,
+        pageSize,
+      },
     ],
     queryFn: async ({ pageParam }) => {
       const searchParams = new URLSearchParams();
@@ -125,9 +141,12 @@ export function useDataRoomsInfiniteQuery(params: UseDataRoomsInfiniteQueryParam
       searchParams.set("offset", String(pageParam));
       if (bonfireId) searchParams.set("bonfire_id", bonfireId);
       if (creatorWallet) searchParams.set("creator_wallet", creatorWallet);
-      if (subscriberWallet) searchParams.set("subscriber_wallet", subscriberWallet);
+      if (subscriberWallet)
+        searchParams.set("subscriber_wallet", subscriberWallet);
       const queryString = searchParams.toString();
-      return apiClient.get<DataRoomListResponse>(`/api/datarooms?${queryString}`);
+      return apiClient.get<DataRoomListResponse>(
+        `/api/datarooms?${queryString}`
+      );
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {

@@ -6,9 +6,8 @@
  * - Private bonfires (is_public: false) → only accessible if user's Clerk org
  *   has publicMetadata.bonfire_id matching the bonfire ID
  */
-
-import { auth, clerkClient } from "@clerk/nextjs/server";
 import type { BonfireInfo } from "@/types";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
 /**
  * Result of an access check

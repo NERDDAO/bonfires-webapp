@@ -1,8 +1,9 @@
-import { Providers } from "../providers";
 import { Background } from "@/components/background";
 import { Navbar } from "@/components/navbar";
-import { SubdomainResolver } from "@/components/subdomain/SubdomainResolver";
 import { OrgSwitchGuard } from "@/components/subdomain/OrgSwitchGuard";
+import { SubdomainResolver } from "@/components/subdomain/SubdomainResolver";
+
+import { Providers } from "../providers";
 
 export default function MainLayout({
   children,
@@ -14,9 +15,7 @@ export default function MainLayout({
       <Providers>
         <Background>
           <Navbar />
-          <OrgSwitchGuard>
-            {children}
-          </OrgSwitchGuard>
+          <OrgSwitchGuard>{children}</OrgSwitchGuard>
         </Background>
       </Providers>
     </SubdomainResolver>

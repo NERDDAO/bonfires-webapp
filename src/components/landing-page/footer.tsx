@@ -7,7 +7,19 @@ import { footerCopy } from "@/content/landing-page";
 import { Button } from "../ui/button";
 
 export default function Footer() {
-  const { title, mobileTitle, subtitle, mobileSubtitle, primaryCta, primaryCtaHref, secondaryCta, secondaryCtaHref, logo, logoAlt, socialLinks } = footerCopy;
+  const {
+    title,
+    mobileTitle,
+    subtitle,
+    mobileSubtitle,
+    primaryCta,
+    primaryCtaHref,
+    secondaryCta,
+    secondaryCtaHref,
+    logo,
+    logoAlt,
+    socialLinks,
+  } = footerCopy;
   return (
     <div className="flex flex-col px-6 lg:px-20 py-6.5 justify-center items-center text-center min-h-svh lg:min-h-auto">
       <div className="flex flex-col justify-center items-center max-w-full lg:max-w-[581px] my-auto lg:my-36">
@@ -28,7 +40,11 @@ export default function Footer() {
         </div>
 
         <div className="mt-6 flex gap-6 flex-col lg:flex-row">
-          <Button variant="primary" className="z-10 w-full lg:w-auto" href={primaryCtaHref}>
+          <Button
+            variant="primary"
+            className="z-10 w-full lg:w-auto"
+            href={primaryCtaHref}
+          >
             {primaryCta}
           </Button>
           <Button variant="outline" className="z-10" href={secondaryCtaHref}>
@@ -38,14 +54,9 @@ export default function Footer() {
       </div>
 
       <div className="mt-auto w-full items-center hidden lg:flex">
-        <Image
-          src={logo}
-          alt={logoAlt}
-          width={170}
-          height={22}
-        />
+        <Image src={logo} alt={logoAlt} width={170} height={22} />
         <div className="flex gap-9 ml-auto">
-          {socialLinks.map(item => (
+          {socialLinks.map((item) => (
             <Link href={item.href} key={item.href}>
               <Image src={item.icon} alt={item.href} width={24} height={24} />
             </Link>
@@ -54,14 +65,9 @@ export default function Footer() {
       </div>
 
       <div className="w-full items-center flex flex-col mb-12 lg:hidden">
-        <Image
-          src={logo}
-          alt={logoAlt}
-          width={170}
-          height={22}
-        />
+        <Image src={logo} alt={logoAlt} width={170} height={22} />
         <div className="flex gap-4 mt-6">
-          {socialLinks.map(item => (
+          {socialLinks.map((item) => (
             <Button variant="outline-white" href={item.href} key={item.href}>
               <Image src={item.icon} alt={item.href} width={24} height={24} />
             </Button>

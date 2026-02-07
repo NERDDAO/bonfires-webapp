@@ -3,20 +3,25 @@
  *
  * POST /api/agents/[agentId]/episodes/search - Fetch latest episodes for an agent (with access control)
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  parseJsonBody,
-} from "@/lib/api/server-utils";
+
+import type {
+  AgentEpisodesSearchRequest,
+  AgentInfo,
+  BonfireListResponse,
+} from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { AgentEpisodesSearchRequest, AgentInfo, BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
+  parseJsonBody,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 interface RouteParams {
   params: Promise<{ agentId: string }>;
@@ -53,20 +58,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (bonfireId) {
     // Fetch bonfire to check is_public
-    const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-      method: "GET",
-    });
+    const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+      "/bonfires",
+      {
+        method: "GET",
+      }
+    );
 
-    const bonfire = bonfireResponse.data?.bonfires?.find((b) => b.id === bonfireId);
+    const bonfire = bonfireResponse.data?.bonfires?.find(
+      (b) => b.id === bonfireId
+    );
 
     const access = await checkBonfireAccess(bonfireId, bonfire?.is_public);
     if (!access.allowed) {
       const denied = createAccessDeniedResponse(access.reason);
-      return createErrorResponse(denied.error, 403, denied.details, denied.code);
+      return createErrorResponse(
+        denied.error,
+        403,
+        denied.details,
+        denied.code
+      );
     }
   }
 
-  const { data: body, error } = await parseJsonBody<AgentEpisodesSearchRequest>(request);
+  const { data: body, error } =
+    await parseJsonBody<AgentEpisodesSearchRequest>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -78,11 +94,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     after_time: body?.after_time,
   };
 
-  return handleProxyRequest(`/knowledge_graph/agents/${agentId}/episodes/search`, {
-    method: "POST",
-    body: searchRequest,
-    timeout: 20000,
-  });
+  return handleProxyRequest(
+    `/knowledge_graph/agents/${agentId}/episodes/search`,
+    {
+      method: "POST",
+      body: searchRequest,
+      timeout: 20000,
+    }
+  );
 }
 
 /**

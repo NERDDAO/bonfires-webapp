@@ -5,25 +5,36 @@
  * Each section loads independently with its own loading state.
  * Graceful degradation: failed sections show error, don't block others.
  */
-
 "use client";
 
-import { useDashboardData } from "@/hooks";
+import Link from "next/link";
+
 import { useSubdomainBonfire } from "@/contexts";
-import { Header } from "@/components/shared/Header";
+import { useDashboardData } from "@/hooks";
+
 import {
-  RecentChatsSection,
   DataRoomsSection,
   HyperBlogsSection,
   PaymentHistorySection,
+  RecentChatsSection,
   WalletInfoSection,
 } from "@/components/dashboard";
-import Link from "next/link";
+import { Header } from "@/components/shared/Header";
+
+/**
+ * Dashboard Page
+ *
+ * Unified dashboard showing user activity across all features.
+ * Each section loads independently with its own loading state.
+ * Graceful degradation: failed sections show error, don't block others.
+ */
 
 export default function DashboardPage() {
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireIdOverride =
-    isSubdomainScoped && subdomainConfig ? subdomainConfig.bonfireId : undefined;
+    isSubdomainScoped && subdomainConfig
+      ? subdomainConfig.bonfireId
+      : undefined;
   const dashboardData = useDashboardData(bonfireIdOverride);
   const isWalletConnected = dashboardData.wallet.isConnected;
 

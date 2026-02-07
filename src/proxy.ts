@@ -6,9 +6,9 @@
  * - Always protected: Dashboard, documents, profile, bonfire settings
  * - Bonfire routes: Access control happens at API route level (is_public check)
  */
+import { NextResponse } from "next/server";
 
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
 
 /**
  * Routes that ALWAYS require authentication (regardless of bonfire visibility)

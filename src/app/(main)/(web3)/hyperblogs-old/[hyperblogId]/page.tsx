@@ -5,14 +5,16 @@
  *
  * Displays a single hyperblog with full content.
  */
-
 import { useCallback, useEffect, useState } from "react";
+
 import { useParams, useRouter } from "next/navigation";
+
 import type { HyperBlogInfo } from "@/types";
+
 import {
+  calculateReadingTime,
   formatTimestamp,
   truncateAddress,
-  calculateReadingTime,
 } from "@/lib/utils";
 
 export default function HyperBlogDetailPage() {

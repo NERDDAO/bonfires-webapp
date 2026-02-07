@@ -3,7 +3,6 @@
  *
  * Clerk-powered sign-up page with email/password and Google OAuth.
  */
-
 import { SignUp } from "@clerk/nextjs";
 
 export default function SignUpPage() {

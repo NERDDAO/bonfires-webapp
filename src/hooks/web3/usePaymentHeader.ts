@@ -6,11 +6,16 @@
  * Hook for building and signing X402 payment headers.
  * Handles both new payments and existing microsub modes.
  */
-
 import { useCallback, useState } from "react";
-import { useSignTypedData } from "wagmi";
+
 import type { SignTypedDataParameters } from "viem";
-import { buildPaymentTypedData, encodePaymentHeader, resolveIntermediaryAddress } from "@/lib/payment";
+import { useSignTypedData } from "wagmi";
+
+import {
+  buildPaymentTypedData,
+  encodePaymentHeader,
+  resolveIntermediaryAddress,
+} from "@/lib/payment";
 import type { X402PaymentHeader } from "@/lib/payment";
 import { isE2EWalletEnabled, useWalletAccount } from "@/lib/wallet/e2e";
 
@@ -33,10 +38,14 @@ export interface UsePaymentHeaderReturn {
 }
 
 // Payment configuration from environment
-const PAYMENT_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "abstract-testnet";
-const SOURCE_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_SOURCE_NETWORK"] ?? PAYMENT_NETWORK;
-const DESTINATION_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_DESTINATION_NETWORK"] ?? PAYMENT_NETWORK;
-const INTERMEDIARY_OVERRIDE = process.env["NEXT_PUBLIC_ONCHAINFI_INTERMEDIARY_ADDRESS"] ?? null;
+const PAYMENT_NETWORK =
+  process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "abstract-testnet";
+const SOURCE_NETWORK =
+  process.env["NEXT_PUBLIC_PAYMENT_SOURCE_NETWORK"] ?? PAYMENT_NETWORK;
+const DESTINATION_NETWORK =
+  process.env["NEXT_PUBLIC_PAYMENT_DESTINATION_NETWORK"] ?? PAYMENT_NETWORK;
+const INTERMEDIARY_OVERRIDE =
+  process.env["NEXT_PUBLIC_ONCHAINFI_INTERMEDIARY_ADDRESS"] ?? null;
 
 const PAYMENT_CONFIG = {
   tokenAddress:
@@ -83,19 +92,19 @@ export function usePaymentHeader(): UsePaymentHeaderReturn {
 
         const paymentAmount = amount || PAYMENT_CONFIG.amount;
         if (isE2EWalletEnabled()) {
-        const typedData = buildPaymentTypedData({
-          tokenAddress: PAYMENT_CONFIG.tokenAddress,
-          recipientAddress: PAYMENT_CONFIG.intermediaryAddress,
-          amount: paymentAmount,
-          network: PAYMENT_CONFIG.network,
-          chainId: PAYMENT_CONFIG.chainId,
-          userAddress: address,
-        });
-        return encodePaymentHeader(
-          typedData.message,
-          "0xe2e-signature",
-          PAYMENT_CONFIG.network
-        );
+          const typedData = buildPaymentTypedData({
+            tokenAddress: PAYMENT_CONFIG.tokenAddress,
+            recipientAddress: PAYMENT_CONFIG.intermediaryAddress,
+            amount: paymentAmount,
+            network: PAYMENT_CONFIG.network,
+            chainId: PAYMENT_CONFIG.chainId,
+            userAddress: address,
+          });
+          return encodePaymentHeader(
+            typedData.message,
+            "0xe2e-signature",
+            PAYMENT_CONFIG.network
+          );
         }
 
         const typedData = buildPaymentTypedData({

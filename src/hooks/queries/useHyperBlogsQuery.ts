@@ -4,12 +4,19 @@
  * React Query hook for fetching hyperblogs with optional filtering.
  * Supports filtering by data room, author wallet, and pagination.
  */
-
 "use client";
 
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import type { HyperBlogInfo, HyperBlogListResponse } from "@/types";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+
 import { apiClient } from "@/lib/api/client";
-import type { HyperBlogListResponse, HyperBlogInfo } from "@/types";
+
+/**
+ * useHyperBlogsQuery Hook
+ *
+ * React Query hook for fetching hyperblogs with optional filtering.
+ * Supports filtering by data room, author wallet, and pagination.
+ */
 
 interface UseHyperBlogsQueryParams {
   /** Filter by data room ID */
@@ -78,7 +85,9 @@ export function useHyperBlogsQuery(params: UseHyperBlogsQueryParams = {}) {
     queryKey: hyperBlogsQueryKey(filterParams),
     queryFn: () => {
       const queryString = buildQueryString(filterParams);
-      return apiClient.get<HyperBlogListResponse>(`/api/hyperblogs${queryString}`);
+      return apiClient.get<HyperBlogListResponse>(
+        `/api/hyperblogs${queryString}`
+      );
     },
     enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes - content changes more frequently
@@ -91,7 +100,8 @@ export function useHyperBlogsQuery(params: UseHyperBlogsQueryParams = {}) {
 export function useHyperBlogById(hyperblogId: string | null) {
   return useQuery({
     queryKey: ["hyperblogs", hyperblogId],
-    queryFn: () => apiClient.get<HyperBlogInfo>(`/api/hyperblogs/${hyperblogId}`),
+    queryFn: () =>
+      apiClient.get<HyperBlogInfo>(`/api/hyperblogs/${hyperblogId}`),
     enabled: !!hyperblogId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -110,7 +120,10 @@ export function useMyHyperBlogs(walletAddress: string | null) {
 /**
  * Fetch public hyperblogs feed
  */
-export function usePublicHyperBlogsFeed(params?: { limit?: number; offset?: number }) {
+export function usePublicHyperBlogsFeed(params?: {
+  limit?: number;
+  offset?: number;
+}) {
   return useHyperBlogsQuery({
     isPublic: true,
     limit: params?.limit,
@@ -153,7 +166,9 @@ export function useDataRoomHyperBlogsInfiniteQuery({
       searchParams.set("offset", String(pageParam));
       if (dataroomId) searchParams.set("dataroom_id", dataroomId);
       const queryString = searchParams.toString();
-      return apiClient.get<HyperBlogListResponse>(`/api/hyperblogs?${queryString}`);
+      return apiClient.get<HyperBlogListResponse>(
+        `/api/hyperblogs?${queryString}`
+      );
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {

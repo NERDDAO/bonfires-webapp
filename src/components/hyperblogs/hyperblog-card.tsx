@@ -1,15 +1,15 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { HyperBlogInfo } from "@/types";
 
 import { cn } from "@/lib/cn";
 import {
   formatNumber,
-  truncateAddress,
-  getTextFromMarkdown,
   formatReadingTime,
+  getTextFromMarkdown,
+  truncateAddress,
 } from "@/lib/utils";
-import Link from "next/link";
 
 function HyperBlogCardSkeleton({
   className,
@@ -46,7 +46,10 @@ function HyperBlogCardSkeleton({
       {/* Stats row: matches icon height 18px + alignment */}
       <div className="mt-4 flex gap-4 items-center">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-4 lg:h-[18px] w-12 bg-[#FFFFFF10] rounded" />
+          <div
+            key={i}
+            className="h-4 lg:h-[18px] w-12 bg-[#FFFFFF10] rounded"
+          />
         ))}
       </div>
     </div>
@@ -82,13 +85,14 @@ export default function HyperBlogCard({
     minute: "numeric",
     hour12: true,
   });
-  const { formattedBlogLength, formattedWordCount, formattedReadingTime } = formatReadingTime(data?.word_count || 0);
+  const { formattedBlogLength, formattedWordCount, formattedReadingTime } =
+    formatReadingTime(data?.word_count || 0);
   const imageSrc = data?.banner_url || "";
   const likes = data?.upvotes || 0;
   const dislikes = data?.downvotes || 0;
   const views = data?.view_count || 0;
   return (
-    <Link 
+    <Link
       href={href}
       className={cn(
         "rounded-2xl lg:rounded-3xl w-full flex flex-col p-4 lg:p-7.5 bg-[#FFFFFF05] hover:bg-[#FFFFFF0A] cursor-pointer transition-colors duration-300 border-[0.78px] border-[#333333]",
@@ -104,14 +108,20 @@ export default function HyperBlogCard({
           {formattedAuthor}
         </span>
         {[
-          { value: formattedTimestamp, className: "w-full lg:w-auto flex-auto" },
+          {
+            value: formattedTimestamp,
+            className: "w-full lg:w-auto flex-auto",
+          },
           { value: formattedBlogLength, className: "" },
           { value: formattedWordCount, className: "" },
           { value: formattedReadingTime, className: "" },
         ].map((item) => (
           <span
             key={item.value}
-            className={cn("text-xs text-center flex-1 lg:flex-none lg:text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap", item.className)}
+            className={cn(
+              "text-xs text-center flex-1 lg:flex-none lg:text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap",
+              item.className
+            )}
           >
             {item.value}
           </span>

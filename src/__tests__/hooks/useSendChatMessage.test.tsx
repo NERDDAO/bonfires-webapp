@@ -3,11 +3,15 @@
  *
  * Tests for the chat message mutation hook including localStorage integration.
  */
-
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
+
 import { useSendChatMessage } from "@/hooks/mutations";
+
+import { apiClient } from "@/lib/api/client";
+import { addChatMessage, getChatHistory } from "@/lib/storage/chatHistory";
 
 // Mock the API client
 jest.mock("@/lib/api/client", () => ({
@@ -27,9 +31,6 @@ jest.mock("@/lib/storage/chatHistory", () => ({
 jest.mock("uuid", () => ({
   v4: () => "mock-uuid-1234",
 }));
-
-import { apiClient } from "@/lib/api/client";
-import { getChatHistory, addChatMessage } from "@/lib/storage/chatHistory";
 
 describe("useSendChatMessage", () => {
   let queryClient: QueryClient;
@@ -105,8 +106,18 @@ describe("useSendChatMessage", () => {
 
   it("should include chat history in the request", async () => {
     const existingHistory = [
-      { id: "1", role: "user" as const, content: "Previous message", timestamp: "2024-01-01T00:00:00Z" },
-      { id: "2", role: "assistant" as const, content: "Previous response", timestamp: "2024-01-01T00:00:01Z" },
+      {
+        id: "1",
+        role: "user" as const,
+        content: "Previous message",
+        timestamp: "2024-01-01T00:00:00Z",
+      },
+      {
+        id: "2",
+        role: "assistant" as const,
+        content: "Previous response",
+        timestamp: "2024-01-01T00:00:01Z",
+      },
     ];
 
     (getChatHistory as jest.Mock).mockReturnValue(existingHistory);
@@ -139,7 +150,12 @@ describe("useSendChatMessage", () => {
 
   it("should skip chat history when includeHistory is false", async () => {
     const existingHistory = [
-      { id: "1", role: "user" as const, content: "Previous message", timestamp: "2024-01-01T00:00:00Z" },
+      {
+        id: "1",
+        role: "user" as const,
+        content: "Previous message",
+        timestamp: "2024-01-01T00:00:00Z",
+      },
     ];
 
     (getChatHistory as jest.Mock).mockReturnValue(existingHistory);
@@ -167,8 +183,14 @@ describe("useSendChatMessage", () => {
 
   it("should include graph context when provided", async () => {
     const graphState = {
-      nodes: [{ data: { id: "n:node-1", label: "Node 1", node_type: "entity" } }],
-      edges: [{ data: { source: "n:node-1", target: "n:node-2", label: "related_to" } }],
+      nodes: [
+        { data: { id: "n:node-1", label: "Node 1", node_type: "entity" } },
+      ],
+      edges: [
+        {
+          data: { source: "n:node-1", target: "n:node-2", label: "related_to" },
+        },
+      ],
       nodeCount: 1,
       edgeCount: 1,
       centerNodeUuid: "node-1",
@@ -224,7 +246,9 @@ describe("useSendChatMessage", () => {
 
     const { result } = renderHook(() => useSendChatMessage(), { wrapper });
 
-    let response: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+    let response:
+      | Awaited<ReturnType<typeof result.current.mutateAsync>>
+      | undefined;
     await act(async () => {
       response = await result.current.mutateAsync({
         agentId: "agent-123",

@@ -4,13 +4,21 @@
  * React Query mutation hook for creating new data rooms.
  * Invalidates data room queries on success.
  */
-
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
-import { dataRoomsQueryKey } from "@/hooks/queries";
 import type { CreateDataRoomRequest, DataRoomInfo } from "@/types";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { dataRoomsQueryKey } from "@/hooks/queries";
+
+import { apiClient } from "@/lib/api/client";
+
+/**
+ * useCreateDataRoom Hook
+ *
+ * React Query mutation hook for creating new data rooms.
+ * Invalidates data room queries on success.
+ */
 
 interface CreateDataRoomParams extends CreateDataRoomRequest {
   /** Creator's wallet address */
@@ -30,7 +38,9 @@ export function useCreateDataRoom() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: CreateDataRoomParams): Promise<CreateDataRoomResult> => {
+    mutationFn: async (
+      params: CreateDataRoomParams
+    ): Promise<CreateDataRoomResult> => {
       const response = await apiClient.post<CreateDataRoomResult>(
         "/api/datarooms",
         params
@@ -55,7 +65,9 @@ export function useCreateDataRoom() {
 
       // Invalidate queries for creator's data rooms
       queryClient.invalidateQueries({
-        queryKey: dataRoomsQueryKey({ creatorWallet: variables.creator_wallet }),
+        queryKey: dataRoomsQueryKey({
+          creatorWallet: variables.creator_wallet,
+        }),
       });
     },
   });
@@ -72,10 +84,10 @@ export function useUpdateDataRoom() {
       dataroomId: string;
       updates: Partial<CreateDataRoomRequest>;
     }): Promise<DataRoomInfo> => {
-      const response = await apiClient.put<{ dataroom: DataRoomInfo; success: boolean }>(
-        `/api/datarooms/${params.dataroomId}`,
-        params.updates
-      );
+      const response = await apiClient.put<{
+        dataroom: DataRoomInfo;
+        success: boolean;
+      }>(`/api/datarooms/${params.dataroomId}`, params.updates);
 
       if (!response.success) {
         throw new Error("Failed to update data room");

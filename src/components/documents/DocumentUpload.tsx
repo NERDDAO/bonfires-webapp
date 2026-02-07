@@ -4,12 +4,19 @@
  * File upload component with drag-and-drop support, validation, and progress indicator.
  * Supports PDF, TXT, MD, and DOCX files up to 25MB.
  */
-
 "use client";
 
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
+
 import { useIngestDocument } from "@/hooks";
-import type { SupportedFileType, FileValidationResult } from "@/types";
+import type { FileValidationResult, SupportedFileType } from "@/types";
+
+/**
+ * DocumentUpload Component
+ *
+ * File upload component with drag-and-drop support, validation, and progress indicator.
+ * Supports PDF, TXT, MD, and DOCX files up to 25MB.
+ */
 
 interface DocumentUploadProps {
   /** Bonfire ID to upload to */
@@ -32,7 +39,8 @@ const SUPPORTED_TYPES: Record<string, SupportedFileType> = {
   "application/pdf": "pdf",
   "text/plain": "txt",
   "text/markdown": "md",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "docx",
 };
 
 /** File extensions mapping */
@@ -98,18 +106,21 @@ export function DocumentUpload({
   const ingestMutation = useIngestDocument();
 
   // Handle file selection
-  const handleFileSelect = useCallback((file: File) => {
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      setValidationError(validation.error ?? "Invalid file");
-      setSelectedFile(null);
-      onUploadError?.(validation.error ?? "Invalid file");
-      return;
-    }
+  const handleFileSelect = useCallback(
+    (file: File) => {
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        setValidationError(validation.error ?? "Invalid file");
+        setSelectedFile(null);
+        onUploadError?.(validation.error ?? "Invalid file");
+        return;
+      }
 
-    setValidationError(null);
-    setSelectedFile(file);
-  }, [onUploadError]);
+      setValidationError(null);
+      setSelectedFile(file);
+    },
+    [onUploadError]
+  );
 
   // Handle file input change
   const handleInputChange = useCallback(
@@ -123,13 +134,16 @@ export function DocumentUpload({
   );
 
   // Handle drag events
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled) {
-      setIsDragging(true);
-    }
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) {
+        setIsDragging(true);
+      }
+    },
+    [disabled]
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -189,7 +203,8 @@ export function DocumentUpload({
       onUploadSuccess?.(result.documentId);
     } catch (error) {
       setUploadProgress(null);
-      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+      const errorMessage =
+        error instanceof Error ? error.message : "Upload failed";
       setValidationError(errorMessage);
       onUploadError?.(errorMessage);
     }
@@ -258,7 +273,9 @@ export function DocumentUpload({
           {/* Text */}
           {selectedFile ? (
             <div className="space-y-1">
-              <p className="font-medium text-base-content">{selectedFile.name}</p>
+              <p className="font-medium text-base-content">
+                {selectedFile.name}
+              </p>
               <p className="text-sm text-base-content/60">
                 {formatFileSize(selectedFile.size)}
               </p>
@@ -268,9 +285,7 @@ export function DocumentUpload({
               <p className="font-medium text-base-content">
                 {isDragging ? "Drop file here" : "Drag and drop a file here"}
               </p>
-              <p className="text-sm text-base-content/60">
-                or click to browse
-              </p>
+              <p className="text-sm text-base-content/60">or click to browse</p>
               <p className="text-xs text-base-content/40 mt-2">
                 Supported: PDF, TXT, MD, DOCX (max 25MB)
               </p>
@@ -287,7 +302,9 @@ export function DocumentUpload({
               max={100}
             />
             <p className="text-xs text-base-content/60 mt-1">
-              {uploadProgress === 100 ? "Upload complete!" : `Uploading... ${uploadProgress}%`}
+              {uploadProgress === 100
+                ? "Upload complete!"
+                : `Uploading... ${uploadProgress}%`}
             </p>
           </div>
         )}
@@ -345,10 +362,7 @@ export function DocumentUpload({
             </svg>
             Upload Document
           </button>
-          <button
-            className="btn btn-ghost"
-            onClick={handleClear}
-          >
+          <button className="btn btn-ghost" onClick={handleClear}>
             Cancel
           </button>
         </div>

@@ -3,20 +3,21 @@
  *
  * GET /api/documents - List documents/chunks for a bonfire (with access control)
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  extractQueryParams,
-} from "@/lib/api/server-utils";
+
+import type { BonfireListResponse } from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 /**
  * GET /api/documents
@@ -47,15 +48,21 @@ export async function GET(request: NextRequest) {
   }
 
   // Check bonfire access
-  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-    method: "GET",
-  });
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+    "/bonfires",
+    {
+      method: "GET",
+    }
+  );
 
   const bonfire = bonfireResponse.data?.bonfires?.find(
     (b) => b.id === params["bonfire_id"]
   );
 
-  const access = await checkBonfireAccess(params["bonfire_id"], bonfire?.is_public);
+  const access = await checkBonfireAccess(
+    params["bonfire_id"],
+    bonfire?.is_public
+  );
   if (!access.allowed) {
     const denied = createAccessDeniedResponse(access.reason);
     return createErrorResponse(denied.error, 403, denied.details, denied.code);

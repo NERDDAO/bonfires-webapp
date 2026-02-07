@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
+
 import { createPortal } from "react-dom";
-import { cn } from "@/lib/cn";
+
 import Image from "next/image";
+
+import { cn } from "@/lib/cn";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
@@ -103,7 +106,10 @@ export function Modal({
         {(title != null || showCloseButton) && (
           <div className="flex items-center justify-between border-b border-dark-s-700">
             {title != null ? (
-              <h2 id="modal-title" className="font-semibold text-lg text-dark-s-0 truncate">
+              <h2
+                id="modal-title"
+                className="font-semibold text-lg text-dark-s-0 truncate"
+              >
                 {title}
               </h2>
             ) : (

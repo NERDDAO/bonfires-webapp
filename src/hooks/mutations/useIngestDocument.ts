@@ -4,13 +4,25 @@
  * React Query mutation hook for ingesting documents.
  * Supports both direct content and file uploads with progress tracking.
  */
-
 "use client";
 
+import type {
+  DocumentInfo,
+  DocumentIngestRequest,
+  DocumentIngestResponse,
+} from "@/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+
 import { documentsQueryKey } from "@/hooks/queries";
-import type { DocumentIngestRequest, DocumentIngestResponse, DocumentInfo } from "@/types";
+
+import { apiClient } from "@/lib/api/client";
+
+/**
+ * useIngestDocument Hook
+ *
+ * React Query mutation hook for ingesting documents.
+ * Supports both direct content and file uploads with progress tracking.
+ */
 
 interface IngestDocumentParams {
   /** The bonfire to ingest into */
@@ -143,7 +155,10 @@ export function useBatchIngestDocuments() {
           results.push({
             documentId: "",
             success: false,
-            message: error instanceof Error ? error.message : "Failed to ingest document",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Failed to ingest document",
           });
         }
       }

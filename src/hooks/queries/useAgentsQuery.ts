@@ -4,12 +4,19 @@
  * React Query hook for fetching agents for a specific bonfire.
  * Disabled until a bonfireId is provided.
  */
-
 "use client";
 
+import type { AgentInfo, BonfireAgentsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
+
 import { apiClient } from "@/lib/api/client";
-import type { BonfireAgentsResponse, AgentInfo } from "@/types";
+
+/**
+ * useAgentsQuery Hook
+ *
+ * React Query hook for fetching agents for a specific bonfire.
+ * Disabled until a bonfireId is provided.
+ */
 
 interface UseAgentsQueryParams {
   bonfireId: string | null;
@@ -26,7 +33,10 @@ export function agentsQueryKey(bonfireId: string | null) {
 /**
  * Fetch agents for a specific bonfire
  */
-export function useAgentsQuery({ bonfireId, enabled = true }: UseAgentsQueryParams) {
+export function useAgentsQuery({
+  bonfireId,
+  enabled = true,
+}: UseAgentsQueryParams) {
   return useQuery({
     queryKey: agentsQueryKey(bonfireId),
     queryFn: () =>
@@ -43,7 +53,7 @@ export function useAgentById(bonfireId: string | null, agentId: string | null) {
   const { data, ...rest } = useAgentsQuery({ bonfireId });
 
   const agent: AgentInfo | null = agentId
-    ? data?.agents.find((a) => a.id === agentId) ?? null
+    ? (data?.agents.find((a) => a.id === agentId) ?? null)
     : null;
 
   return {

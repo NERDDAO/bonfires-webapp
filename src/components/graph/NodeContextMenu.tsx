@@ -2,12 +2,18 @@
  * NodeContextMenu Component
  * Context menu for graph nodes with actions including "Create Data Room"
  */
-
 "use client";
 
-import React, { useRef, useEffect, useCallback, useState } from "react";
-import { Plus, Expand, Trash2, Database } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
+import { Database, Expand, Plus, Trash2 } from "lucide-react";
+
 import { cn } from "@/lib/cn";
+
+/**
+ * NodeContextMenu Component
+ * Context menu for graph nodes with actions including "Create Data Room"
+ */
 
 export interface NodeData {
   id: string;

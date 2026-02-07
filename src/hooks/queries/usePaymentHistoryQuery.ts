@@ -4,12 +4,23 @@
  * React Query hook for fetching payment history for a wallet address.
  * Used in the dashboard to show user's payment transactions.
  */
-
 "use client";
 
+import type {
+  PaymentHistoryResponse,
+  PaymentTransaction,
+  PaymentType,
+} from "@/types";
 import { useQuery } from "@tanstack/react-query";
+
 import { apiClient } from "@/lib/api/client";
-import type { PaymentHistoryResponse, PaymentTransaction, PaymentType } from "@/types";
+
+/**
+ * usePaymentHistoryQuery Hook
+ *
+ * React Query hook for fetching payment history for a wallet address.
+ * Used in the dashboard to show user's payment transactions.
+ */
 
 interface UsePaymentHistoryQueryParams {
   /** User's wallet address (required) */

@@ -7,12 +7,11 @@
  * should activate for this bonfire. Requires authentication — the backend
  * needs the user_id from the Clerk JWT to query org memberships.
  */
-
 import {
-  proxyToBackend,
-  handleCorsOptions,
   createErrorResponse,
   createSuccessResponse,
+  handleCorsOptions,
+  proxyToBackend,
 } from "@/lib/api/server-utils";
 
 interface ResolveOrgResponse {
@@ -30,10 +29,7 @@ interface RouteParams {
  * Resolve which Clerk org a signed-in user should activate for this bonfire.
  * Returns the org_id and whether it's an admin org, or null if no matching org.
  */
-export async function GET(
-  _request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   const { bonfireId } = await params;
 
   if (!bonfireId) {

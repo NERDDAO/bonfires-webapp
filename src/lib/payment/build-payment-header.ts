@@ -3,7 +3,6 @@
  *
  * Utilities for building and signing ERC-3009 X402 payment headers.
  */
-
 import type {
   BuildPaymentHeaderParams,
   EIP712Domain,
@@ -12,11 +11,18 @@ import type {
   X402PaymentHeader,
   X402PaymentPayload,
 } from "./types";
-import { DEFAULT_VALID_DURATION_SECONDS, ERC3009_TYPES, X402_VERSION } from "./types";
+import {
+  DEFAULT_VALID_DURATION_SECONDS,
+  ERC3009_TYPES,
+  X402_VERSION,
+} from "./types";
 
 const USDC_DECIMALS = 6;
 
-export function parseTokenAmount(amount: string, decimals: number = USDC_DECIMALS): string {
+export function parseTokenAmount(
+  amount: string,
+  decimals: number = USDC_DECIMALS
+): string {
   const amountFloat = parseFloat(amount);
   if (Number.isNaN(amountFloat)) {
     throw new Error(`Invalid amount: ${amount}`);
@@ -36,7 +42,10 @@ export function generateNonce(): string {
   return `0x${hex}`;
 }
 
-export function getTokenDomain(tokenAddress: string, chainId: number): EIP712Domain {
+export function getTokenDomain(
+  tokenAddress: string,
+  chainId: number
+): EIP712Domain {
   return {
     name: "USD Coin",
     version: "2",
@@ -45,7 +54,9 @@ export function getTokenDomain(tokenAddress: string, chainId: number): EIP712Dom
   };
 }
 
-export function buildPaymentTypedData(params: BuildPaymentHeaderParams): TypedData {
+export function buildPaymentTypedData(
+  params: BuildPaymentHeaderParams
+): TypedData {
   const {
     tokenAddress,
     recipientAddress,
@@ -83,7 +94,7 @@ export function buildPaymentTypedData(params: BuildPaymentHeaderParams): TypedDa
 export function encodePaymentHeader(
   authorization: TransferWithAuthorization,
   signature: string,
-  network: string,
+  network: string
 ): X402PaymentHeader {
   const payload: X402PaymentPayload = {
     x402Version: X402_VERSION,

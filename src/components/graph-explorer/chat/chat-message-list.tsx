@@ -1,13 +1,18 @@
 /**
  * Chat messages list with empty states and typing indicator
  */
-
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+
 import { Loader2 } from "lucide-react";
+
 import { ChatMessageBubble } from "./chat-message-bubble";
 import type { ChatMessage } from "./types";
+
+/**
+ * Chat messages list with empty states and typing indicator
+ */
 
 export interface ChatMessageListProps {
   agentId?: string;

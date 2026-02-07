@@ -4,8 +4,8 @@
  * Layout for all Web3 features: Data Rooms, HyperBlogs, x402 Chat, x402 Delve.
  * Includes wallet connection indicators and Web3-specific navigation.
  */
-
 import type { ReactNode } from "react";
+
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

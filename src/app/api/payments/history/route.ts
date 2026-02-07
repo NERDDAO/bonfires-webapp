@@ -3,13 +3,13 @@
  *
  * GET /api/payments/history - Fetch payment history for a wallet address
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
   extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 /**

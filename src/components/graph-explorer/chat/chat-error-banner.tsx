@@ -1,10 +1,13 @@
 /**
  * Error banner for chat panel
  */
-
 "use client";
 
 import React from "react";
+
+/**
+ * Error banner for chat panel
+ */
 
 export interface ChatErrorBannerProps {
   error: string;

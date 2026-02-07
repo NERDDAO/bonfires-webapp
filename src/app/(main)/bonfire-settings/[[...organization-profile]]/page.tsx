@@ -8,10 +8,11 @@
  *
  * Access: Only org:bonfire_manager and org:bonfire_admin roles
  */
+import { redirect } from "next/navigation";
 
 import { OrganizationProfile } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+
 import { Header } from "@/components/shared/Header";
 
 export default async function BonfireSettingsPage() {

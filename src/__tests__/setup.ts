@@ -4,7 +4,6 @@
  * Global setup for Jest tests with Next.js.
  * Run: npm install --save-dev jest jest-environment-jsdom @testing-library/react @testing-library/jest-dom
  */
-
 import "@testing-library/jest-dom";
 
 // Mock fetch globally

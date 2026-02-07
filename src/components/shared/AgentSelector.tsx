@@ -6,7 +6,6 @@
  * Unified bonfire/agent selection component with DaisyUI styling.
  * Supports compact and default variants.
  */
-
 import type { AgentSelectionState } from "@/types";
 
 interface AgentSelectorProps {

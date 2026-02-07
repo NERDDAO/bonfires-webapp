@@ -6,8 +6,13 @@
  * change the current position; future crumbs are removed only when
  * "Search around this node" is clicked (then path is forked at current position).
  */
-
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 export interface SearchHistoryItem {
   nodeId: string;
@@ -27,7 +32,8 @@ export interface GraphSearchHistoryContextValue {
   navigateToSearchHistoryIndex: (index: number) => void;
 }
 
-const GraphSearchHistoryContext = createContext<GraphSearchHistoryContextValue | null>(null);
+const GraphSearchHistoryContext =
+  createContext<GraphSearchHistoryContextValue | null>(null);
 
 export interface GraphSearchHistoryProviderProps {
   children: React.ReactNode;
@@ -39,7 +45,9 @@ export function GraphSearchHistoryProvider({
   children,
   onNavigateToCenter,
 }: GraphSearchHistoryProviderProps) {
-  const [searchHistoryStack, setSearchHistoryStack] = useState<SearchHistoryItem[]>([]);
+  const [searchHistoryStack, setSearchHistoryStack] = useState<
+    SearchHistoryItem[]
+  >([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
 
   const pushSearchAround = useCallback(
@@ -96,7 +104,9 @@ export function GraphSearchHistoryProvider({
 export function useGraphSearchHistory(): GraphSearchHistoryContextValue {
   const ctx = useContext(GraphSearchHistoryContext);
   if (!ctx) {
-    throw new Error("useGraphSearchHistory must be used within GraphSearchHistoryProvider");
+    throw new Error(
+      "useGraphSearchHistory must be used within GraphSearchHistoryProvider"
+    );
   }
   return ctx;
 }

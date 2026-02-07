@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+
 import { siteCopy } from "@/content";
 
 const { title, template, description, keywords, author, siteName } = siteCopy;

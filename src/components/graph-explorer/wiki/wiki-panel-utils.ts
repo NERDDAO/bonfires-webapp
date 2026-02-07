@@ -30,10 +30,12 @@ export interface WikiEpisodeContent {
   name: string;
   content: string;
   valid_at?: string;
-  updates?: {
-    description: string;
-    attributes: Record<string, unknown>;
-  }[] | null;
+  updates?:
+    | {
+        description: string;
+        attributes: Record<string, unknown>;
+      }[]
+    | null;
 }
 
 /**
@@ -53,9 +55,7 @@ export function formatDate(dateStr?: string): string {
  */
 export function formatLabel(str?: string): string {
   if (!str) return "";
-  return str
-    .replace(/_/g, " ")
-    .toLowerCase()
+  return str.replace(/_/g, " ").toLowerCase();
 }
 
 /**
@@ -63,7 +63,11 @@ export function formatLabel(str?: string): string {
  */
 export function formatAttributeValue(value: unknown): string {
   if (value === null || value === undefined) return "";
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return String(value);
   }
   if (Array.isArray(value)) {

@@ -4,16 +4,17 @@
  * GET /api/datarooms - List datarooms from marketplace
  * POST /api/datarooms - Create a new dataroom listing
  */
-
 import { NextRequest } from "next/server";
-import {
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  parseJsonBody,
-  extractQueryParams,
-} from "@/lib/api/server-utils";
+
 import type { CreateDataRoomRequest } from "@/types";
+
+import {
+  createErrorResponse,
+  extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
+  parseJsonBody,
+} from "@/lib/api/server-utils";
 
 /**
  * GET /api/datarooms
@@ -83,7 +84,8 @@ export async function GET(request: NextRequest) {
  * - image_model?: string
  */
 export async function POST(request: NextRequest) {
-  const { data: body, error } = await parseJsonBody<Partial<CreateDataRoomRequest>>(request);
+  const { data: body, error } =
+    await parseJsonBody<Partial<CreateDataRoomRequest>>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -97,13 +99,22 @@ export async function POST(request: NextRequest) {
     return createErrorResponse("description is required", 400);
   }
   if (body.description.length < 10 || body.description.length > 1000) {
-    return createErrorResponse("description must be between 10 and 1000 characters", 400);
+    return createErrorResponse(
+      "description must be between 10 and 1000 characters",
+      400
+    );
   }
   if (body.system_prompt === undefined || body.system_prompt === null) {
-    return createErrorResponse("system_prompt is required (can be empty string)", 400);
+    return createErrorResponse(
+      "system_prompt is required (can be empty string)",
+      400
+    );
   }
   if (body.system_prompt.length > 2000) {
-    return createErrorResponse("system_prompt must be at most 2000 characters", 400);
+    return createErrorResponse(
+      "system_prompt must be at most 2000 characters",
+      400
+    );
   }
   if (body.price_usd === undefined || body.price_usd === null) {
     return createErrorResponse("price_usd is required", 400);
@@ -113,17 +124,30 @@ export async function POST(request: NextRequest) {
   }
 
   // Validate optional constraints
-  if (body.query_limit !== undefined && (body.query_limit < 1 || body.query_limit > 1000)) {
+  if (
+    body.query_limit !== undefined &&
+    (body.query_limit < 1 || body.query_limit > 1000)
+  ) {
     return createErrorResponse("query_limit must be between 1 and 1000", 400);
   }
-  if (body.expiration_days !== undefined && (body.expiration_days < 1 || body.expiration_days > 365)) {
-    return createErrorResponse("expiration_days must be between 1 and 365", 400);
+  if (
+    body.expiration_days !== undefined &&
+    (body.expiration_days < 1 || body.expiration_days > 365)
+  ) {
+    return createErrorResponse(
+      "expiration_days must be between 1 and 365",
+      400
+    );
   }
 
-  return handleProxyRequest("/datarooms", {
-    method: "POST",
-    body,
-  }, 201);
+  return handleProxyRequest(
+    "/datarooms",
+    {
+      method: "POST",
+      body,
+    },
+    201
+  );
 }
 
 /**

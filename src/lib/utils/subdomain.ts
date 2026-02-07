@@ -10,7 +10,6 @@
  * - boulder.{VERCEL_URL} on Vercel preview deployments
  * - localhost / 127.0.0.1 always return null (no subdomain)
  */
-
 import { config } from "@/lib/config";
 
 /**
@@ -63,7 +62,10 @@ export function getSubdomainLabel(hostname: string): string | null {
   // Check if hostname ends with .{appRoot}
   for (const root of appRoots) {
     const suffix = `.${root}`;
-    if (hostWithoutPort.endsWith(suffix) && hostWithoutPort.length > suffix.length) {
+    if (
+      hostWithoutPort.endsWith(suffix) &&
+      hostWithoutPort.length > suffix.length
+    ) {
       const prefix = hostWithoutPort.slice(0, -suffix.length);
       const label = prefix.split(".").pop() ?? prefix;
       return label || null;

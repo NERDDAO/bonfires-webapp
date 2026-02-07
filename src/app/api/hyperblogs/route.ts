@@ -3,13 +3,13 @@
  *
  * GET /api/hyperblogs - List public hyperblogs
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
   extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 /**
@@ -64,7 +64,10 @@ export async function GET(request: NextRequest) {
 
   // Validate generation_mode
   const validModes = ["blog", "card"];
-  if (params["generation_mode"] && !validModes.includes(params["generation_mode"])) {
+  if (
+    params["generation_mode"] &&
+    !validModes.includes(params["generation_mode"])
+  ) {
     return createErrorResponse(
       `generation_mode must be one of: ${validModes.join(", ")}`,
       400

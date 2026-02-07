@@ -43,8 +43,14 @@ export interface PaymentConfig {
 export interface TypedData {
   domain: EIP712Domain;
   types: {
-    EIP712Domain: ReadonlyArray<{ readonly name: string; readonly type: string }>;
-    TransferWithAuthorization: ReadonlyArray<{ readonly name: string; readonly type: string }>;
+    EIP712Domain: ReadonlyArray<{
+      readonly name: string;
+      readonly type: string;
+    }>;
+    TransferWithAuthorization: ReadonlyArray<{
+      readonly name: string;
+      readonly type: string;
+    }>;
   };
   primaryType: "TransferWithAuthorization";
   message: TransferWithAuthorization;

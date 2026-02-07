@@ -1,9 +1,11 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
 import {
   SubdomainBonfireProvider,
   type SubdomainConfig,
 } from "@/contexts/SubdomainBonfireContext";
+
 import { config as appConfig } from "@/lib/config";
 import { getSubdomainLabel } from "@/lib/utils/subdomain";
 
@@ -62,10 +64,10 @@ export async function SubdomainResolver({ children }: SubdomainResolverProps) {
       </SubdomainBonfireProvider>
     );
   }
-  const host = headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "";
+  const host =
+    headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "";
   const subdomainLabel =
-    getSubdomainLabel(host) ??
-    headersList.get("x-subdomain-override");
+    getSubdomainLabel(host) ?? headersList.get("x-subdomain-override");
 
   let initialConfig: SubdomainConfig | null = null;
 
@@ -92,7 +94,11 @@ export async function SubdomainResolver({ children }: SubdomainResolverProps) {
           });
           redirect("/subdomain-not-found");
         }
-        const data = (await res.json()) as { bonfire_id: string; agent_id: string | null; is_public: boolean };
+        const data = (await res.json()) as {
+          bonfire_id: string;
+          agent_id: string | null;
+          is_public: boolean;
+        };
         const subdomainConfig: SubdomainConfig = {
           bonfireId: data.bonfire_id,
           agentId: data.agent_id ?? null,

@@ -5,13 +5,22 @@
  * - Created data rooms (by creator_wallet)
  * - Subscribed data rooms (by user_wallet)
  */
-
 "use client";
 
 import Link from "next/link";
-import { DashboardSection } from "./DashboardSection";
-import type { DashboardSectionState } from "@/types/dashboard";
+
 import type { DataRoomInfo, DataRoomSubscription } from "@/types/api";
+import type { DashboardSectionState } from "@/types/dashboard";
+
+import { DashboardSection } from "./DashboardSection";
+
+/**
+ * DataRoomsSection Component
+ *
+ * Displays My Data Rooms with two sub-sections:
+ * - Created data rooms (by creator_wallet)
+ * - Subscribed data rooms (by user_wallet)
+ */
 
 interface DataRoomsSectionProps {
   createdDataRooms: DashboardSectionState<DataRoomInfo[]>;
@@ -111,15 +120,15 @@ function SubscribedDataRoomCard({
               isExpired
                 ? "badge-error"
                 : isExpiringSoon
-                ? "badge-warning"
-                : "badge-info"
+                  ? "badge-warning"
+                  : "badge-info"
             }`}
           >
             {isExpired
               ? "Expired"
               : isExpiringSoon
-              ? `${daysLeft}d left`
-              : `${daysLeft}d remaining`}
+                ? `${daysLeft}d left`
+                : `${daysLeft}d remaining`}
           </span>
         </div>
       </div>
@@ -168,14 +177,10 @@ export function DataRoomsSection({
   const created = createdDataRooms.data ?? [];
   const subscribed = subscribedDataRooms.data ?? [];
 
-  const isLoading =
-    createdDataRooms.isLoading || subscribedDataRooms.isLoading;
+  const isLoading = createdDataRooms.isLoading || subscribedDataRooms.isLoading;
   const isError = createdDataRooms.isError || subscribedDataRooms.isError;
   const isEmpty =
-    !isLoading &&
-    !isError &&
-    created.length === 0 &&
-    subscribed.length === 0;
+    !isLoading && !isError && created.length === 0 && subscribed.length === 0;
 
   const handleRetry = () => {
     createdDataRooms.refetch();

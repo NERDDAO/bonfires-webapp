@@ -7,20 +7,21 @@
  * graph searches. For long-running queries, the backend may return
  * a job ID for async polling.
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  parseJsonBody,
-} from "@/lib/api/server-utils";
+
+import type { BonfireListResponse, DelveRequest } from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { DelveRequest, BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
+  parseJsonBody,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 /**
  * POST /api/graph/query
@@ -36,7 +37,8 @@ import type { DelveRequest, BonfireListResponse } from "@/types";
  * - graph_id?: string - Use existing graph context
  */
 export async function POST(request: NextRequest) {
-  const { data: body, error } = await parseJsonBody<Partial<DelveRequest>>(request);
+  const { data: body, error } =
+    await parseJsonBody<Partial<DelveRequest>>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -47,9 +49,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Check bonfire access
-  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-    method: "GET",
-  });
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+    "/bonfires",
+    {
+      method: "GET",
+    }
+  );
 
   const bonfire = bonfireResponse.data?.bonfires?.find(
     (b) => b.id === body.bonfire_id

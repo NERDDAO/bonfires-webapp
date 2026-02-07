@@ -3,13 +3,13 @@
  *
  * GET /api/documents/[docId] - Get document/entity details
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
   extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 interface RouteParams {
@@ -24,10 +24,7 @@ interface RouteParams {
  * Query Parameters:
  * - bonfire_id?: string - Filter by bonfire context
  */
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { docId } = await params;
 
   if (!docId) {
@@ -38,7 +35,7 @@ export async function GET(
 
   return handleProxyRequest(`/knowledge_graph/entity/${docId}`, {
     method: "GET",
-    queryParams: queryParams["bonfire_id"] 
+    queryParams: queryParams["bonfire_id"]
       ? { bonfire_id: queryParams["bonfire_id"] }
       : undefined,
   });

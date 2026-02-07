@@ -3,15 +3,16 @@
  *
  * POST /api/datarooms/[dataroomId]/subscribe - Subscribe to a dataroom
  */
-
 import { NextRequest } from "next/server";
+
+import type { DataRoomSubscribeRequest } from "@/types";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
   parseJsonBody,
 } from "@/lib/api/server-utils";
-import type { DataRoomSubscribeRequest } from "@/types";
 
 interface RouteParams {
   params: Promise<{ dataroomId: string }>;
@@ -26,17 +27,15 @@ interface RouteParams {
  * - payment_header: string (required) - x402 payment header
  * - user_wallet: string (required) - Subscriber's wallet address
  */
-export async function POST(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function POST(request: NextRequest, { params }: RouteParams) {
   const { dataroomId } = await params;
 
   if (!dataroomId) {
     return createErrorResponse("DataRoom ID is required", 400);
   }
 
-  const { data: body, error } = await parseJsonBody<Partial<DataRoomSubscribeRequest>>(request);
+  const { data: body, error } =
+    await parseJsonBody<Partial<DataRoomSubscribeRequest>>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -51,13 +50,17 @@ export async function POST(
   }
 
   // The backend endpoint for subscribing
-  return handleProxyRequest(`/datarooms/${dataroomId}/subscribe`, {
-    method: "POST",
-    body,
-    headers: {
-      "X-Payment-Header": body.payment_header,
+  return handleProxyRequest(
+    `/datarooms/${dataroomId}/subscribe`,
+    {
+      method: "POST",
+      body,
+      headers: {
+        "X-Payment-Header": body.payment_header,
+      },
     },
-  }, 201);
+    201
+  );
 }
 
 /**

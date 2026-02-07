@@ -5,14 +5,23 @@
  * used by GraphExplorer: POST /api/agents/[agentId]/episodes/search.
  * Returns normalized GraphData for use in graph-2 StaticGraphView.
  */
-
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
-import type { GraphData, GraphNode, GraphEdge } from "@/types/graph";
 import type { AgentLatestEpisodesResponse } from "@/types";
+import { useQuery } from "@tanstack/react-query";
+
+import { apiClient } from "@/lib/api/client";
+
+import type { GraphData, GraphEdge, GraphNode } from "@/types/graph";
 import type { NodeType } from "@/types/graph";
+
+/**
+ * useLatestEpisodesGraph
+ *
+ * Loads the agent's latest episodes graph (nodes + edges) from the same API
+ * used by GraphExplorer: POST /api/agents/[agentId]/episodes/search.
+ * Returns normalized GraphData for use in graph-2 StaticGraphView.
+ */
 
 function resolveNodeType(rawType: unknown, labels: string[]): NodeType {
   const normalized = typeof rawType === "string" ? rawType.toLowerCase() : "";
@@ -22,7 +31,9 @@ function resolveNodeType(rawType: unknown, labels: string[]): NodeType {
   return hasEpisodeLabel ? "episode" : "entity";
 }
 
-function buildProperties(raw: Record<string, unknown>): Record<string, unknown> {
+function buildProperties(
+  raw: Record<string, unknown>
+): Record<string, unknown> {
   const base = { ...raw };
   if (raw["properties"] && typeof raw["properties"] === "object") {
     Object.assign(base, raw["properties"] as Record<string, unknown>);
@@ -93,7 +104,10 @@ function normalizeEdge(raw: Record<string, unknown>): GraphEdge | null {
   };
 }
 
-export function latestEpisodesGraphQueryKey(bonfireId: string, agentId: string) {
+export function latestEpisodesGraphQueryKey(
+  bonfireId: string,
+  agentId: string
+) {
   return ["graph", "latest-episodes", bonfireId, agentId] as const;
 }
 

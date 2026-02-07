@@ -3,10 +3,15 @@
  *
  * Summary statistics cards showing document and chunk counts.
  */
-
 "use client";
 
 import type { DocumentSummary } from "@/types";
+
+/**
+ * DocumentSummaryCards Component
+ *
+ * Summary statistics cards showing document and chunk counts.
+ */
 
 interface DocumentSummaryCardsProps {
   /** Summary data */
@@ -25,16 +30,22 @@ interface SummaryCardProps {
   isLoading?: boolean;
 }
 
-function SummaryCard({ title, value, icon, color, isLoading }: SummaryCardProps) {
+function SummaryCard({
+  title,
+  value,
+  icon,
+  color,
+  isLoading,
+}: SummaryCardProps) {
   return (
     <div className="card bg-base-200">
       <div className="card-body p-4">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${color}`}>
-            {icon}
-          </div>
+          <div className={`p-2 rounded-lg ${color}`}>{icon}</div>
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-base-content/60">{title}</h3>
+            <h3 className="text-sm font-medium text-base-content/60">
+              {title}
+            </h3>
             {isLoading ? (
               <div className="skeleton h-7 w-16 mt-1" />
             ) : (
@@ -59,7 +70,12 @@ export function DocumentSummaryCards({
       title: "Total Documents",
       value: summary?.total_documents ?? 0,
       icon: (
-        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-5 h-5 text-primary"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -74,7 +90,12 @@ export function DocumentSummaryCards({
       title: "Total Chunks",
       value: summary?.total_chunks ?? 0,
       icon: (
-        <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-5 h-5 text-secondary"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -89,7 +110,12 @@ export function DocumentSummaryCards({
       title: "Labeled Chunks",
       value: summary?.labeled_chunks ?? 0,
       icon: (
-        <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-5 h-5 text-success"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -104,7 +130,12 @@ export function DocumentSummaryCards({
       title: "Unlabeled Chunks",
       value: summary?.unlabeled_chunks ?? 0,
       icon: (
-        <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-5 h-5 text-warning"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -136,7 +167,11 @@ export function DocumentSummaryCards({
 /**
  * Skeleton loader for summary cards
  */
-export function DocumentSummaryCardsSkeleton({ className = "" }: { className?: string }) {
+export function DocumentSummaryCardsSkeleton({
+  className = "",
+}: {
+  className?: string;
+}) {
   return (
     <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
       {[1, 2, 3, 4].map((i) => (

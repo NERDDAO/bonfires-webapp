@@ -5,15 +5,22 @@
  *
  * Displays a grid of available data rooms for browsing and subscription.
  */
-
 import { useEffect, useState } from "react";
-import { useWalletAccount } from "@/lib/wallet/e2e";
+
+import type {
+  CreateDataRoomRequest,
+  DataRoomInfo,
+  DataRoomListResponse,
+} from "@/types";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+
+import { Header } from "@/components/shared/Header";
 import { DataRoomMarketplaceCard } from "@/components/web3/DataRoomMarketplaceCard";
 import { DataRoomWizard } from "@/components/web3/DataRoomWizard";
-import type { DataRoomInfo, DataRoomListResponse, CreateDataRoomRequest } from "@/types";
-import { Header } from "@/components/shared/Header";
+
 import { useAuth } from "@/hooks/useAuth";
+
+import { useWalletAccount } from "@/lib/wallet/e2e";
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -285,7 +292,8 @@ export default function DataRoomsPage() {
                 Browse and subscribe to data rooms created by the community.
               </p>
               <div className="mt-2 text-sm opacity-70">
-                Found {dataRooms.length} data room{dataRooms.length !== 1 ? "s" : ""}
+                Found {dataRooms.length} data room
+                {dataRooms.length !== 1 ? "s" : ""}
               </div>
               {!isConnected && (
                 <div className="alert alert-info mt-4">

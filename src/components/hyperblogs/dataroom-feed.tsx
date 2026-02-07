@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { hyperblogsCopy } from "@/content/hyperblogs";
 import { useDataRoomsInfiniteQuery } from "@/hooks";
-import { useEffect, useRef } from "react";
-import DataroomCard from "./dataroom-card";
+
 import { DataRoomInfo } from "@/types/api";
+
+import DataroomCard from "./dataroom-card";
 
 const PAGE_SIZE = 4;
 
@@ -21,7 +24,10 @@ export default function DataroomFeed() {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { dataroomTitle } = hyperblogsCopy;
-  const dataRooms = data?.pages.flatMap((page: { datarooms: DataRoomInfo[] }) => page.datarooms) ?? [];
+  const dataRooms =
+    data?.pages.flatMap(
+      (page: { datarooms: DataRoomInfo[] }) => page.datarooms
+    ) ?? [];
   const placeholderCount = isFetchingNextPage ? PAGE_SIZE : 0;
   const totalCount = dataRooms.length + placeholderCount;
 

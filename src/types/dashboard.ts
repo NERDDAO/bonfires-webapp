@@ -4,13 +4,12 @@
  * TypeScript interfaces for the unified dashboard page.
  * Aggregates data from multiple sources (API, localStorage, wallet).
  */
-
 import type {
+  AgentInfo,
   DataRoomInfo,
   DataRoomSubscription,
   DocumentInfo,
   HyperBlogInfo,
-  AgentInfo,
 } from "./api";
 import type { PaymentTransaction, WalletState } from "./web3";
 

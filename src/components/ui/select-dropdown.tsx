@@ -6,10 +6,11 @@
  * Custom dropdown that behaves like a select: options with value/label,
  * single selection, click-outside to close. Styling via className props.
  */
+import { useEffect, useRef, useState } from "react";
+
+import Image from "next/image";
 
 import { cn } from "@/lib/cn";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
 
 export interface SelectDropdownOption {
   value: string;
@@ -53,7 +54,7 @@ export function SelectDropdown({
   const panelRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = value
-    ? options.find((o) => o.value === value) ?? null
+    ? (options.find((o) => o.value === value) ?? null)
     : null;
   const displayText = selectedOption ? selectedOption.label : placeholder;
 
@@ -94,7 +95,7 @@ export function SelectDropdown({
           "focus:outline-none focus:ring-1 focus:ring-white/30 focus:border-[#646464]",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           "flex items-center justify-between gap-2",
-          !selectedOption && "text-[#A9A9A9]",
+          !selectedOption && "text-[#A9A9A9]"
         )}
         onClick={() => !disabled && setOpen((prev) => !prev)}
         disabled={disabled}
@@ -103,10 +104,7 @@ export function SelectDropdown({
       >
         <span className="truncate">{displayText}</span>
         <span
-          className={cn(
-            "shrink-0 transition-transform",
-            open && "rotate-180"
-          )}
+          className={cn("shrink-0 transition-transform", open && "rotate-180")}
           aria-hidden
         >
           <Image
@@ -133,11 +131,7 @@ export function SelectDropdown({
           onMouseDown={(e) => e.preventDefault()}
         >
           {options.length === 0 ? (
-            <div
-              className={cn(
-                "px-3 py-2.5 text-sm text-[#A9A9A9]",
-              )}
-            >
+            <div className={cn("px-3 py-2.5 text-sm text-[#A9A9A9]")}>
               No options
             </div>
           ) : (
@@ -153,7 +147,7 @@ export function SelectDropdown({
                     "w-full text-left px-3 py-2.5 text-sm lg:text-base",
                     "hover:bg-[#181818]/40 focus:bg-[#181818]/40 focus:outline-none",
                     isSelected && "bg-[#FFFFFF08] text-white",
-                    !isSelected && "text-[#e5e5e5]",
+                    !isSelected && "text-[#e5e5e5]"
                   )}
                   onClick={() => handleSelect(option.value)}
                 >

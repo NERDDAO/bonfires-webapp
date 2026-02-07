@@ -1,9 +1,14 @@
 "use client";
 
-import { SelectDropdown } from "@/components/ui/select-dropdown";
-import { cn } from "@/lib/cn";
-import type { AgentInfo, BonfireInfo } from "@/types";
 import Image from "next/image";
+
+import type { AgentInfo, BonfireInfo } from "@/types";
+
+import { SelectDropdown } from "@/components/ui/select-dropdown";
+
+import { cn } from "@/lib/cn";
+
+import { SearchHistoryBreadcrumbs } from "./search-history-breadcrumbs";
 import {
   contentClass,
   errorClass,
@@ -12,7 +17,6 @@ import {
   skeletonClass,
   width,
 } from "./select-panel-constants";
-import { SearchHistoryBreadcrumbs } from "./search-history-breadcrumbs";
 
 export interface PanelHeaderProps {
   hideGraphSelector: boolean;
@@ -62,7 +66,8 @@ export function PanelHeader({
 
   const activeBreadcrumb =
     activeBreadcrumbProp ??
-    searchHistoryBreadcrumbs.find((crumb) => crumb.label === searchQuery)?.label ??
+    searchHistoryBreadcrumbs.find((crumb) => crumb.label === searchQuery)
+      ?.label ??
     null;
 
   return (
@@ -168,7 +173,9 @@ export function PanelHeader({
               aria-label="Search"
             >
               <Image
-                src={isSearching ? "/icons/loader-circle.svg" : "/icons/search.svg"}
+                src={
+                  isSearching ? "/icons/loader-circle.svg" : "/icons/search.svg"
+                }
                 alt={isSearching ? "Searching" : "Search"}
                 width={16}
                 height={16}
@@ -190,7 +197,10 @@ export function PanelHeader({
         <div
           className={cn(panelContainerClass, "mb-3 lg:mt-2 hidden lg:block")}
         >
-          <label htmlFor="search-history-breadcrumbs" className={cn(labelClass, "mb-0")}>
+          <label
+            htmlFor="search-history-breadcrumbs"
+            className={cn(labelClass, "mb-0")}
+          >
             Graph Navigation
           </label>
           <SearchHistoryBreadcrumbs

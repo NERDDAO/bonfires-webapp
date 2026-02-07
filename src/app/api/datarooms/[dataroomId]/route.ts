@@ -3,12 +3,12 @@
  *
  * GET /api/datarooms/[dataroomId] - Get dataroom details
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 interface RouteParams {
@@ -20,10 +20,7 @@ interface RouteParams {
  *
  * Get details of a specific dataroom.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { dataroomId } = await params;
 
   if (!dataroomId) {

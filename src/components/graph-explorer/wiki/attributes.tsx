@@ -1,6 +1,10 @@
 import { formatAttributeValue, formatLabel } from "./wiki-panel-utils";
 
-export default function Attributes({ attributes }: { attributes: Record<string, unknown> }) {
+export default function Attributes({
+  attributes,
+}: {
+  attributes: Record<string, unknown>;
+}) {
   return (
     <div className="bg-base-200 rounded-lg divide-y divide-base-300">
       {Object.entries(attributes).map(([key, val]) => {
@@ -21,5 +25,5 @@ export default function Attributes({ attributes }: { attributes: Record<string, 
         );
       })}
     </div>
-  )
+  );
 }

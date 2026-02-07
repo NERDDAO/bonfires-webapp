@@ -4,7 +4,6 @@
  * Lightweight API client with request deduplication, caching, and retry logic.
  * Integrates with React Query for query-level caching.
  */
-
 import type { ApiError, AsyncJob } from "@/types";
 
 interface RequestConfig {
@@ -59,7 +58,11 @@ function shouldRetryStatus(status: number): boolean {
 /**
  * Get retry delay based on status and retry count
  */
-function getRetryDelay(status: number, retryCount: number, retryAfterHeader?: string | null): number {
+function getRetryDelay(
+  status: number,
+  retryCount: number,
+  retryAfterHeader?: string | null
+): number {
   // If we have a Retry-After header, use it
   if (retryAfterHeader) {
     const seconds = parseInt(retryAfterHeader, 10);
@@ -93,7 +96,10 @@ class ApiClient {
   /**
    * GET request with caching and deduplication
    */
-  async get<T>(endpoint: string, options?: { cache?: boolean; ttl?: number }): Promise<T> {
+  async get<T>(
+    endpoint: string,
+    options?: { cache?: boolean; ttl?: number }
+  ): Promise<T> {
     const { cache = true, ttl = DEFAULT_CACHE_TTL } = options ?? {};
     const cacheKey = `GET:${endpoint}`;
 
@@ -114,12 +120,14 @@ class ApiClient {
       return inflight as Promise<T>;
     }
 
-    const request = this.request<T>(endpoint, { method: "GET" }).then((data) => {
-      if (cache) {
-        this.setCache(cacheKey, data, ttl);
+    const request = this.request<T>(endpoint, { method: "GET" }).then(
+      (data) => {
+        if (cache) {
+          this.setCache(cacheKey, data, ttl);
+        }
+        return data;
       }
-      return data;
-    });
+    );
 
     this.inflightRequests.set(cacheKey, request);
     try {
@@ -160,7 +168,10 @@ class ApiClient {
   /**
    * Initiate an async job for long-running operations
    */
-  async initiateJob(endpoint: string, data: unknown): Promise<{ jobId: string }> {
+  async initiateJob(
+    endpoint: string,
+    data: unknown
+  ): Promise<{ jobId: string }> {
     return this.post<{ jobId: string }>(endpoint, data);
   }
 
@@ -175,11 +186,17 @@ class ApiClient {
       onProgress?: (progress: number) => void;
     }
   ): Promise<T> {
-    const { interval = 1000, timeout = 5 * 60 * 1000, onProgress } = options ?? {};
+    const {
+      interval = 1000,
+      timeout = 5 * 60 * 1000,
+      onProgress,
+    } = options ?? {};
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
-      const job = await this.get<AsyncJob<T>>(`/api/jobs/${jobId}`, { cache: false });
+      const job = await this.get<AsyncJob<T>>(`/api/jobs/${jobId}`, {
+        cache: false,
+      });
 
       if (job.progress !== undefined && onProgress) {
         onProgress(job.progress);
@@ -231,7 +248,9 @@ class ApiClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as Partial<ApiError>;
+        const errorData = (await response
+          .json()
+          .catch(() => ({}))) as Partial<ApiError>;
         const error = {
           code: errorData.code ?? "UNKNOWN_ERROR",
           message: errorData.message ?? `HTTP ${response.status}`,
@@ -383,7 +402,9 @@ class ApiClient {
     console.debug("[ApiClient] Cache Statistics:", {
       ...stats,
       hitRatePercent: `${(stats.hitRate * 100).toFixed(1)}%`,
-      avgTtlSec: stats.avgTtlMs ? `${(stats.avgTtlMs / 1000).toFixed(1)}s` : "N/A",
+      avgTtlSec: stats.avgTtlMs
+        ? `${(stats.avgTtlMs / 1000).toFixed(1)}s`
+        : "N/A",
       ageMs: Date.now() - stats.createdAt,
     });
   }

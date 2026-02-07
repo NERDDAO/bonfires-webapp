@@ -6,7 +6,6 @@
  * Displays a connection prompt when wallet is not connected.
  * Used to guard Web3 features that require wallet connection.
  */
-
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 interface WalletConnectionGuardProps {

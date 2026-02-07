@@ -4,11 +4,21 @@
  * Provides authentication state from Clerk with typed organization roles and permissions.
  * Wraps Clerk's useUser, useOrganization, and useAuth hooks for convenience.
  */
-
 "use client";
 
-import { useUser, useOrganization, useAuth as useClerkAuth } from "@clerk/nextjs";
-import type { BonfireRole, BonfirePermission, AuthState } from "@/types";
+import type { AuthState, BonfirePermission, BonfireRole } from "@/types";
+import {
+  useAuth as useClerkAuth,
+  useOrganization,
+  useUser,
+} from "@clerk/nextjs";
+
+/**
+ * useAuth Hook
+ *
+ * Provides authentication state from Clerk with typed organization roles and permissions.
+ * Wraps Clerk's useUser, useOrganization, and useAuth hooks for convenience.
+ */
 
 /**
  * Hook for accessing authentication state
@@ -56,7 +66,9 @@ export function useAuth(): AuthState & {
           id: organization.id,
           name: organization.name,
           slug: organization.slug,
-          bonfireId: (organization.publicMetadata?.["bonfire_id"] as string) ?? undefined,
+          bonfireId:
+            (organization.publicMetadata?.["bonfire_id"] as string) ??
+            undefined,
         }
       : null,
     orgRole,

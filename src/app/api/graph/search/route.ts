@@ -6,20 +6,25 @@
  * This endpoint proxies to the backend vector search endpoint for
  * semantic search over chunks.
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  parseJsonBody,
-} from "@/lib/api/server-utils";
+
+import type {
+  BonfireListResponse,
+  GraphSearchRequest,
+  VectorSearchRequest,
+} from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { GraphSearchRequest, VectorSearchRequest, BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
+  parseJsonBody,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 /**
  * POST /api/graph/search
@@ -34,7 +39,8 @@ import type { GraphSearchRequest, VectorSearchRequest, BonfireListResponse } fro
  * - filters?: object - Additional filters
  */
 export async function POST(request: NextRequest) {
-  const { data: body, error } = await parseJsonBody<Partial<GraphSearchRequest>>(request);
+  const { data: body, error } =
+    await parseJsonBody<Partial<GraphSearchRequest>>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -48,9 +54,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Check bonfire access
-  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-    method: "GET",
-  });
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+    "/bonfires",
+    {
+      method: "GET",
+    }
+  );
 
   const bonfire = bonfireResponse.data?.bonfires?.find(
     (b) => b.id === body.bonfire_id

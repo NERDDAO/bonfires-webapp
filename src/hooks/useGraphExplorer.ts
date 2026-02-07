@@ -2,11 +2,16 @@
  * useGraphExplorer Hook
  * Centralized state management for the graph explorer component
  */
-
 "use client";
 
-import { useReducer, useCallback } from "react";
+import { useCallback, useReducer } from "react";
+
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
+/**
+ * useGraphExplorer Hook
+ * Centralized state management for the graph explorer component
+ */
 
 // Panel modes
 export type PanelMode = "none" | "chat" | "wiki";
@@ -69,8 +74,16 @@ export enum TimelineActionType {
 
 // Selection actions
 type SelectionAction =
-  | { type: SelectionActionType.SELECT_NODE; nodeId: string; userTriggered?: boolean }
-  | { type: SelectionActionType.SELECT_EDGE; edgeId: string; userTriggered?: boolean }
+  | {
+      type: SelectionActionType.SELECT_NODE;
+      nodeId: string;
+      userTriggered?: boolean;
+    }
+  | {
+      type: SelectionActionType.SELECT_EDGE;
+      edgeId: string;
+      userTriggered?: boolean;
+    }
   | { type: SelectionActionType.CLEAR_SELECTION }
   | { type: SelectionActionType.SET_AUTO_SELECTED; autoSelected: boolean };
 
@@ -89,7 +102,10 @@ type TimelineAction =
   | { type: TimelineActionType.SET_FALLBACK_CENTER; centerId: string | null };
 
 // Reducers
-function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
+function selectionReducer(
+  state: SelectionState,
+  action: SelectionAction
+): SelectionState {
   switch (action.type) {
     case SelectionActionType.SELECT_NODE:
       return {
@@ -153,7 +169,10 @@ function panelReducer(state: PanelState, action: PanelAction): PanelState {
   }
 }
 
-function timelineReducer(state: TimelineState, action: TimelineAction): TimelineState {
+function timelineReducer(
+  state: TimelineState,
+  action: TimelineAction
+): TimelineState {
   switch (action.type) {
     case TimelineActionType.TOGGLE_EXPANDED:
       return { ...state, expanded: !state.expanded };
@@ -189,9 +208,15 @@ const initialTimelineState: TimelineState = {
  * Hook for managing graph explorer state
  */
 export function useGraphExplorerState() {
-  const [selection, dispatchSelection] = useReducer(selectionReducer, initialSelectionState);
+  const [selection, dispatchSelection] = useReducer(
+    selectionReducer,
+    initialSelectionState
+  );
   const [panel, dispatchPanel] = useReducer(panelReducer, initialPanelState);
-  const [timeline, dispatchTimeline] = useReducer(timelineReducer, initialTimelineState);
+  const [timeline, dispatchTimeline] = useReducer(
+    timelineReducer,
+    initialTimelineState
+  );
 
   return {
     state: {
@@ -235,9 +260,11 @@ export function getEdgeFromElements(
   edgeId: string | null
 ): GraphElement | null {
   if (!edgeId) return null;
-  return elements.find(
-    (el) => el.data?.id === edgeId && el.data?.source && el.data?.target
-  ) ?? null;
+  return (
+    elements.find(
+      (el) => el.data?.id === edgeId && el.data?.source && el.data?.target
+    ) ?? null
+  );
 }
 
 export default useGraphExplorerState;

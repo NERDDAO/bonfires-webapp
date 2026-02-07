@@ -8,6 +8,7 @@
  */
 
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 /**
  * Routes that ALWAYS require authentication (regardless of bonfire visibility)
@@ -39,6 +40,18 @@ export default clerkMiddleware(async (auth, req) => {
   }
   // Public routes and bonfire-specific routes pass through
   // Bonfire access control (is_public check) happens at API route level
+
+  // Forward ?subdomain= query param as a header for SubdomainResolver
+  // Only on Vercel preview URLs (*.vercel.app) - blocked on production domains
+  const host = req.headers.get("host") ?? "";
+  const subdomainParam = req.nextUrl.searchParams.get("subdomain");
+  if (subdomainParam && host.endsWith(".vercel.app")) {
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-subdomain-override", subdomainParam);
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+  }
 });
 
 export const config = {

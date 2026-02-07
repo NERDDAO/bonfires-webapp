@@ -99,13 +99,18 @@ function getConfig(): AppConfig {
 }
 
 function parseAppRoots(env: string | undefined): string[] {
-  if (env && env.trim()) {
-    return env
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
+  const defaults = ["app.bonfires.ai", "staging-app.bonfires.ai"];
+  const fromEnv = env?.trim()
+    ? env
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : defaults;
+  const vercelUrl = process.env["VERCEL_URL"]?.toLowerCase();
+  if (vercelUrl && !fromEnv.includes(vercelUrl)) {
+    return [...fromEnv, vercelUrl];
   }
-  return ["app.bonfires.ai", "staging-app.bonfires.ai"];
+  return fromEnv;
 }
 
 export const config = getConfig();

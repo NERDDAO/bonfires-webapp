@@ -2,13 +2,19 @@
  * Floating chat button for collapsed state (when chat is closed).
  * Uses primary Button from ui.
  */
-
 "use client";
 
 import React from "react";
-import { MessageSquare } from "lucide-react";
+
 import type { PanelMode } from "@/hooks";
+import { MessageSquare } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+
+/**
+ * Floating chat button for collapsed state (when chat is closed).
+ * Uses primary Button from ui.
+ */
 
 export interface FloatingChatButtonProps {
   mode: PanelMode;

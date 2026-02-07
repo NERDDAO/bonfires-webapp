@@ -6,8 +6,8 @@
  * - Viewing connected accounts (Google, etc.)
  * - Future: Linking Web3 wallets
  */
-
 import { UserProfile } from "@clerk/nextjs";
+
 import { Header } from "@/components/shared/Header";
 
 export default function ProfilePage() {

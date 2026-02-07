@@ -69,7 +69,10 @@ export {
 } from "./useDocumentsQuery";
 
 // Taxonomy
-export { useTaxonomyStatsQuery, taxonomyStatsQueryKey } from "./useTaxonomyStatsQuery";
+export {
+  useTaxonomyStatsQuery,
+  taxonomyStatsQueryKey,
+} from "./useTaxonomyStatsQuery";
 
 // Job Polling
 export {

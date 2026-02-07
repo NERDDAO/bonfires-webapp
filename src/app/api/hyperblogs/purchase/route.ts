@@ -3,12 +3,12 @@
  *
  * POST /api/hyperblogs/purchase - Purchase / create a hyperblog for a dataroom
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
   parseJsonBody,
 } from "@/lib/api/server-utils";
 
@@ -35,9 +35,8 @@ interface PurchaseBody {
  * - expected_amount?: string
  */
 export async function POST(request: NextRequest) {
-  const { data: body, error } = await parseJsonBody<Partial<PurchaseBody>>(
-    request
-  );
+  const { data: body, error } =
+    await parseJsonBody<Partial<PurchaseBody>>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -58,16 +57,20 @@ export async function POST(request: NextRequest) {
       ? body.payment_header
       : JSON.stringify(body.payment_header);
 
-  return handleProxyRequest("/datarooms/hyperblogs/purchase", {
-    method: "POST",
-    body: {
-      ...body,
-      payment_header: body.payment_header,
+  return handleProxyRequest(
+    "/datarooms/hyperblogs/purchase",
+    {
+      method: "POST",
+      body: {
+        ...body,
+        payment_header: body.payment_header,
+      },
+      headers: {
+        "X-Payment-Header": paymentHeader,
+      },
     },
-    headers: {
-      "X-Payment-Header": paymentHeader,
-    },
-  }, 201);
+    201
+  );
 }
 
 /**

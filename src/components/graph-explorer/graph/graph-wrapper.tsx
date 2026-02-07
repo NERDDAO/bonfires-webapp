@@ -3,15 +3,22 @@
  * High-level graph visualization wrapper with loading states and error handling.
  * Renders the graph using CanvasGraphView (static-graph-view style UI).
  */
-
 "use client";
 
-import React, { useCallback, useMemo, memo, useRef, useEffect } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { ErrorMessage, LoadingSpinner } from "@/components/common";
+
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
-import ForceGraph from "./force-graph";
+
 import GraphStatusOverlay from "../ui/graph-status-overlay";
+import ForceGraph from "./force-graph";
+
+/**
+ * GraphVisualization Component
+ * High-level graph visualization wrapper with loading states and error handling.
+ * Renders the graph using CanvasGraphView (static-graph-view style UI).
+ */
 
 interface GraphVisualizationProps {
   /** Graph elements to display */
@@ -117,10 +124,7 @@ export const GraphWrapper = memo(function GraphWrapper({
     >
       {/* Loading overlay */}
       {loading && (
-        <GraphStatusOverlay
-          isLoading={true}
-          message="Loading graph..."
-        />
+        <GraphStatusOverlay isLoading={true} message="Loading graph..." />
       )}
 
       {/* Graph canvas (static-graph-view style) */}

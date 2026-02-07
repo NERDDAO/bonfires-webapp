@@ -4,22 +4,23 @@
  * GET /api/agents - List agents (with optional filters and access control)
  * POST /api/agents - Create a new agent
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  createSuccessResponse,
-  parseJsonBody,
-  extractQueryParams,
-} from "@/lib/api/server-utils";
+
+import type { BonfireListResponse } from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
+  parseJsonBody,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 /**
  * GET /api/agents
@@ -44,18 +45,29 @@ export async function GET(request: NextRequest) {
   // If bonfire_id is provided, validate access first
   if (params["bonfire_id"]) {
     // Fetch bonfire to check access
-    const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-      method: "GET",
-    });
+    const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+      "/bonfires",
+      {
+        method: "GET",
+      }
+    );
 
     const bonfire = bonfireResponse.data?.bonfires?.find(
       (b) => b.id === params["bonfire_id"]
     );
 
-    const access = await checkBonfireAccess(params["bonfire_id"], bonfire?.is_public);
+    const access = await checkBonfireAccess(
+      params["bonfire_id"],
+      bonfire?.is_public
+    );
     if (!access.allowed) {
       const denied = createAccessDeniedResponse(access.reason);
-      return createErrorResponse(denied.error, 403, denied.details, denied.code);
+      return createErrorResponse(
+        denied.error,
+        403,
+        denied.details,
+        denied.code
+      );
     }
 
     queryParams["bonfire_id"] = params["bonfire_id"];
@@ -105,10 +117,14 @@ export async function POST(request: NextRequest) {
     return createErrorResponse("name is required", 400);
   }
 
-  return handleProxyRequest("/agents", {
-    method: "POST",
-    body,
-  }, 201);
+  return handleProxyRequest(
+    "/agents",
+    {
+      method: "POST",
+      body,
+    },
+    201
+  );
 }
 
 /**

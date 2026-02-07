@@ -4,10 +4,16 @@
  * Wrapper component for dashboard sections with independent loading states.
  * Shows skeleton loader while loading, error state with retry, or content.
  */
-
 "use client";
 
 import { type ReactNode } from "react";
+
+/**
+ * DashboardSection Component
+ *
+ * Wrapper component for dashboard sections with independent loading states.
+ * Shows skeleton loader while loading, error state with retry, or content.
+ */
 
 interface DashboardSectionProps {
   /** Section title */

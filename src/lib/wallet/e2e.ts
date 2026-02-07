@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import { useAccount } from "wagmi";
 
 export interface WalletAccountState {
@@ -19,7 +20,10 @@ export function isE2EWalletEnabled(): boolean {
   return process.env["NEXT_PUBLIC_E2E_WALLET"] === "true";
 }
 
-export function setE2EWalletState(isConnected: boolean, address?: string): void {
+export function setE2EWalletState(
+  isConnected: boolean,
+  address?: string
+): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(E2E_WALLET_STORAGE_KEY, String(isConnected));
   if (address) {
@@ -40,7 +44,8 @@ function readE2EWalletState(): WalletAccountState {
   if (typeof window === "undefined") {
     return { address: undefined, isConnected: false, isConnecting: false };
   }
-  const isConnected = window.localStorage.getItem(E2E_WALLET_STORAGE_KEY) === "true";
+  const isConnected =
+    window.localStorage.getItem(E2E_WALLET_STORAGE_KEY) === "true";
   const address =
     window.localStorage.getItem(E2E_WALLET_ADDRESS_KEY) ?? DEFAULT_E2E_ADDRESS;
   return {

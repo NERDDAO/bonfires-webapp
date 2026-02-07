@@ -21,9 +21,9 @@ export const staticGraphNodes = {
 
 export const knowledgeGraphSectionCopy = {
   title: "Knowledge Graph",
-  subtitle:
-    "The Structuring Process.",
-  description: "Navigate the knowledge produced at ETHBoulder through the interactive graph viewer. Explore users, ideas, relationships and more through the structured context of the Bonfire.",
+  subtitle: "The Structuring Process.",
+  description:
+    "Navigate the knowledge produced at ETHBoulder through the interactive graph viewer. Explore users, ideas, relationships and more through the structured context of the Bonfire.",
   paragraphs: [
     {
       heading: "Episodic Memory",
@@ -51,7 +51,8 @@ export const hyperblogsPreviewSectionCopy = {
   tooltipAlt: "Hyperblogs Info",
   cta: "Create your own",
   ctaHref: "/hyperblogs",
-  description: "Hyperblogs are a long forms information format, which is generated from the context of the information already stored in the knowledge graph. It’s a way for users to potentially monetize their contributed pieces of knowledge.",
+  description:
+    "Hyperblogs are a long forms information format, which is generated from the context of the information already stored in the knowledge graph. It’s a way for users to potentially monetize their contributed pieces of knowledge.",
   featuredBlogTitle: "Featured Hyperblog",
   latestBlogsTitle: "Latest Hyperblogs",
   viewMoreCtaTitle: "View More",
@@ -60,27 +61,32 @@ export const hyperblogsPreviewSectionCopy = {
 
 export const howItWorksSectionCopy = {
   title: "How It Works",
-  description: "From knowledge exploration to monetization, Delve provides a complete platform for working with AI-powered knowledge graphs.",
+  description:
+    "From knowledge exploration to monetization, Delve provides a complete platform for working with AI-powered knowledge graphs.",
   steps: [
     {
       icon: "icons/search.svg",
       title: "Explore Knowledge Graphs",
-      description: "Navigate interconnected knowledge through interactive graph visualizations. Discover entities, relationships, and episodes with AI-assisted exploration.",
+      description:
+        "Navigate interconnected knowledge through interactive graph visualizations. Discover entities, relationships, and episodes with AI-assisted exploration.",
     },
     {
       icon: "icons/upload-file.svg",
       title: "Upload & Process Documents",
-      description: "Feed documents into the system to automatically extract knowledge. Our AI processes content, creates chunks, and generates taxonomies.",
+      description:
+        "Feed documents into the system to automatically extract knowledge. Our AI processes content, creates chunks, and generates taxonomies.",
     },
     {
       icon: "icons/cottage.svg",
       title: "Create Data Rooms",
-      description: "Package your knowledge into monetizable data rooms. Set pricing, access controls, and let others subscribe to your curated knowledge.",
+      description:
+        "Package your knowledge into monetizable data rooms. Set pricing, access controls, and let others subscribe to your curated knowledge.",
     },
     {
       icon: "icons/auto-awesome.svg",
       title: "Generate HyperBlogs",
-      description: "Transform knowledge graphs into comprehensive AI-generated blog posts. Publish content with blockchain-verified payments.",
+      description:
+        "Transform knowledge graphs into comprehensive AI-generated blog posts. Publish content with blockchain-verified payments.",
     },
   ],
 };
@@ -88,8 +94,10 @@ export const howItWorksSectionCopy = {
 export const footerCopy = {
   title: "Ready to Explore?",
   mobileTitle: "Light up the Dark Forest",
-  subtitle: "Dive into knowledge graphs, create data rooms, or generate your first HyperBlog. Use the navigation above to get started.",
-  mobileSubtitle: "For any questions, collaborations, partnerships or anything else, contact us!",
+  subtitle:
+    "Dive into knowledge graphs, create data rooms, or generate your first HyperBlog. Use the navigation above to get started.",
+  mobileSubtitle:
+    "For any questions, collaborations, partnerships or anything else, contact us!",
   primaryCta: "Explore Graph",
   primaryCtaHref: "/graph",
   secondaryCta: "Join ETH Boulder Telegram group",

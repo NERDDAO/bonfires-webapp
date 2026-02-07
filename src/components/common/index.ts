@@ -12,7 +12,11 @@ export { Modal, ConfirmModal } from "./Modal";
 // Loading & Feedback Components
 export { LoadingSpinner } from "./LoadingSpinner";
 export { ErrorMessage } from "./ErrorMessage";
-export { SkeletonLoader, SkeletonCard, SkeletonListItem } from "./SkeletonLoader";
+export {
+  SkeletonLoader,
+  SkeletonCard,
+  SkeletonListItem,
+} from "./SkeletonLoader";
 
 // Toast Notification System (uses react-hot-toast)
 export { ToastProvider, toast } from "./Toast";

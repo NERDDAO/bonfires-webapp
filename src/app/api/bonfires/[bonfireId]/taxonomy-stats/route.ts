@@ -3,19 +3,20 @@
  *
  * GET /api/bonfires/[bonfireId]/taxonomy-stats - Get taxonomy stats for a bonfire (with access control)
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-} from "@/lib/api/server-utils";
+
+import type { BonfireListResponse } from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 interface RouteParams {
   params: Promise<{ bonfireId: string }>;
@@ -27,10 +28,7 @@ interface RouteParams {
  * Proxies to /bonfire/{id}/taxonomy_stats on the backend.
  * Checks access control - private bonfires require org membership.
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   const { bonfireId } = await params;
 
   if (!bonfireId) {
@@ -38,11 +36,16 @@ export async function GET(
   }
 
   // Fetch bonfire to check access
-  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-    method: "GET",
-  });
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+    "/bonfires",
+    {
+      method: "GET",
+    }
+  );
 
-  const bonfire = bonfireResponse.data?.bonfires?.find((b) => b.id === bonfireId);
+  const bonfire = bonfireResponse.data?.bonfires?.find(
+    (b) => b.id === bonfireId
+  );
 
   // Check access control
   const access = await checkBonfireAccess(bonfireId, bonfire?.is_public);

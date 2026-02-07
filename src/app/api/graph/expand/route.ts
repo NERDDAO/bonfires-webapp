@@ -6,20 +6,25 @@
  * This endpoint proxies to /delve using center_node_uuid to expand
  * related nodes around a specific entity or episode.
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  parseJsonBody,
-} from "@/lib/api/server-utils";
+
+import type {
+  BonfireListResponse,
+  DelveRequest,
+  GraphExpandRequest,
+} from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { DelveRequest, GraphExpandRequest, BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
+  parseJsonBody,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 /**
  * POST /api/graph/expand
@@ -34,7 +39,8 @@ import type { DelveRequest, GraphExpandRequest, BonfireListResponse } from "@/ty
  * - limit?: number - Maximum nodes to return
  */
 export async function POST(request: NextRequest) {
-  const { data: body, error } = await parseJsonBody<Partial<GraphExpandRequest>>(request);
+  const { data: body, error } =
+    await parseJsonBody<Partial<GraphExpandRequest>>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -50,9 +56,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Check bonfire access
-  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-    method: "GET",
-  });
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+    "/bonfires",
+    {
+      method: "GET",
+    }
+  );
 
   const bonfire = bonfireResponse.data?.bonfires?.find(
     (b) => b.id === body.bonfire_id

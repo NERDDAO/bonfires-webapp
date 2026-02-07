@@ -1,11 +1,23 @@
 "use client";
 
-import { SignInButton, useAuth, useClerk, useOrganization, useOrganizationList, useUser } from "@clerk/nextjs";
-import { useIsMobile } from "@/hooks/useMediaQuery";
-import { cn } from "@/lib/cn";
-import { Button } from "@/components/common/Button";
-import Dropdown from "../ui/dropdown";
 import Image from "next/image";
+
+import {
+  SignInButton,
+  useAuth,
+  useClerk,
+  useOrganization,
+  useOrganizationList,
+  useUser,
+} from "@clerk/nextjs";
+
+import { Button } from "@/components/common/Button";
+
+import { useIsMobile } from "@/hooks/useMediaQuery";
+
+import { cn } from "@/lib/cn";
+
+import Dropdown from "../ui/dropdown";
 
 export default function Signin() {
   const isMobile = useIsMobile();
@@ -18,12 +30,12 @@ export default function Signin() {
   });
 
   const profilePicture = user?.imageUrl;
-  const email = user?.emailAddresses.find((email) => email.id === user?.primaryEmailAddressId)?.emailAddress;
+  const email = user?.emailAddresses.find(
+    (email) => email.id === user?.primaryEmailAddressId
+  )?.emailAddress;
 
   if (!isLoaded) {
-    return (
-      <div className="w-8 h-8 rounded-full bg-dark-s-900 skeleton" />
-    );
+    return <div className="w-8 h-8 rounded-full bg-dark-s-900 skeleton" />;
   }
 
   if (isSignedIn) {
@@ -41,13 +53,17 @@ export default function Signin() {
             disabled={!isLoaded}
             onClick={onToggle}
           >
-            {profilePicture ? <Image
-              src={profilePicture}
-              alt="Profile Picture"
-              width={20}
-              height={20}
-              className="w-7 h-7 rounded-full"
-            /> : <div className="w-8 h-8 rounded-full bg-dark-s-900" />}
+            {profilePicture ? (
+              <Image
+                src={profilePicture}
+                alt="Profile Picture"
+                width={20}
+                height={20}
+                className="w-7 h-7 rounded-full"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-dark-s-900" />
+            )}
 
             <Image
               src="/icons/chevron-down.svg"
@@ -64,12 +80,8 @@ export default function Signin() {
           className="text-sm block px-4 py-2 text-dark-s-0"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="text-xs text-dark-s-0/50">
-            Email Address
-          </div>
-          <span>
-            {email}
-          </span>
+          <div className="text-xs text-dark-s-0/50">Email Address</div>
+          <span>{email}</span>
         </li>
 
         <li
@@ -78,9 +90,7 @@ export default function Signin() {
           onMouseDown={(e) => e.stopPropagation()}
         >
           <div className="text-xs text-dark-s-0/50 flex items-center gap-1">
-            <span className="flex-1">
-              Bonfires
-            </span>
+            <span className="flex-1">Bonfires</span>
             <button
               type="button"
               className="cursor-pointer text-[1rem] block text-dark-s-0/60 hover:text-dark-s-0 transition-colors duration-200"
@@ -102,7 +112,7 @@ export default function Signin() {
                       "w-full text-left text-xs py-1.5 px-2 rounded transition-colors duration-200",
                       orgId === mem.organization.id
                         ? "text-dark-s-0/80 bg-dark-s-900 cursor-default"
-                        : "text-dark-s-0/70 hover:text-dark-s-0 hover:bg-dark-s-900/50 cursor-pointer",
+                        : "text-dark-s-0/70 hover:text-dark-s-0 hover:bg-dark-s-900/50 cursor-pointer"
                     )}
                     onClick={() => {
                       if (orgId !== mem.organization.id) {
@@ -121,39 +131,49 @@ export default function Signin() {
         </li>
 
         <div className="flex mt-2 justify-center mx-auto border-t border-[#3B1517] gap-4 py-2 bg-[#1A1C1F] rounded-b-lg">
-          {[{
-            icon: "/icons/settings.svg",
-            alt: "Manage Account",
-            onClick: () => {
-              clerk?.openUserProfile();
+          {[
+            {
+              icon: "/icons/settings.svg",
+              alt: "Manage Account",
+              onClick: () => {
+                clerk?.openUserProfile();
+              },
             },
-          }, {
-            icon: "/icons/building.svg",
-            alt: "Manage Bonfire",
-            onClick: () => {
-              clerk?.openOrganizationProfile();
+            {
+              icon: "/icons/building.svg",
+              alt: "Manage Bonfire",
+              onClick: () => {
+                clerk?.openOrganizationProfile();
+              },
             },
-          }, {
-            icon: "/icons/log-out.svg",
-            alt: "Sign Out",
-            onClick: () => {
-              signOut();
+            {
+              icon: "/icons/log-out.svg",
+              alt: "Sign Out",
+              onClick: () => {
+                signOut();
+              },
             },
-          }].map((item) => (
+          ].map((item) => (
             <button
               key={item.alt}
               onClick={item.onClick}
               onMouseDown={(e) => e.stopPropagation()}
               className={cn(
-                "rounded-lg text-sm p-2 text-dark-s-0 opacity-80 hover:opacity-100 cursor-pointer flex items-center justify-center",
+                "rounded-lg text-sm p-2 text-dark-s-0 opacity-80 hover:opacity-100 cursor-pointer flex items-center justify-center"
               )}
             >
-              <Image src={item.icon} alt={item.alt} width={20} height={20} className="w-4 h-4" />
+              <Image
+                src={item.icon}
+                alt={item.alt}
+                width={20}
+                height={20}
+                className="w-4 h-4"
+              />
             </button>
           ))}
         </div>
       </Dropdown>
-    )
+    );
   }
 
   return (
@@ -171,7 +191,6 @@ export default function Signin() {
     </SignInButton>
   );
 }
-
 
 /* Replaced with Custom Components */
 

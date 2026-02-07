@@ -3,11 +3,14 @@
  *
  * Tests for the bonfires query hook.
  */
-
-import { renderHook, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useBonfiresQuery, useBonfireById } from "@/hooks/queries";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
+
+import { useBonfireById, useBonfiresQuery } from "@/hooks/queries";
+
+import { apiClient } from "@/lib/api/client";
 
 // Mock the API client
 jest.mock("@/lib/api/client", () => ({
@@ -16,8 +19,6 @@ jest.mock("@/lib/api/client", () => ({
     post: jest.fn(),
   },
 }));
-
-import { apiClient } from "@/lib/api/client";
 
 describe("useBonfiresQuery", () => {
   let queryClient: QueryClient;
@@ -40,8 +41,20 @@ describe("useBonfiresQuery", () => {
   it("should fetch bonfires", async () => {
     const mockBonfires = {
       bonfires: [
-        { id: "1", name: "Bonfire 1", description: "Test", created_at: "2024-01-01", agent_count: 2 },
-        { id: "2", name: "Bonfire 2", description: "Test", created_at: "2024-01-02", agent_count: 3 },
+        {
+          id: "1",
+          name: "Bonfire 1",
+          description: "Test",
+          created_at: "2024-01-01",
+          agent_count: 2,
+        },
+        {
+          id: "2",
+          name: "Bonfire 2",
+          description: "Test",
+          created_at: "2024-01-02",
+          agent_count: 3,
+        },
       ],
     };
 
@@ -92,8 +105,20 @@ describe("useBonfireById", () => {
   it("should return a specific bonfire from the list", async () => {
     const mockBonfires = {
       bonfires: [
-        { id: "1", name: "Bonfire 1", description: "Test", created_at: "2024-01-01", agent_count: 2 },
-        { id: "2", name: "Bonfire 2", description: "Test", created_at: "2024-01-02", agent_count: 3 },
+        {
+          id: "1",
+          name: "Bonfire 1",
+          description: "Test",
+          created_at: "2024-01-01",
+          agent_count: 2,
+        },
+        {
+          id: "2",
+          name: "Bonfire 2",
+          description: "Test",
+          created_at: "2024-01-02",
+          agent_count: 3,
+        },
       ],
     };
 
@@ -111,7 +136,13 @@ describe("useBonfireById", () => {
   it("should return null for non-existent bonfire", async () => {
     const mockBonfires = {
       bonfires: [
-        { id: "1", name: "Bonfire 1", description: "Test", created_at: "2024-01-01", agent_count: 2 },
+        {
+          id: "1",
+          name: "Bonfire 1",
+          description: "Test",
+          created_at: "2024-01-01",
+          agent_count: 2,
+        },
       ],
     };
 

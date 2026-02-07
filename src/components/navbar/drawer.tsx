@@ -1,14 +1,23 @@
-import { Drawer as DrawerComponent } from "@/components/ui/drawer";
-import { navigationItems } from "@/content";
 import Image from "next/image";
 import Link from "next/link";
-import Signin from "./signin";
+
+import { navigationItems } from "@/content";
+
+import { Drawer as DrawerComponent } from "@/components/ui/drawer";
+
 import ConnectWallet from "./connect-wallet";
+import Signin from "./signin";
 
 const drawerLinkClass =
   "block px-6 py-3 text-dark-s-0/90 no-underline transition-colors hover:bg-[#1A1C1F] hover:text-dark-s-0";
 
-export default function Drawer({ drawerOpen, closeDrawer }: { drawerOpen: boolean, closeDrawer: () => void }) {
+export default function Drawer({
+  drawerOpen,
+  closeDrawer,
+}: {
+  drawerOpen: boolean;
+  closeDrawer: () => void;
+}) {
   return (
     <DrawerComponent isOpen={drawerOpen} onClose={closeDrawer} side="right">
       <div className="flex items-center justify-between px-4 py-3">
@@ -25,7 +34,6 @@ export default function Drawer({ drawerOpen, closeDrawer }: { drawerOpen: boolea
           <Signin />
           <ConnectWallet />
         </div>
-
       </div>
 
       <nav className="flex flex-col py-2" aria-label="Mobile navigation">

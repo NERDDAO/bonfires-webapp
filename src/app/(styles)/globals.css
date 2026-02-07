@@ -3,7 +3,9 @@
 
 /* DaisyUI configuration */
 @plugin "daisyui" {
-  themes: light --default, dark --prefersdark;
+  themes:
+    light --default,
+    dark --prefersdark;
 }
 
 /* Font families: use CSS variables set by Next.js font loader on body */
@@ -189,7 +191,8 @@
 }
 
 @keyframes pulse-soft {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

@@ -1,7 +1,6 @@
 /**
  * Chat panel types
  */
-
 import type { PanelMode } from "@/hooks";
 
 export interface ChatMessage {

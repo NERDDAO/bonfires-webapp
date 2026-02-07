@@ -2,11 +2,15 @@
  * Toast Notification Component
  * Using react-hot-toast for notifications
  */
-
 "use client";
 
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { Toaster, toast as hotToast } from "react-hot-toast";
-import { CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
+
+/**
+ * Toast Notification Component
+ * Using react-hot-toast for notifications
+ */
 
 /** Toast configuration */
 export function ToastProvider() {

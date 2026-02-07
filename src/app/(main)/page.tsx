@@ -1,5 +1,8 @@
 "use client";
 
+import { siteCopy } from "@/content";
+import { useSubdomainBonfire } from "@/contexts";
+
 import {
   Footer,
   Hero,
@@ -7,8 +10,6 @@ import {
   HyperBlogsPreview,
   KnowledgeGraph,
 } from "@/components/landing-page";
-import { siteCopy } from "@/content";
-import { useSubdomainBonfire } from "@/contexts";
 
 export default function HomePage() {
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();

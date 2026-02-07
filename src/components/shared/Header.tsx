@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  SignInButton,
-  UserButton,
-  OrganizationSwitcher,
-} from "@clerk/nextjs";
+
+import { OrganizationSwitcher, SignInButton, UserButton } from "@clerk/nextjs";
+
 import { useAuth } from "@/hooks/useAuth";
+
 import ConnectWallet from "../navbar/connect-wallet";
 
 type NavSection = "graph" | "web3" | "documents" | "dashboard" | null;
@@ -133,7 +133,9 @@ export function Header({ className = "" }: HeaderProps) {
   }, []);
 
   return (
-    <header className={`navbar bg-base-100 shadow-sm sticky top-0 z-40 ${className}`}>
+    <header
+      className={`navbar bg-base-100 shadow-sm sticky top-0 z-40 ${className}`}
+    >
       <div className="navbar-start">
         {/* Mobile menu button */}
         <div className="dropdown lg:hidden">
@@ -232,7 +234,10 @@ export function Header({ className = "" }: HeaderProps) {
               <ul className="absolute left-0 top-full mt-2 menu p-2 shadow-lg bg-base-200 rounded-box w-64 z-50">
                 {graphItems.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="flex flex-col items-start py-3">
+                    <Link
+                      href={item.href}
+                      className="flex flex-col items-start py-3"
+                    >
                       <span className="font-medium">{item.label}</span>
                       {item.description && (
                         <span className="text-xs text-base-content/50">
@@ -267,7 +272,10 @@ export function Header({ className = "" }: HeaderProps) {
               <ul className="absolute left-0 top-full mt-2 menu p-2 shadow-lg bg-base-200 rounded-box w-64 z-50">
                 {web3Items.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="flex flex-col items-start py-3">
+                    <Link
+                      href={item.href}
+                      className="flex flex-col items-start py-3"
+                    >
                       <span className="font-medium">{item.label}</span>
                       {item.description && (
                         <span className="text-xs text-base-content/50">
@@ -392,7 +400,11 @@ function ChevronDownIcon({ className = "" }: { className?: string }) {
       stroke="currentColor"
       className={className}
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+      />
     </svg>
   );
 }

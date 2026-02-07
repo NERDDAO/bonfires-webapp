@@ -2,12 +2,18 @@
  * Single chat message bubble
  * Styled like recent activity cards (episodes list).
  */
-
 "use client";
 
 import React from "react";
+
 import { cn } from "@/lib/cn";
+
 import type { ChatMessage as ChatMessageType } from "./types";
+
+/**
+ * Single chat message bubble
+ * Styled like recent activity cards (episodes list).
+ */
 
 export interface ChatMessageBubbleProps {
   message: ChatMessageType;

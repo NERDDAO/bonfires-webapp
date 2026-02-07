@@ -1,11 +1,20 @@
-import { config } from "@/lib/config";
-import { truncateAddress } from "@/lib";
-import { cn } from "@/lib/cn";
-import { isE2EWalletEnabled, setE2EWalletState, useE2EBalance, useWalletAccount } from "@/lib/wallet/e2e";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
-import Image from "next/image";
 import { useEffect, useState } from "react";
+
+import Image from "next/image";
+
+import { truncateAddress } from "@/lib";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
+
+import { cn } from "@/lib/cn";
+import { config } from "@/lib/config";
+import {
+  isE2EWalletEnabled,
+  setE2EWalletState,
+  useE2EBalance,
+  useWalletAccount,
+} from "@/lib/wallet/e2e";
+
 import Dropdown from "../ui/dropdown";
 
 const ALLOWED_CHAIN_ID = config.web3.chainId;
@@ -35,14 +44,17 @@ export default function ConnectWallet() {
     : "0.0000 ETH";
 
   // Resolve current chain from wallet; allowed chain from app config
-  const currentChain = chainId != null ? chains?.find((c) => c.id === chainId) : undefined;
+  const currentChain =
+    chainId != null ? chains?.find((c) => c.id === chainId) : undefined;
   const isCorrectChain =
     chainId != null && Number(chainId) === ALLOWED_CHAIN_ID;
 
   const currentChainLabel =
     chainId == null
       ? "Connecting…"
-      : isCorrectChain ? (currentChain?.name ?? `Chain ${chainId}`) : "Wrong network";
+      : isCorrectChain
+        ? (currentChain?.name ?? `Chain ${chainId}`)
+        : "Wrong network";
 
   // Prevent hydration mismatch by only showing dynamic content after mount
   useEffect(() => {
@@ -54,7 +66,8 @@ export default function ConnectWallet() {
       <button
         className={cn(
           "flex items-center gap-3 font-normal text-sm py-2 px-2 border border-[#3B1517] rounded-lg bg-brand-black cursor-pointer hover:bg-dark-s-900 transition-colors duration-200",
-          loading && "skeleton")}
+          loading && "skeleton"
+        )}
         onClick={() => {
           if (isE2EWalletEnabled()) {
             setE2EWalletState(true);
@@ -81,7 +94,8 @@ export default function ConnectWallet() {
         <button
           className={cn(
             "flex items-center gap-3 font-normal text-sm py-2 px-5 border border-[#3B1517] rounded-lg bg-brand-black cursor-pointer hover:bg-dark-s-900 transition-colors duration-200",
-            loading && "skeleton")}
+            loading && "skeleton"
+          )}
           onClick={onToggle}
           disabled={loading}
         >
@@ -93,9 +107,7 @@ export default function ConnectWallet() {
             className={cn(loading ? "opacity-40" : "")}
           />
           {isConnected && (
-            <span className="text-sm text-dark-s-0">
-              {formattedAddress}
-            </span>
+            <span className="text-sm text-dark-s-0">{formattedAddress}</span>
           )}
         </button>
       )}
@@ -112,49 +124,55 @@ export default function ConnectWallet() {
           className="text-sm block px-4 py-2 text-dark-s-0"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="text-xs text-dark-s-0/50">
-            {item.label}
-          </div>
-          <span>
-            {item.value}
-          </span>
+          <div className="text-xs text-dark-s-0/50">{item.label}</div>
+          <span>{item.value}</span>
         </li>
       ))}
       <div className="flex mt-2 justify-center mx-auto border-t border-[#3B1517] gap-4 py-2 bg-[#1A1C1F] rounded-b-lg">
-        {[{
-          icon: "/icons/copy.svg",
-          alt: "Copy Address",
-          onClick: () => {
-            if (address) {
-              navigator.clipboard.writeText(address);
-            }
+        {[
+          {
+            icon: "/icons/copy.svg",
+            alt: "Copy Address",
+            onClick: () => {
+              if (address) {
+                navigator.clipboard.writeText(address);
+              }
+            },
           },
-        }, {
-          icon: "/icons/switch.svg",
-          alt: "Switch Network",
-          onClick: () => {
-            switchChain({ chainId: ALLOWED_CHAIN_ID });
+          {
+            icon: "/icons/switch.svg",
+            alt: "Switch Network",
+            onClick: () => {
+              switchChain({ chainId: ALLOWED_CHAIN_ID });
+            },
           },
-        }, {
-          icon: "/icons/log-out.svg",
-          alt: "Disconnect Wallet",
-          onClick: () => {
-            if (isE2EWalletEnabled()) {
-              setE2EWalletState(false);
-            } else {
-              disconnect();
-            }
+          {
+            icon: "/icons/log-out.svg",
+            alt: "Disconnect Wallet",
+            onClick: () => {
+              if (isE2EWalletEnabled()) {
+                setE2EWalletState(false);
+              } else {
+                disconnect();
+              }
+            },
           },
-        }].map((item) => (
+        ].map((item) => (
           <button
             key={item.alt}
             onClick={item.onClick}
             onMouseDown={(e) => e.stopPropagation()}
             className={cn(
-              "rounded-lg text-sm p-2 text-dark-s-0 opacity-80 hover:opacity-100 cursor-pointer flex items-center justify-center",
+              "rounded-lg text-sm p-2 text-dark-s-0 opacity-80 hover:opacity-100 cursor-pointer flex items-center justify-center"
             )}
           >
-            <Image src={item.icon} alt={item.alt} width={20} height={20} className="w-4 h-4" />
+            <Image
+              src={item.icon}
+              alt={item.alt}
+              width={20}
+              height={20}
+              className="w-4 h-4"
+            />
           </button>
         ))}
       </div>

@@ -7,12 +7,12 @@
  * Long-running operations (graph queries, etc.) return a job ID,
  * and clients poll this endpoint until the job completes.
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 interface RouteParams {
@@ -52,10 +52,7 @@ interface RouteParams {
  * }
  * ```
  */
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { jobId } = await params;
 
   if (!jobId) {

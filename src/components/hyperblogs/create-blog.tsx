@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "@/components/ui/modal";
-import { Button } from "@/components/ui/button";
-import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
-import { apiClient } from "@/lib/api/client";
+
 import type { DataRoomInfo } from "@/types";
+
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+
+import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
+
+import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 
 export interface CreateBlogModalProps {
@@ -48,9 +52,10 @@ export function CreateBlogModal({
         const dataroom = await apiClient.get<DataRoomInfo>(
           `/api/datarooms/${dataroomId}`
         );
-        const info = dataroom as DataRoomInfo & { current_hyperblog_price_usd?: number };
-        priceUsd =
-          info.current_hyperblog_price_usd ?? info.price_usd ?? 0;
+        const info = dataroom as DataRoomInfo & {
+          current_hyperblog_price_usd?: number;
+        };
+        priceUsd = info.current_hyperblog_price_usd ?? info.price_usd ?? 0;
       }
 
       const expectedAmount = priceUsd.toFixed(2);
@@ -81,7 +86,9 @@ export function CreateBlogModal({
       onClose();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to create blog. Please try again."
+        err instanceof Error
+          ? err.message
+          : "Failed to create blog. Please try again."
       );
     } finally {
       setIsSubmitting(false);
@@ -104,7 +111,10 @@ export function CreateBlogModal({
       showCloseButton={true}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
-        <label htmlFor="create-blog-description" className="text-sm font-medium text-dark-s-100">
+        <label
+          htmlFor="create-blog-description"
+          className="text-sm font-medium text-dark-s-100"
+        >
           Description
         </label>
         <textarea

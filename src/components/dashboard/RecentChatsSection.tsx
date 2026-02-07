@@ -4,12 +4,23 @@
  * Displays recent chat conversations from localStorage.
  * Shows per-agent chat history with quick action to continue chat.
  */
-
 "use client";
 
 import Link from "next/link";
+
+import type {
+  DashboardSectionState,
+  RecentChatSummary,
+} from "@/types/dashboard";
+
 import { DashboardSection } from "./DashboardSection";
-import type { DashboardSectionState, RecentChatSummary } from "@/types/dashboard";
+
+/**
+ * RecentChatsSection Component
+ *
+ * Displays recent chat conversations from localStorage.
+ * Shows per-agent chat history with quick action to continue chat.
+ */
 
 interface RecentChatsSectionProps {
   data: DashboardSectionState<RecentChatSummary[]>;

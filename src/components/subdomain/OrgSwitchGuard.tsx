@@ -8,14 +8,26 @@
  *   - "no_access"        → access denied message
  *   - "ok"               → render children normally
  */
-
 "use client";
 
 import type { ReactNode } from "react";
+
 import { SignInButton } from "@clerk/nextjs";
 
-import { useAutoOrgSwitch } from "@/hooks/useAutoOrgSwitch";
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
+
+import { useAutoOrgSwitch } from "@/hooks/useAutoOrgSwitch";
+
+/**
+ * OrgSwitchGuard
+ *
+ * Client component that wraps page content and gates rendering based on
+ * the auto-org-switch status. Shows appropriate UI for:
+ *   - "loading"          → spinner while switching or resolving
+ *   - "sign_in_required" → prompt to sign in (private bonfire, unauthenticated)
+ *   - "no_access"        → access denied message
+ *   - "ok"               → render children normally
+ */
 
 interface OrgSwitchGuardProps {
   children: ReactNode;

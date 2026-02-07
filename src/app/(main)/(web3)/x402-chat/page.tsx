@@ -5,13 +5,16 @@
  *
  * Payment-gated AI chat with agent selection.
  */
-
 import { Suspense, useEffect, useState } from "react";
+
 import { useSearchParams } from "next/navigation";
-import { PaidChatInterface } from "@/components/web3/PaidChatInterface";
-import { AgentSelector } from "@/components/shared/AgentSelector";
-import { useAgentSelection } from "@/hooks/web3";
+
 import type { DataRoomInfo } from "@/types";
+
+import { AgentSelector } from "@/components/shared/AgentSelector";
+import { PaidChatInterface } from "@/components/web3/PaidChatInterface";
+
+import { useAgentSelection } from "@/hooks/web3";
 
 function ChatPageContent() {
   const searchParams = useSearchParams();

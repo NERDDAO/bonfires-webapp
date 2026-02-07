@@ -4,10 +4,10 @@
  * Reusable utilities for Next.js API routes that proxy to the Delve backend.
  * These utilities handle timeout, error handling, logging, CORS, and auth.
  */
-
-import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+import { auth } from "@clerk/nextjs/server";
 
 // Server-side timeout (60s for Vercel Pro compatibility)
 const DEFAULT_TIMEOUT_MS = 60000;
@@ -64,7 +64,8 @@ export interface ProxyResult<T = unknown> {
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Payment-Header",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Payment-Header",
 } as const;
 
 /**
@@ -96,7 +97,9 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
       return { Authorization: `Bearer ${sessionCookie.value}` };
     }
 
-    console.debug("[Auth Headers] No Clerk token available (getToken=null, no __session cookie)");
+    console.debug(
+      "[Auth Headers] No Clerk token available (getToken=null, no __session cookie)"
+    );
     return {};
   } catch (error) {
     console.debug("[Auth Headers] auth() threw:", error);
@@ -238,8 +241,10 @@ export async function proxyToBackend<T = unknown>(
   // Get auth headers if requested
   const authHeaders = includeAuth ? await getAuthHeaders() : {};
 
-  const hasClerkJwt = !!authHeaders['Authorization'];
-  console.debug(`[API Proxy] ${method} ${url} | clerkJwt=${hasClerkJwt} includeAuth=${includeAuth}`);
+  const hasClerkJwt = !!authHeaders["Authorization"];
+  console.debug(
+    `[API Proxy] ${method} ${url} | clerkJwt=${hasClerkJwt} includeAuth=${includeAuth}`
+  );
 
   try {
     const response = await fetch(url, {
@@ -307,7 +312,8 @@ export async function proxyToBackend<T = unknown>(
         return {
           success: false,
           error: {
-            error: "Failed to connect to backend. Please check the backend is running.",
+            error:
+              "Failed to connect to backend. Please check the backend is running.",
             code: "CONNECTION_ERROR",
           },
           status: 503,

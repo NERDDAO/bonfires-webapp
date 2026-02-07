@@ -1,9 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useDataRoomHyperBlogsInfiniteQuery } from "@/hooks";
 import { useEffect, useRef, useState } from "react";
+
 import Image from "next/image";
+import Link from "next/link";
+
+import { useDataRoomHyperBlogsInfiniteQuery } from "@/hooks";
+
 import { cn } from "@/lib/cn";
 import { formatReadingTime, getTextFromMarkdown } from "@/lib/utils";
 
@@ -12,8 +15,8 @@ const PAGE_SIZE = 4;
 const buttonClassName = cn(
   "mt-4 w-full bg-[#22252B]/70 hover:bg-[#22252B]/40 cursor-pointer",
   "transition-colors duration-300 rounded-lg flex flex-col",
-  "justify-center items-center gap-1 p-3 min-h-17",
-)
+  "justify-center items-center gap-1 p-3 min-h-17"
+);
 
 export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
   const [showBlogs, setShowBlogs] = useState(false);
@@ -58,7 +61,6 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
         className={cn(buttonClassName, "")}
         disabled={!dataroomId || isLoading}
       >
-
         <span className="font-bold text-white">Show existing blogs</span>
         <Image
           src="/icons/chevron-down.svg"
@@ -67,7 +69,7 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
           height={16}
         />
       </button>
-    )
+    );
   }
 
   return (
@@ -75,32 +77,46 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
       <div className="mt-4 w-full rounded-lg overflow-hidden flex flex-col max-h-[462px] h-full">
         <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4">
           {isError && (
-            <div className="text-xs text-destructive py-1">
-              Failed to load
-            </div>
+            <div className="text-xs text-destructive py-1">Failed to load</div>
           )}
           {!isError && !isLoading && hyperblogs.length === 0 && (
-            <div className="text-xs text-[#A9A9A9] py-1 flex items-center justify-center min-h-17">No hyperblogs found</div>
+            <div className="text-xs text-[#A9A9A9] py-1 flex items-center justify-center min-h-17">
+              No hyperblogs found
+            </div>
           )}
           {hyperblogs.map((blog) => {
             const title = blog.user_query || blog.preview || "Untitled";
             const description = getTextFromMarkdown(blog.preview || "");
-            const { formattedBlogLength, formattedWordCount, formattedReadingTime } = formatReadingTime(blog.word_count || 0);
+            const {
+              formattedBlogLength,
+              formattedWordCount,
+              formattedReadingTime,
+            } = formatReadingTime(blog.word_count || 0);
             return (
               <Link
                 key={blog.id}
                 href={`/hyperblogs/${blog.id}`}
                 className="rounded-lg flex flex-col py-3 px-4 bg-[#22252B]/70 hover:bg-[#22252B]/40 cursor-pointer transition-colors duration-300"
               >
-                <div className="font-bold text-white capitalize line-clamp-1">{title}</div>
-                <div className="mt-2 text-[#A9A9A9] line-clamp-2">{description}</div>
+                <div className="font-bold text-white capitalize line-clamp-1">
+                  {title}
+                </div>
+                <div className="mt-2 text-[#A9A9A9] line-clamp-2">
+                  {description}
+                </div>
                 <div className="mt-2 flex gap-2 flex-wrap">
                   {[
                     { value: formattedBlogLength, className: "" },
                     { value: formattedWordCount, className: "" },
                     { value: formattedReadingTime, className: "" },
                   ].map((item) => (
-                    <span key={item.value} className={cn("text-xs text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap", item.className)}>
+                    <span
+                      key={item.value}
+                      className={cn(
+                        "text-xs text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap",
+                        item.className
+                      )}
+                    >
                       {item.value}
                     </span>
                   ))}
@@ -110,9 +126,15 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
           })}
 
           {isFetchingNextPage && (
-            <div className="text-xs text-[#A9A9A9] py-1 w-full text-center">Loading…</div>
+            <div className="text-xs text-[#A9A9A9] py-1 w-full text-center">
+              Loading…
+            </div>
           )}
-          <div ref={sentinelRef} className="h-2 min-h-2 shrink-0" aria-hidden="true" />
+          <div
+            ref={sentinelRef}
+            className="h-2 min-h-2 shrink-0"
+            aria-hidden="true"
+          />
         </div>
       </div>
 

@@ -2,13 +2,25 @@
  * WikiPanelContainer
  * Draggable, minimizable, closeable wrapper for WikiPanel. Can be placed anywhere.
  */
-
 "use client";
 
-import React, { useCallback, useRef, useState, useEffect } from "react";
-import { X, Minimize2, Maximize2 } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
+import { Maximize2, Minimize2, X } from "lucide-react";
+
 import { cn } from "@/lib/cn";
-import { WikiPanel, type WikiPanelProps, type WikiNodeData, type WikiEdgeData } from "./wiki-panel";
+
+import {
+  type WikiEdgeData,
+  type WikiNodeData,
+  WikiPanel,
+  type WikiPanelProps,
+} from "./wiki-panel";
+
+/**
+ * WikiPanelContainer
+ * Draggable, minimizable, closeable wrapper for WikiPanel. Can be placed anywhere.
+ */
 
 export type { WikiNodeData, WikiEdgeData };
 
@@ -46,16 +58,27 @@ export function WikiPanelContainer({
   ...wikiPanelProps
 }: WikiPanelContainerProps) {
   const [position, setPosition] = useState(() => ({
-    left: defaultLeft ?? (typeof window !== "undefined" ? Math.max(MIN_LEFT, window.innerWidth - DEFAULT_WIDTH - OFFSET_RIGHT) : 100),
+    left:
+      defaultLeft ??
+      (typeof window !== "undefined"
+        ? Math.max(MIN_LEFT, window.innerWidth - DEFAULT_WIDTH - OFFSET_RIGHT)
+        : 100),
     top: defaultTop ?? OFFSET_TOP,
   }));
   const [internalMinimized, setInternalMinimized] = useState(false);
   const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false
+    typeof window !== "undefined"
+      ? window.innerWidth < MOBILE_BREAKPOINT
+      : false
   );
   const isControlled = controlledMinimized !== undefined;
   const isMinimized = isControlled ? controlledMinimized : internalMinimized;
-  const dragRef = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    startLeft: number;
+    startTop: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,7 +93,9 @@ export function WikiPanelContainer({
     if (defaultLeft !== undefined && defaultTop !== undefined) return;
     setPosition((prev) => {
       if (typeof window === "undefined") return prev;
-      const left = defaultLeft ?? Math.max(MIN_LEFT, window.innerWidth - DEFAULT_WIDTH - OFFSET_RIGHT);
+      const left =
+        defaultLeft ??
+        Math.max(MIN_LEFT, window.innerWidth - DEFAULT_WIDTH - OFFSET_RIGHT);
       const top = defaultTop ?? OFFSET_TOP;
       return { left, top };
     });
@@ -80,7 +105,8 @@ export function WikiPanelContainer({
     (e: React.PointerEvent) => {
       if (isMobile) return;
       const target = e.target as HTMLElement;
-      if (!target.closest("[data-drag-handle]") || target.closest("button")) return;
+      if (!target.closest("[data-drag-handle]") || target.closest("button"))
+        return;
       e.preventDefault();
       dragRef.current = {
         startX: e.clientX,
@@ -140,8 +166,13 @@ export function WikiPanelContainer({
     >
       <span className="text-sm font-medium truncate flex-1 min-w-0">
         {wikiPanelProps.edge
-          ? wikiPanelProps.edge.label || wikiPanelProps.edge.relation_type || "Relationship"
-          : wikiPanelProps.node?.name || wikiPanelProps.node?.label || wikiPanelProps.node?.uuid?.slice(0, 8) || "Node"}
+          ? wikiPanelProps.edge.label ||
+            wikiPanelProps.edge.relation_type ||
+            "Relationship"
+          : wikiPanelProps.node?.name ||
+            wikiPanelProps.node?.label ||
+            wikiPanelProps.node?.uuid?.slice(0, 8) ||
+            "Node"}
       </span>
       <div className="flex items-center gap-0.5 shrink-0">
         {!isMobile && (
@@ -151,7 +182,11 @@ export function WikiPanelContainer({
             className="btn btn-ghost btn-xs btn-square"
             aria-label={isMinimized ? "Maximize" : "Minimize"}
           >
-            {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            {isMinimized ? (
+              <Maximize2 className="w-4 h-4" />
+            ) : (
+              <Minimize2 className="w-4 h-4" />
+            )}
           </button>
         )}
         <button
@@ -183,7 +218,10 @@ export function WikiPanelContainer({
       {headerContent}
       {showBody && (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <WikiPanel {...wikiPanelProps} onSearchAroundNode={handleSearchAroundNode} />
+          <WikiPanel
+            {...wikiPanelProps}
+            onSearchAroundNode={handleSearchAroundNode}
+          />
         </div>
       )}
     </>
@@ -220,7 +258,10 @@ export function WikiPanelContainer({
   return (
     <div
       ref={containerRef}
-      className={cn("fixed z-100 flex flex-col rounded-lg shadow-xl border border-base-300 bg-base-100 overflow-hidden", className)}
+      className={cn(
+        "fixed z-100 flex flex-col rounded-lg shadow-xl border border-base-300 bg-base-100 overflow-hidden",
+        className
+      )}
       style={{
         left: position.left,
         top: position.top,

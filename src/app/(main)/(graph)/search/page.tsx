@@ -2,20 +2,27 @@
  * Graph Search Page
  * Dedicated search interface for the knowledge graph
  */
-
 "use client";
 
-export const dynamic = "force-dynamic";
+import { Suspense, useCallback, useState } from "react";
 
-import { Suspense, useState, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Search, ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import dynamicImport from "next/dynamic";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { ArrowLeft, Search } from "lucide-react";
 
 import { LoadingSpinner } from "@/components/common";
-import { cn } from "@/lib/cn";
 import type { NodeData } from "@/components/graph";
+
+import { cn } from "@/lib/cn";
+
+/**
+ * Graph Search Page
+ * Dedicated search interface for the knowledge graph
+ */
+
+export const dynamic = "force-dynamic";
 
 const GraphExplorer = dynamicImport(
   () => import("@/components/graph").then((mod) => mod.GraphExplorer),
@@ -108,7 +115,10 @@ function SearchPageContent() {
         {/* Search tips */}
         {!initialQuery && (
           <div className="mt-3 text-sm text-base-content/60">
-            <p>Tips: Search for entities, episodes, or relationships in the knowledge graph.</p>
+            <p>
+              Tips: Search for entities, episodes, or relationships in the
+              knowledge graph.
+            </p>
           </div>
         )}
       </header>
@@ -127,7 +137,9 @@ function SearchPageContent() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md">
             <Search className="w-12 h-12 text-base-content/30 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Search the Knowledge Graph</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              Search the Knowledge Graph
+            </h2>
             <p className="text-base-content/60">
               Enter a search query to find entities, episodes, and relationships
               in the knowledge graph.

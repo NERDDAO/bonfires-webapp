@@ -5,12 +5,11 @@
  *
  * Proxies to Delve backend. No auth required - subdomain resolution happens before login.
  */
-
 import {
-  proxyToBackend,
-  handleCorsOptions,
   createErrorResponse,
   createSuccessResponse,
+  handleCorsOptions,
+  proxyToBackend,
 } from "@/lib/api/server-utils";
 
 export interface SubdomainResolutionResponse {
@@ -29,10 +28,7 @@ interface RouteParams {
  * Resolve subdomain (slug or 24-char ObjectId) to bonfire_id and first agent_id.
  * Returns 404 if not found.
  */
-export async function GET(
-  _request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   const { subdomain } = await params;
 
   if (!subdomain) {

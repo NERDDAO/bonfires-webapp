@@ -1,11 +1,15 @@
 /**
  * Collapsed chat panel - floating button to open chat
  */
-
 "use client";
 
 import React from "react";
+
 import { MessageSquare } from "lucide-react";
+
+/**
+ * Collapsed chat panel - floating button to open chat
+ */
 
 export interface ChatPanelCollapsedProps {
   onOpen: () => void;

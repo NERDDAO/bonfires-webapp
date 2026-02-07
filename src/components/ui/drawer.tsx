@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+
 import { createPortal } from "react-dom";
+
 import { cn } from "@/lib/cn";
 
 export interface DrawerProps {
@@ -65,11 +67,7 @@ export function Drawer({
   const openTranslate = "translate-x-0";
 
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex"
-    >
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
       <div
         className={cn(

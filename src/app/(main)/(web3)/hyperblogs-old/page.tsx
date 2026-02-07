@@ -5,12 +5,20 @@
  *
  * Displays a feed of all public hyperblogs from all data rooms.
  */
-
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import Link from "next/link";
+
 import type { HyperBlogInfo, HyperBlogListResponse } from "@/types";
-import { formatTimestamp, truncateAddress, truncatePreviewSmart, calculateReadingTime } from "@/lib/utils";
+
 import { Header } from "@/components/shared/Header";
+
+import {
+  calculateReadingTime,
+  formatTimestamp,
+  truncateAddress,
+  truncatePreviewSmart,
+} from "@/lib/utils";
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -228,7 +236,9 @@ export default function HyperBlogsPage() {
                   {/* Metadata */}
                   <div className="flex flex-wrap items-center gap-4 text-sm text-base-content/60 mt-4">
                     <span className="font-medium">
-                      by {blog.author_name || truncateAddress(blog.author_wallet, 6)}
+                      by{" "}
+                      {blog.author_name ||
+                        truncateAddress(blog.author_wallet, 6)}
                     </span>
                     <span>•</span>
                     <span>{formatTimestamp(blog.created_at)}</span>
@@ -238,31 +248,38 @@ export default function HyperBlogsPage() {
                         <span className="capitalize">{blog.blog_length}</span>
                       </>
                     )}
-                    {blog.generation_status === "completed" && blog.word_count && (
-                      <>
-                        <span>•</span>
-                        <span>{blog.word_count} words</span>
-                        <span>•</span>
-                        <span>{calculateReadingTime(blog.word_count)}</span>
-                      </>
-                    )}
+                    {blog.generation_status === "completed" &&
+                      blog.word_count && (
+                        <>
+                          <span>•</span>
+                          <span>{blog.word_count} words</span>
+                          <span>•</span>
+                          <span>{calculateReadingTime(blog.word_count)}</span>
+                        </>
+                      )}
                   </div>
 
                   {/* Tags */}
-                  {blog.taxonomy_keywords && blog.taxonomy_keywords.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {blog.taxonomy_keywords.slice(0, 5).map((keyword, idx) => (
-                        <span key={idx} className="badge badge-primary badge-sm">
-                          {keyword}
-                        </span>
-                      ))}
-                      {blog.taxonomy_keywords.length > 5 && (
-                        <span className="badge badge-ghost badge-sm">
-                          +{blog.taxonomy_keywords.length - 5} more
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {blog.taxonomy_keywords &&
+                    blog.taxonomy_keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {blog.taxonomy_keywords
+                          .slice(0, 5)
+                          .map((keyword, idx) => (
+                            <span
+                              key={idx}
+                              className="badge badge-primary badge-sm"
+                            >
+                              {keyword}
+                            </span>
+                          ))}
+                        {blog.taxonomy_keywords.length > 5 && (
+                          <span className="badge badge-ghost badge-sm">
+                            +{blog.taxonomy_keywords.length - 5} more
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                   {/* Stats */}
                   {blog.generation_status === "completed" && (

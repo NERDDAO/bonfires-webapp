@@ -4,21 +4,22 @@
  * GET /api/agents/[agentId] - Get agent details (with access control)
  * PUT /api/agents/[agentId] - Update agent (with access control)
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleProxyRequest,
-  handleCorsOptions,
-  createErrorResponse,
-  createSuccessResponse,
-  parseJsonBody,
-} from "@/lib/api/server-utils";
+
+import type { AgentInfo, BonfireListResponse } from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { AgentInfo, BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  handleCorsOptions,
+  handleProxyRequest,
+  parseJsonBody,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 interface RouteParams {
   params: Promise<{ agentId: string }>;
@@ -46,15 +47,25 @@ async function checkAgentAccess(agentId: string) {
   }
 
   // Fetch bonfire to check is_public
-  const bonfireResponse = await proxyToBackend<BonfireListResponse>("/bonfires", {
-    method: "GET",
-  });
+  const bonfireResponse = await proxyToBackend<BonfireListResponse>(
+    "/bonfires",
+    {
+      method: "GET",
+    }
+  );
 
-  const bonfire = bonfireResponse.data?.bonfires?.find((b) => b.id === bonfireId);
+  const bonfire = bonfireResponse.data?.bonfires?.find(
+    (b) => b.id === bonfireId
+  );
 
   const access = await checkBonfireAccess(bonfireId, bonfire?.is_public);
   if (!access.allowed) {
-    return { allowed: false, error: "Access denied", status: 403, reason: access.reason };
+    return {
+      allowed: false,
+      error: "Access denied",
+      status: 403,
+      reason: access.reason,
+    };
   }
 
   return { allowed: true, agent };
@@ -66,10 +77,7 @@ async function checkAgentAccess(agentId: string) {
  * Get details of a specific agent.
  * Checks access based on the agent's bonfire.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { agentId } = await params;
 
   if (!agentId) {
@@ -99,10 +107,7 @@ export async function GET(
  * - is_active?: boolean
  * - capabilities?: string[]
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   const { agentId } = await params;
 
   if (!agentId) {

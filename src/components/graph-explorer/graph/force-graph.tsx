@@ -7,11 +7,13 @@
  * node size by type, d3 force layout, drag/pan/zoom. Accepts GraphElement[]
  * and callbacks so it plugs into GraphVisualization without changing core logic.
  */
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import * as d3 from "d3";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
 import { NODE_COLOR_DEFAULTS } from "@/lib/utils/graph-theme";
+import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
 import { IconButton } from "../ui/icon-button";
 
 const RADIUS_BY_SIZE: Record<number, number> = {
@@ -126,7 +128,13 @@ function elementsToView(elements: GraphElement[]): {
   const edgeElements: GraphElement[] = [];
   for (const el of elements) {
     const data = el?.data ?? {};
-    if (data && "source" in data && "target" in data && data.source != null && data.target != null) {
+    if (
+      data &&
+      "source" in data &&
+      "target" in data &&
+      data.source != null &&
+      data.target != null
+    ) {
       edgeElements.push(el);
     } else {
       nodeElements.push(el);
@@ -150,12 +158,14 @@ function elementsToView(elements: GraphElement[]): {
   }
 
   const usedEdgeIds = new Map<string, number>();
-  const links: { source: string; target: string; id: string; label: string }[] = [];
+  const links: { source: string; target: string; id: string; label: string }[] =
+    [];
   for (const el of edgeElements) {
     const data = el?.data ?? {};
     const source = String(data.source ?? "").replace(/^n:/, "");
     const target = String(data.target ?? "").replace(/^n:/, "");
-    if (!source || !target || !nodeById.has(source) || !nodeById.has(target)) continue;
+    if (!source || !target || !nodeById.has(source) || !nodeById.has(target))
+      continue;
     const baseId = String(data.id ?? `${data.source}->${data.target}`);
     const seen = usedEdgeIds.get(baseId) ?? 0;
     const id = seen === 0 ? baseId : `${baseId}__dup_${seen + 1}`;
@@ -197,20 +207,36 @@ function drawNode(
   ctx.arc(x, y, r, 0, 2 * Math.PI);
   const baseFill = node.color ?? colors.nodeFill;
   const baseStroke = node.color ?? colors.nodeStroke;
-  ctx.fillStyle = active ? (isSelectedOrHighlighted ? colors.nodeFillSelected : colors.nodeFillHover) : baseFill;
+  ctx.fillStyle = active
+    ? isSelectedOrHighlighted
+      ? colors.nodeFillSelected
+      : colors.nodeFillHover
+    : baseFill;
   ctx.fill();
-  ctx.strokeStyle = active ? (isSelectedOrHighlighted ? colors.nodeStrokeSelected : colors.nodeStrokeHover) : baseStroke;
+  ctx.strokeStyle = active
+    ? isSelectedOrHighlighted
+      ? colors.nodeStrokeSelected
+      : colors.nodeStrokeHover
+    : baseStroke;
   ctx.lineWidth = active ? 2.5 : 1.5;
   ctx.stroke();
 
   const baseFontSize = node.size >= 4 ? 11 : node.size >= 2 ? 10 : 9;
-  const fontSize = active ? baseFontSize + GRAPH_COLORS.labelFontSizeHoverOffset : baseFontSize;
-  const fontWeight = active ? GRAPH_COLORS.labelFontWeightHover : node.size >= 4 ? "600" : "500";
+  const fontSize = active
+    ? baseFontSize + GRAPH_COLORS.labelFontSizeHoverOffset
+    : baseFontSize;
+  const fontWeight = active
+    ? GRAPH_COLORS.labelFontWeightHover
+    : node.size >= 4
+      ? "600"
+      : "500";
   ctx.font = `${fontWeight} ${fontSize}px system-ui, sans-serif`;
   ctx.fillStyle = active ? colors.labelFillHover : colors.labelFill;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  const displayLabel = active ? node.label : truncateLabel(ctx, node.label, MAX_LABEL_WIDTH);
+  const displayLabel = active
+    ? node.label
+    : truncateLabel(ctx, node.label, MAX_LABEL_WIDTH);
   ctx.fillText(displayLabel, x, y + r + 4);
 }
 
@@ -365,7 +391,10 @@ function getTouchDistance(touches: TouchList): number {
   return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
 }
 
-function getTouchCenter(touches: TouchList): { clientX: number; clientY: number } {
+function getTouchCenter(touches: TouchList): {
+  clientX: number;
+  clientY: number;
+} {
   if (touches.length < 2) return { clientX: 0, clientY: 0 };
   const a = touches[0];
   const b = touches[1];
@@ -421,9 +450,17 @@ export default function ForceGraph({
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
   const sizeRef = useRef({ width: 0, height: 0 });
-  const graphSizeRef = useRef({ graphWidth: GRAPH_WIDTH, graphHeight: GRAPH_HEIGHT });
+  const graphSizeRef = useRef({
+    graphWidth: GRAPH_WIDTH,
+    graphHeight: GRAPH_HEIGHT,
+  });
   const transformRef = useRef({ x: 0, y: 0, k: 1 });
-  const panStartRef = useRef<{ clientX: number; clientY: number; tx: number; ty: number } | null>(null);
+  const panStartRef = useRef<{
+    clientX: number;
+    clientY: number;
+    tx: number;
+    ty: number;
+  } | null>(null);
   const lastLogicalRef = useRef({ x: 0, y: 0 });
   const touchStartRef = useRef<{
     clientX: number;
@@ -487,7 +524,9 @@ export default function ForceGraph({
       return;
     }
     const normalizedId = panToNodeId.replace(/^n:/, "");
-    const node = nodes.find((n) => n.id === normalizedId || n.id === panToNodeId);
+    const node = nodes.find(
+      (n) => n.id === normalizedId || n.id === panToNodeId
+    );
     if (!node || node.x == null || node.y == null) {
       onPanToNodeComplete?.();
       return;
@@ -598,7 +637,18 @@ export default function ForceGraph({
       }
 
       sizeRef.current = { width, height };
-      draw(ctx, nodes, links, width, height, null, null, null, highlightedSet.current, transformRef.current);
+      draw(
+        ctx,
+        nodes,
+        links,
+        width,
+        height,
+        null,
+        null,
+        null,
+        highlightedSet.current,
+        transformRef.current
+      );
     };
 
     resize(true);
@@ -615,9 +665,10 @@ export default function ForceGraph({
       return { x: clientX, y: clientY };
     };
 
-    const toLogical = (
-      e: { clientX: number; clientY: number }
-    ): { x: number; y: number } => {
+    const toLogical = (e: {
+      clientX: number;
+      clientY: number;
+    }): { x: number; y: number } => {
       const { width, height } = sizeRef.current;
       const rect = canvas.getBoundingClientRect();
       const { x: layoutX, y: layoutY } = toLayoutClient(e.clientX, e.clientY);
@@ -713,9 +764,9 @@ export default function ForceGraph({
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
-      const scaleX = (canvas.width / (window.devicePixelRatio ?? 1)) / rect.width;
+      const scaleX = canvas.width / (window.devicePixelRatio ?? 1) / rect.width;
       const scaleY =
-        (canvas.height / (window.devicePixelRatio ?? 1)) / rect.height;
+        canvas.height / (window.devicePixelRatio ?? 1) / rect.height;
       const canvasX = (e.clientX - rect.left) * scaleX;
       const canvasY = (e.clientY - rect.top) * scaleY;
       const t = transformRef.current;
@@ -755,7 +806,12 @@ export default function ForceGraph({
         e.preventDefault();
         return;
       }
-      if (e.touches.length !== 1 || panStartRef.current || touchStartRef.current) return;
+      if (
+        e.touches.length !== 1 ||
+        panStartRef.current ||
+        touchStartRef.current
+      )
+        return;
       e.preventDefault(); // claim touch so browser doesn't scroll/zoom; enables reliable pan + tap
       const coords = getTouchCoords(e);
       if (!coords) return;
@@ -786,12 +842,18 @@ export default function ForceGraph({
         const { width, height } = sizeRef.current;
         const scaleX = width / rect.width;
         const scaleY = height / rect.height;
-        const { x: layoutX0, y: layoutY0 } = toLayoutClient(pinch.centerClientX, pinch.centerClientY);
+        const { x: layoutX0, y: layoutY0 } = toLayoutClient(
+          pinch.centerClientX,
+          pinch.centerClientY
+        );
         const centerCanvasX0 = (layoutX0 - rect.left) * scaleX;
         const centerCanvasY0 = (layoutY0 - rect.top) * scaleY;
         const graphX = (centerCanvasX0 - pinch.tx) / pinch.k;
         const graphY = (centerCanvasY0 - pinch.ty) / pinch.k;
-        const { x: layoutX, y: layoutY } = toLayoutClient(center.clientX, center.clientY);
+        const { x: layoutX, y: layoutY } = toLayoutClient(
+          center.clientX,
+          center.clientY
+        );
         const centerCanvasX = (layoutX - rect.left) * scaleX;
         const centerCanvasY = (layoutY - rect.top) * scaleY;
         transformRef.current = {
@@ -822,8 +884,10 @@ export default function ForceGraph({
       const panStart = panStartRef.current;
       if (panStart) {
         e.preventDefault();
-        transformRef.current.x = panStart.tx + (coords.clientX - panStart.clientX);
-        transformRef.current.y = panStart.ty + (coords.clientY - panStart.clientY);
+        transformRef.current.x =
+          panStart.tx + (coords.clientX - panStart.clientX);
+        transformRef.current.y =
+          panStart.ty + (coords.clientY - panStart.clientY);
         redraw();
       }
     };
@@ -901,7 +965,18 @@ export default function ForceGraph({
       hoveredNodeRef.current ?? draggedNodeRef.current?.id ?? null;
     const hoveredEdge = hoveredEdgeRef.current;
     const selectedEdge = selectedEdgeId ?? null;
-    draw(ctx, nodes, links, width, height, hoveredNode, hoveredEdge, selectedEdge, highlightedSet.current, transformRef.current);
+    draw(
+      ctx,
+      nodes,
+      links,
+      width,
+      height,
+      hoveredNode,
+      hoveredEdge,
+      selectedEdge,
+      highlightedSet.current,
+      transformRef.current
+    );
 
     const el = canvasRef.current;
     if (el) {

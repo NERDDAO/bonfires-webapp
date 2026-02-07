@@ -1,18 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { useRouter } from "next/navigation";
-import { apiClient } from "@/lib/api/client";
+
 import type { AgentLatestEpisodesResponse } from "@/types";
+
 import EpisodesList from "@/components/graph-explorer/select-panel/episodes-list";
 import type { EpisodeTimelineItem } from "@/components/graph-explorer/select-panel/panel-types";
+
+import { apiClient } from "@/lib/api/client";
 
 export interface HeroRecentActivityProps {
   staticGraph: { staticBonfireId: string; staticAgentId: string };
   className?: string;
 }
 
-export function HeroRecentActivity({ staticGraph, className }: HeroRecentActivityProps) {
+export function HeroRecentActivity({
+  staticGraph,
+  className,
+}: HeroRecentActivityProps) {
   const router = useRouter();
   const [episodes, setEpisodes] = useState<EpisodeTimelineItem[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(true);

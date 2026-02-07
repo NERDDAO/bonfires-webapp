@@ -3,15 +3,15 @@
  *
  * GET /api/bonfires - List all bonfires (filtered by access)
  */
-
-import {
-  proxyToBackend,
-  handleCorsOptions,
-  createSuccessResponse,
-  createErrorResponse,
-} from "@/lib/api/server-utils";
-import { filterAccessibleBonfires } from "@/lib/api/bonfire-access";
 import type { BonfireListResponse } from "@/types";
+
+import { filterAccessibleBonfires } from "@/lib/api/bonfire-access";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  handleCorsOptions,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 /**
  * GET /api/bonfires

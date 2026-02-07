@@ -2,21 +2,27 @@
  * WikiPanel Component
  * Displays wiki content for selected nodes (episodes, entities, edges)
  */
-
 "use client";
 
 import React from "react";
+
+import type { WikiBreadcrumb, WikiMode } from "@/hooks";
 import {
-  X,
   ChevronLeft,
   ChevronRight,
   Maximize2,
   Minimize2,
   Expand,
+  X,
 } from "lucide-react";
+
 import { cn } from "@/lib/cn";
-import type { WikiBreadcrumb, WikiMode } from "@/hooks";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
+/**
+ * WikiPanel Component
+ * Displays wiki content for selected nodes (episodes, entities, edges)
+ */
 
 // Types for wiki content
 export interface WikiNodeData {
@@ -145,7 +151,9 @@ export function WikiPanel({
             </h3>
             <div className="flex items-center gap-2 text-sm">
               <button
-                onClick={() => edgeSourceNode && onNodeSelect(edgeSourceNode.uuid)}
+                onClick={() =>
+                  edgeSourceNode && onNodeSelect(edgeSourceNode.uuid)
+                }
                 className="link text-base-content"
               >
                 {edgeSourceNode?.name || edgeSourceNode?.label || edge.source}
@@ -156,7 +164,9 @@ export function WikiPanel({
               </span>
               <span className="text-base-content/50">→</span>
               <button
-                onClick={() => edgeTargetNode && onNodeSelect(edgeTargetNode.uuid)}
+                onClick={() =>
+                  edgeTargetNode && onNodeSelect(edgeTargetNode.uuid)
+                }
                 className="link text-base-content"
               >
                 {edgeTargetNode?.name || edgeTargetNode?.label || edge.target}
@@ -176,7 +186,9 @@ export function WikiPanel({
                   value={edge.strength * 100}
                   max="100"
                 />
-                <span className="text-sm">{(edge.strength * 100).toFixed(0)}%</span>
+                <span className="text-sm">
+                  {(edge.strength * 100).toFixed(0)}%
+                </span>
               </div>
             </section>
           )}
@@ -491,9 +503,7 @@ export function WikiPanel({
   }
 
   // Sidebar mode
-  return (
-    <div className="w-80 h-full shrink-0">{panelContent}</div>
-  );
+  return <div className="w-80 h-full shrink-0">{panelContent}</div>;
 }
 
 export default WikiPanel;

@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react";
 
 import { staticGraphNodes } from "@/content/landing-page";
-import * as d3 from "d3";
 import { useIsMobile } from "@/hooks";
+import * as d3 from "d3";
 
 // Node size tier 1–5 (1 = smallest, 5 = largest). Used for radius.
 const RADIUS_BY_SIZE: Record<number, number> = {
@@ -154,7 +154,11 @@ function drawNode(
   const fontSize = isHovered
     ? baseFontSize + colors.labelFontSizeHoverOffset
     : baseFontSize;
-  const fontWeight = isHovered ? colors.labelFontWeightHover : node.size >= 4 ? "600" : "500";
+  const fontWeight = isHovered
+    ? colors.labelFontWeightHover
+    : node.size >= 4
+      ? "600"
+      : "500";
   ctx.font = `${fontWeight} ${fontSize}px system-ui, sans-serif`;
   ctx.fillStyle = isHovered ? colors.labelFillHover : colors.labelFill;
   ctx.textAlign = "center";
@@ -195,7 +199,11 @@ function draw(
 }
 
 /** Find node under canvas coordinates (logical pixels). */
-function nodeUnderPoint(nodes: D3Node[], logicalX: number, logicalY: number): D3Node | null {
+function nodeUnderPoint(
+  nodes: D3Node[],
+  logicalX: number,
+  logicalY: number
+): D3Node | null {
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     if (node === undefined) continue;
@@ -211,9 +219,13 @@ function nodeUnderPoint(nodes: D3Node[], logicalX: number, logicalY: number): D3
 
 export default function StaticGraph() {
   const isMobile = useIsMobile();
-  const WIDTH = isMobile ? ORIGINAL_WIDTH * MOBILE_SCALE_FACTOR : ORIGINAL_WIDTH * SCALE_FACTOR;
-  const HEIGHT = isMobile ? ORIGINAL_HEIGHT * MOBILE_SCALE_FACTOR : ORIGINAL_HEIGHT * SCALE_FACTOR;
-  
+  const WIDTH = isMobile
+    ? ORIGINAL_WIDTH * MOBILE_SCALE_FACTOR
+    : ORIGINAL_WIDTH * SCALE_FACTOR;
+  const HEIGHT = isMobile
+    ? ORIGINAL_HEIGHT * MOBILE_SCALE_FACTOR
+    : ORIGINAL_HEIGHT * SCALE_FACTOR;
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hoveredNodeRef = useRef<string | null>(null);
   const draggedNodeRef = useRef<D3Node | null>(null);
@@ -335,7 +347,8 @@ export default function StaticGraph() {
 
     let rafId: number;
     function loop() {
-      const pinnedId = hoveredNodeRef.current ?? draggedNodeRef.current?.id ?? null;
+      const pinnedId =
+        hoveredNodeRef.current ?? draggedNodeRef.current?.id ?? null;
       floatStep(
         nodes,
         WIDTH,
@@ -346,10 +359,16 @@ export default function StaticGraph() {
         pinnedId
       );
       clampNodesToBounds(nodes, WIDTH, HEIGHT);
-      const highlightId = hoveredNodeRef.current ?? draggedNodeRef.current?.id ?? null;
+      const highlightId =
+        hoveredNodeRef.current ?? draggedNodeRef.current?.id ?? null;
       draw(context, nodes, links, WIDTH, HEIGHT, GRAPH_COLORS, highlightId);
       const el = canvasRef.current;
-      if (el) el.style.cursor = draggedNodeRef.current ? "grabbing" : highlightId ? "grab" : "default";
+      if (el)
+        el.style.cursor = draggedNodeRef.current
+          ? "grabbing"
+          : highlightId
+            ? "grab"
+            : "default";
       rafId = requestAnimationFrame(loop);
     }
     rafId = requestAnimationFrame(loop);

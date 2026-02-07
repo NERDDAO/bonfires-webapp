@@ -75,8 +75,7 @@ function getConfig(): AppConfig {
     features: {
       graphVisualization:
         process.env["NEXT_PUBLIC_ENABLE_GRAPH_VIZ"] !== "false",
-      web3Features:
-        process.env["NEXT_PUBLIC_ENABLE_WEB3_FEATURES"] !== "false",
+      web3Features: process.env["NEXT_PUBLIC_ENABLE_WEB3_FEATURES"] !== "false",
       devTools: isDev,
     },
 
@@ -91,9 +90,7 @@ function getConfig(): AppConfig {
     },
 
     subdomain: {
-      appRoots: parseAppRoots(
-        process.env["NEXT_PUBLIC_APP_ROOTS"]
-      ),
+      appRoots: parseAppRoots(process.env["NEXT_PUBLIC_APP_ROOTS"]),
     },
   };
 }

@@ -3,11 +3,17 @@
  *
  * Panel displaying taxonomy labels with counts and labeling controls.
  */
-
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+
 import type { TaxonomyLabel } from "@/types";
+
+/**
+ * TaxonomyLabelsPanel Component
+ *
+ * Panel displaying taxonomy labels with counts and labeling controls.
+ */
 
 interface TaxonomyLabelsPanelProps {
   /** Available taxonomy labels */
@@ -38,7 +44,9 @@ function getLabelColor(name: string): string {
     "badge-success",
     "badge-warning",
   ] as const;
-  const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = name
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length] ?? "badge-primary";
 }
 
@@ -89,7 +97,10 @@ export function TaxonomyLabelsPanel({
     );
   }
 
-  const totalLabeledChunks = labels.reduce((acc, label) => acc + label.count, 0);
+  const totalLabeledChunks = labels.reduce(
+    (acc, label) => acc + label.count,
+    0
+  );
 
   return (
     <div className={`card bg-base-200 ${className}`}>
@@ -156,7 +167,8 @@ export function TaxonomyLabelsPanel({
           <div className="space-y-3">
             {labels.length === 0 ? (
               <p className="text-sm text-base-content/50 py-2">
-                No taxonomy labels available. Trigger labeling to categorize chunks.
+                No taxonomy labels available. Trigger labeling to categorize
+                chunks.
               </p>
             ) : (
               <>
@@ -213,9 +225,7 @@ export function TaxonomyLabelsPanel({
                 {/* Stats */}
                 <div className="pt-2 border-t border-base-300 mt-3">
                   <div className="flex items-center justify-between text-xs text-base-content/50">
-                    <span>
-                      {totalLabeledChunks} total labeled chunks
-                    </span>
+                    <span>{totalLabeledChunks} total labeled chunks</span>
                     <span>{labels.length} categories</span>
                   </div>
                   {totalLabeledChunks === 0 && (
@@ -236,6 +246,10 @@ export function TaxonomyLabelsPanel({
 /**
  * Skeleton loader for taxonomy panel
  */
-export function TaxonomyLabelsPanelSkeleton({ className = "" }: { className?: string }) {
+export function TaxonomyLabelsPanelSkeleton({
+  className = "",
+}: {
+  className?: string;
+}) {
   return <TaxonomyLabelsPanel labels={[]} isLoading className={className} />;
 }

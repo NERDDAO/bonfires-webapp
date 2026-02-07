@@ -4,13 +4,25 @@
  * React Query mutation hook for subscribing to data rooms.
  * Handles payment verification flow.
  */
-
 "use client";
 
+import type {
+  DataRoomSubscribeRequest,
+  DataRoomSubscription,
+  PaymentVerifyResponse,
+} from "@/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+
 import { dataRoomsQueryKey } from "@/hooks/queries";
-import type { DataRoomSubscription, DataRoomSubscribeRequest, PaymentVerifyResponse } from "@/types";
+
+import { apiClient } from "@/lib/api/client";
+
+/**
+ * useSubscribeDataRoom Hook
+ *
+ * React Query mutation hook for subscribing to data rooms.
+ * Handles payment verification flow.
+ */
 
 interface SubscribeParams {
   /** Data room ID to subscribe to */
@@ -106,7 +118,9 @@ export function useCheckSubscription() {
       try {
         const response = await apiClient.get<{
           subscription: DataRoomSubscription | null;
-        }>(`/api/datarooms/${params.dataroomId}/subscription?wallet=${params.userWallet}`);
+        }>(
+          `/api/datarooms/${params.dataroomId}/subscription?wallet=${params.userWallet}`
+        );
 
         return response.subscription;
       } catch {

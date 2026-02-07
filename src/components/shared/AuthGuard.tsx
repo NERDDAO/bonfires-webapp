@@ -6,11 +6,20 @@
  *
  * Similar pattern to WalletConnectionGuard but for Clerk auth.
  */
-
 "use client";
 
 import { SignInButton } from "@clerk/nextjs";
+
 import { useAuth } from "@/hooks/useAuth";
+
+/**
+ * AuthGuard Component
+ *
+ * Guards content behind authentication.
+ * Shows a sign-in prompt if user is not authenticated.
+ *
+ * Similar pattern to WalletConnectionGuard but for Clerk auth.
+ */
 
 interface AuthGuardProps {
   /** Title shown when not authenticated */

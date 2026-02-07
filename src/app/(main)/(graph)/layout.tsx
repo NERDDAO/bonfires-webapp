@@ -2,7 +2,6 @@
  * Graph Route Group Layout
  * Provides graph-specific layout and styling
  */
-
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,9 +14,5 @@ interface GraphLayoutProps {
 }
 
 export default function GraphLayout({ children }: GraphLayoutProps) {
-  return (
-    <div className="h-screen flex flex-col bg-base-200">
-      {children}
-    </div>
-  );
+  return <div className="h-screen flex flex-col bg-base-200">{children}</div>;
 }

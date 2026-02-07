@@ -25,6 +25,6 @@ export const siteCopy = {
   discordUrl: "https://discord.gg/bonfiresai",
   staticGraph: {
     staticBonfireId: "68962cbc2c14173dafbe6dc9",
-    staticAgentId: "68cadde6d6ce58d6050e8f7a"
+    staticAgentId: "68cadde6d6ce58d6050e8f7a",
   },
 } as const;

@@ -3,19 +3,20 @@
  *
  * GET /api/bonfires/[bonfireId] - Get bonfire details (with access control)
  */
-
 import { NextRequest } from "next/server";
-import {
-  proxyToBackend,
-  handleCorsOptions,
-  createErrorResponse,
-  createSuccessResponse,
-} from "@/lib/api/server-utils";
+
+import type { BonfireListResponse } from "@/types";
+
 import {
   checkBonfireAccess,
   createAccessDeniedResponse,
 } from "@/lib/api/bonfire-access";
-import type { BonfireListResponse } from "@/types";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  handleCorsOptions,
+  proxyToBackend,
+} from "@/lib/api/server-utils";
 
 interface RouteParams {
   params: Promise<{ bonfireId: string }>;
@@ -27,10 +28,7 @@ interface RouteParams {
  * Get details of a specific bonfire including taxonomy stats.
  * Checks access control - private bonfires require org membership.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { bonfireId } = await params;
 
   if (!bonfireId) {
@@ -51,7 +49,9 @@ export async function GET(
     );
   }
 
-  const bonfire = response.data?.bonfires?.find((item) => item.id === bonfireId);
+  const bonfire = response.data?.bonfires?.find(
+    (item) => item.id === bonfireId
+  );
   if (!bonfire) {
     return createErrorResponse("Bonfire not found", 404);
   }

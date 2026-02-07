@@ -11,14 +11,29 @@
  * - Manual switch: calls GET /orgs/{orgId}/bonfire-mapping to find the bonfire
  *   for the new org, then redirects to its subdomain.
  */
-
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import { useAuth, useClerk, useOrganization } from "@clerk/nextjs";
 
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
+
 import { config as appConfig } from "@/lib/config";
+
+/**
+ * useAutoOrgSwitch Hook
+ *
+ * Automatically switches the user's active Clerk organization to match the
+ * bonfire resolved from the current subdomain.
+ *
+ * All org ↔ bonfire resolution goes through the backend (ClerkOrgMapping),
+ * which is the single source of truth. No Clerk publicMetadata dependency.
+ *
+ * - Auto-switch: calls GET /resolve-org to find the right org for this bonfire.
+ * - Manual switch: calls GET /orgs/{orgId}/bonfire-mapping to find the bonfire
+ *   for the new org, then redirects to its subdomain.
+ */
 
 export type AccessStatus = "ok" | "sign_in_required" | "no_access" | "loading";
 
@@ -67,14 +82,22 @@ function buildSubdomainUrl(slug: string): string {
  */
 async function resolveOrgBonfireMapping(
   orgId: string
-): Promise<{ bonfire_id: string | null; is_admin: boolean; slug: string | null } | null> {
+): Promise<{
+  bonfire_id: string | null;
+  is_admin: boolean;
+  slug: string | null;
+} | null> {
   try {
     const res = await fetch(
       `/api/orgs/${encodeURIComponent(orgId)}/bonfire-mapping`,
       { method: "GET" }
     );
     if (!res.ok) return null;
-    return (await res.json()) as { bonfire_id: string | null; is_admin: boolean; slug: string | null };
+    return (await res.json()) as {
+      bonfire_id: string | null;
+      is_admin: boolean;
+      slug: string | null;
+    };
   } catch {
     return null;
   }
@@ -112,7 +135,12 @@ export function useAutoOrgSwitch(): AutoOrgSwitchState {
   // Manual org switch → redirect to the new bonfire's subdomain
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!isSubdomainScoped || !initialSwitchComplete.current || isRedirecting.current) return;
+    if (
+      !isSubdomainScoped ||
+      !initialSwitchComplete.current ||
+      isRedirecting.current
+    )
+      return;
 
     if (!activeOrgId || activeOrgId === autoSwitchedOrgId.current) return;
 
@@ -153,14 +181,19 @@ export function useAutoOrgSwitch(): AutoOrgSwitchState {
   // Backend call: resolve which org to activate for this bonfire
   // ---------------------------------------------------------------------------
   const resolveViaBackend = useCallback(
-    async (targetBonfireId: string): Promise<{ org_id: string; is_admin: boolean } | null> => {
+    async (
+      targetBonfireId: string
+    ): Promise<{ org_id: string; is_admin: boolean } | null> => {
       try {
         const res = await fetch(
           `/api/bonfires/${encodeURIComponent(targetBonfireId)}/resolve-org`,
           { method: "GET" }
         );
         if (!res.ok) return null;
-        return (await res.json()) as { org_id: string; is_admin: boolean } | null;
+        return (await res.json()) as {
+          org_id: string;
+          is_admin: boolean;
+        } | null;
       } catch {
         return null;
       }

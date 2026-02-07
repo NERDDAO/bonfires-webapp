@@ -4,15 +4,26 @@ import { useEffect, useState } from "react";
 
 import Image from "next/image";
 
+import { hyperblogsPreviewSectionCopy } from "@/content/landing-page";
 import { usePublicHyperBlogsFeed } from "@/hooks";
 import { HyperBlogInfo } from "@/types";
 
-import { Button } from "../ui/button";
 import HyperBlogCard from "../hyperblogs/hyperblog-card";
-import { hyperblogsPreviewSectionCopy } from "@/content/landing-page";
+import { Button } from "../ui/button";
 
 export default function HyperBlogsPreview() {
-  const { title, tooltipIcon, tooltipAlt, description, cta, ctaHref, featuredBlogTitle, latestBlogsTitle, viewMoreCtaTitle, viewMoreCtaHref } = hyperblogsPreviewSectionCopy;
+  const {
+    title,
+    tooltipIcon,
+    tooltipAlt,
+    description,
+    cta,
+    ctaHref,
+    featuredBlogTitle,
+    latestBlogsTitle,
+    viewMoreCtaTitle,
+    viewMoreCtaHref,
+  } = hyperblogsPreviewSectionCopy;
   const { data, isLoading, error } = usePublicHyperBlogsFeed({ limit: 5 });
 
   const [featuredBlogData, setFeaturedBlogData] = useState<
@@ -37,7 +48,9 @@ export default function HyperBlogsPreview() {
     <div className="flex flex-col px-6 lg:px-20 py-7 lg:py-20 min-h-svh lg:min-h-screen">
       <div className="flex flex-col">
         <div className="flex items-center gap-4">
-          <div className="font-montserrat text-2xl lg:text-5xl font-black">{title}</div>
+          <div className="font-montserrat text-2xl lg:text-5xl font-black">
+            {title}
+          </div>
           <Image
             src={tooltipIcon}
             alt={tooltipAlt}
@@ -45,7 +58,11 @@ export default function HyperBlogsPreview() {
             height={34}
             className="hidden lg:block"
           />
-          <Button variant="primary" className="ml-auto hidden lg:block" href={ctaHref}>
+          <Button
+            variant="primary"
+            className="ml-auto hidden lg:block"
+            href={ctaHref}
+          >
             {cta}
           </Button>
         </div>

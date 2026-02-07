@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import Link from "next/link";
+
 import { cn } from "@/lib/cn";
 
 export interface DropdownItem {
@@ -26,7 +28,11 @@ function ChevronDownIcon({ className = "" }: { className?: string }) {
       stroke="currentColor"
       className={className}
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+      />
     </svg>
   );
 }
@@ -34,7 +40,8 @@ function ChevronDownIcon({ className = "" }: { className?: string }) {
 const baseStyles =
   "flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors";
 const activeStyles = "bg-primary/20 text-primary";
-const inactiveStyles = "text-base-content/80 hover:text-base-content hover:bg-base-content/10";
+const inactiveStyles =
+  "text-base-content/80 hover:text-base-content hover:bg-base-content/10";
 
 /**
  * NavigationButton – link or dropdown trigger with active/inactive states.
@@ -76,7 +83,10 @@ export function NavigationButton({
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     }

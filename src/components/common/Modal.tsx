@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
+
 import { createPortal } from "react-dom";
+
 import { cn } from "@/lib/cn";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
@@ -181,7 +183,11 @@ export function ConfirmModal({
       size="sm"
       footer={
         <>
-          <button className="btn btn-ghost" onClick={onClose} disabled={loading}>
+          <button
+            className="btn btn-ghost"
+            onClick={onClose}
+            disabled={loading}
+          >
             {cancelText}
           </button>
           <button

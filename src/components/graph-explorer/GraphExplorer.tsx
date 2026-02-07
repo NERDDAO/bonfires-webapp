@@ -2,39 +2,29 @@
  * GraphExplorer Component
  * Main orchestrating component for graph visualization, wiki, chat, and timeline features
  */
-
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import { useWalletAccount } from "@/lib/wallet/e2e";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-import { cn } from "@/lib/cn";
-import { LoadingSpinner, ErrorMessage, toast } from "@/components/common";
-import { apiClient } from "@/lib/api/client";
+import { useSearchParams } from "next/navigation";
+
 import {
-  useGraphExplorerState,
-  useWikiNavigation,
+  PanelActionType,
+  SelectionActionType,
   useAgentSelection,
   useBonfiresQuery,
-  useGraphQuery,
   useGraphExpand,
+  useGraphExplorerState,
+  useGraphQuery,
   useSendChatMessage,
-  SelectionActionType,
-  PanelActionType,
+  useWikiNavigation,
 } from "@/hooks";
-
-import {
-  GraphSearchHistoryProvider,
-  useGraphSearchHistory,
-} from "./graph-context";
-import GraphWrapper from "./graph/graph-wrapper";
-import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
-import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
-import { WikiPanelContainer, type WikiNodeData, type WikiEdgeData } from "./wiki/wiki-panel-container";
-import { ChatPanel, FloatingChatButton, type ChatMessage } from "./chat";
-import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
-import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import type {
   AgentLatestEpisodesResponse,
   GraphData,
@@ -44,17 +34,48 @@ import type {
   GraphStatePayload,
   NodeType,
 } from "@/types";
+
+import { ErrorMessage, LoadingSpinner, toast } from "@/components/common";
+
+import { apiClient } from "@/lib/api/client";
+import { cn } from "@/lib/cn";
+import type { GraphElement } from "@/lib/utils/sigma-adapter";
+import { useWalletAccount } from "@/lib/wallet/e2e";
+
+import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
+import { type ChatMessage, ChatPanel, FloatingChatButton } from "./chat";
+import {
+  GraphSearchHistoryProvider,
+  useGraphSearchHistory,
+} from "./graph-context";
+import GraphWrapper from "./graph/graph-wrapper";
+import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
+import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
 import GraphStatusOverlay from "./ui/graph-status-overlay";
+import {
+  type WikiEdgeData,
+  type WikiNodeData,
+  WikiPanelContainer,
+} from "./wiki/wiki-panel-container";
+
+/**
+ * GraphExplorer Component
+ * Main orchestrating component for graph visualization, wiki, chat, and timeline features
+ */
 
 function resolveNodeType(rawType: unknown, labels: string[]): NodeType {
   const normalized = typeof rawType === "string" ? rawType.toLowerCase() : "";
   if (normalized.includes("episode")) return "episode";
   if (normalized.includes("entity")) return "entity";
-  const hasEpisodeLabel = labels.some((label) => label.toLowerCase() === "episode");
+  const hasEpisodeLabel = labels.some(
+    (label) => label.toLowerCase() === "episode"
+  );
   return hasEpisodeLabel ? "episode" : "entity";
 }
 
-function buildProperties(raw: Record<string, unknown>): Record<string, unknown> {
+function buildProperties(
+  raw: Record<string, unknown>
+): Record<string, unknown> {
   const base = { ...raw };
   if (raw["properties"] && typeof raw["properties"] === "object") {
     Object.assign(base, raw["properties"] as Record<string, unknown>);
@@ -70,7 +91,9 @@ function normalizeNode(raw: Record<string, unknown>): GraphNode | null {
   if (!uuid) return null;
 
   const labels = Array.isArray(raw["labels"])
-    ? raw["labels"].filter((label): label is string => typeof label === "string")
+    ? raw["labels"].filter(
+        (label): label is string => typeof label === "string"
+      )
     : [];
 
   const nameCandidate =
@@ -161,7 +184,9 @@ function buildGraphStatePayload(
     edges,
     nodeCount: nodes.length,
     edgeCount: edges.length,
-    centerNodeUuid: centerNodeId ? normalizeNodeId(centerNodeId) || undefined : undefined,
+    centerNodeUuid: centerNodeId
+      ? normalizeNodeId(centerNodeId) || undefined
+      : undefined,
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -224,10 +249,15 @@ function GraphExplorerSearchHistoryBridge({
     if (!effectiveCenterNode || searchHistoryStack.length > 0) return;
     const label =
       selectedNode?.uuid === effectiveCenterNode
-        ? selectedNode?.name ?? selectedNode?.label
+        ? (selectedNode?.name ?? selectedNode?.label)
         : undefined;
     pushSearchAround(effectiveCenterNode, label);
-  }, [effectiveCenterNode, searchHistoryStack.length, pushSearchAround, selectedNode]);
+  }, [
+    effectiveCenterNode,
+    searchHistoryStack.length,
+    pushSearchAround,
+    selectedNode,
+  ]);
 
   const handleSearchAroundNodeWithPush = useCallback(
     (nodeUuid: string) => {
@@ -251,9 +281,9 @@ function GraphExplorerSearchHistoryBridge({
 
   const activeBreadcrumb =
     currentIndex >= 0 && currentIndex < searchHistoryStack.length
-      ? searchHistoryStack[currentIndex]?.label ??
+      ? (searchHistoryStack[currentIndex]?.label ??
         searchHistoryStack[currentIndex]?.nodeId.slice(0, 8) ??
-        null
+        null)
       : null;
 
   return (
@@ -279,7 +309,8 @@ export function GraphExplorer({
   className,
 }: GraphExplorerProps) {
   const searchParams = useSearchParams();
-  const { address: walletAddress, isConnected: isWalletConnected } = useWalletAccount();
+  const { address: walletAddress, isConnected: isWalletConnected } =
+    useWalletAccount();
 
   // When staticGraph is provided, ignore URL and initial props; otherwise use URL/initial
   const effectiveBonfireId = staticGraph
@@ -295,11 +326,14 @@ export function GraphExplorer({
   const urlSearchQuery = searchParams.get("q") ?? "";
 
   // Effective search/center (from URL or from in-page "Search around this node" — no navigation)
-  const [effectiveSearchQuery, setEffectiveSearchQuery] = useState(urlSearchQuery);
-  const [effectiveCenterNode, setEffectiveCenterNode] = useState<string | null>(urlCenterNode);
+  const [effectiveSearchQuery, setEffectiveSearchQuery] =
+    useState(urlSearchQuery);
+  const [effectiveCenterNode, setEffectiveCenterNode] = useState<string | null>(
+    urlCenterNode
+  );
 
   // State management
-  const { state, actions } = useGraphExplorerState(); 
+  const { state, actions } = useGraphExplorerState();
   const { selection, panel, timeline } = state;
   const { dispatchSelection, dispatchPanel, dispatchTimeline } = actions;
 
@@ -320,8 +354,7 @@ export function GraphExplorer({
   // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
   // Use "relationships" only as API fallback when center node is set and search is empty (do not put in search bar)
   const queryForApi =
-    effectiveSearchQuery.trim() ||
-    (effectiveCenterNode ? "relationships" : "");
+    effectiveSearchQuery.trim() || (effectiveCenterNode ? "relationships" : "");
   const shouldRunGraphQuery =
     !!agentSelection.selectedBonfireId && queryForApi.length > 0;
   const graphQuery = useGraphQuery({
@@ -334,7 +367,9 @@ export function GraphExplorer({
     useAsyncPolling: true,
   });
 
-  const [initialGraphData, setInitialGraphData] = useState<GraphData | null>(null);
+  const [initialGraphData, setInitialGraphData] = useState<GraphData | null>(
+    null
+  );
   const [isHydrating, setIsHydrating] = useState(false);
   const [hydrationError, setHydrationError] = useState<string | null>(null);
   const [extraGraphData, setExtraGraphData] = useState<GraphData | null>(null);
@@ -359,7 +394,9 @@ export function GraphExplorer({
 
   // Mock episodes for timeline (will be populated from graph data)
   const [episodes, setEpisodes] = useState<EpisodeTimelineItem[]>([]);
-  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
+    null
+  );
   /** One-shot: when set, graph pans to this node (no graph data update). Cleared by GraphWrapper. */
   const [panToNodeId, setPanToNodeId] = useState<string | null>(null);
 
@@ -370,7 +407,8 @@ export function GraphExplorer({
   }, [agentSelection.selectedAgent?.episode_uuids]);
 
   const hydrateLatestEpisodes = useCallback(async () => {
-    if (!agentSelection.selectedAgentId || !agentSelection.selectedBonfireId) return;
+    if (!agentSelection.selectedAgentId || !agentSelection.selectedBonfireId)
+      return;
 
     setIsHydrating(true);
     setHydrationError(null);
@@ -408,18 +446,19 @@ export function GraphExplorer({
 
       setInitialGraphData(graphData);
 
-      const responseEpisodes: EpisodeTimelineItem[] = (response.episodes ?? []).map(
-        (episode) => {
-          const episodeRecord = episode as Record<string, unknown>;
-          return {
-            uuid: String(episodeRecord["uuid"] ?? episodeRecord["id"] ?? ""),
-            name: (episodeRecord["name"] ??
-              episodeRecord["title"]) as string | undefined,
-            summary: episodeRecord["summary"] as string | undefined,
-            valid_at: episodeRecord["valid_at"] as string | undefined,
-          };
-        }
-      );
+      const responseEpisodes: EpisodeTimelineItem[] = (
+        response.episodes ?? []
+      ).map((episode) => {
+        const episodeRecord = episode as Record<string, unknown>;
+        return {
+          uuid: String(episodeRecord["uuid"] ?? episodeRecord["id"] ?? ""),
+          name: (episodeRecord["name"] ?? episodeRecord["title"]) as
+            | string
+            | undefined,
+          summary: episodeRecord["summary"] as string | undefined,
+          valid_at: episodeRecord["valid_at"] as string | undefined,
+        };
+      });
 
       let episodeItems: EpisodeTimelineItem[] = responseEpisodes.filter(
         (episode) => episode.uuid
@@ -470,7 +509,9 @@ export function GraphExplorer({
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to load latest episodes";
+        error instanceof Error
+          ? error.message
+          : "Failed to load latest episodes";
       setHydrationError(message);
     } finally {
       setIsHydrating(false);
@@ -506,7 +547,8 @@ export function GraphExplorer({
   }, [agentSelection.selectedAgentId, agentSelection.selectedBonfireId]);
 
   useEffect(() => {
-    if (!agentSelection.selectedAgentId || !agentSelection.selectedBonfireId) return;
+    if (!agentSelection.selectedAgentId || !agentSelection.selectedBonfireId)
+      return;
     if (effectiveSearchQuery.trim()) return;
     if (isHydrating || initialGraphData) return;
 
@@ -522,78 +564,86 @@ export function GraphExplorer({
 
   const activeGraphData = graphQuery.data ?? initialGraphData;
 
-  const mergeGraphData = useCallback((base: GraphData | null, incoming: GraphData | null) => {
-    if (!base) return incoming;
-    if (!incoming) return base;
+  const mergeGraphData = useCallback(
+    (base: GraphData | null, incoming: GraphData | null) => {
+      if (!base) return incoming;
+      if (!incoming) return base;
 
-    const nodeIds = new Set<string>();
-    const mergedNodes: GraphData["nodes"] = [];
+      const nodeIds = new Set<string>();
+      const mergedNodes: GraphData["nodes"] = [];
 
-    for (const node of base.nodes) {
-      const nodeRecord = asRecord(node);
-      const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
-      if (!nodeId || nodeIds.has(nodeId)) continue;
-      nodeIds.add(nodeId);
-      mergedNodes.push(node);
-    }
+      for (const node of base.nodes) {
+        const nodeRecord = asRecord(node);
+        const nodeId = String(
+          nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
+        ).replace(/^n:/, "");
+        if (!nodeId || nodeIds.has(nodeId)) continue;
+        nodeIds.add(nodeId);
+        mergedNodes.push(node);
+      }
 
-    for (const node of incoming.nodes) {
-      const nodeRecord = asRecord(node);
-      const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
-      if (!nodeId || nodeIds.has(nodeId)) continue;
-      nodeIds.add(nodeId);
-      mergedNodes.push(node);
-    }
+      for (const node of incoming.nodes) {
+        const nodeRecord = asRecord(node);
+        const nodeId = String(
+          nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
+        ).replace(/^n:/, "");
+        if (!nodeId || nodeIds.has(nodeId)) continue;
+        nodeIds.add(nodeId);
+        mergedNodes.push(node);
+      }
 
-    const edgeKeys = new Set<string>();
-    const mergedEdges: GraphData["edges"] = [];
+      const edgeKeys = new Set<string>();
+      const mergedEdges: GraphData["edges"] = [];
 
-    const addEdge = (edge: GraphData["edges"][number]) => {
-      const edgeRecord = asRecord(edge);
-      const sourceId = normalizeNodeId(
-        edgeRecord["source"] ??
-          edgeRecord["source_uuid"] ??
-          edgeRecord["source_node_uuid"] ??
-          edgeRecord["from_uuid"] ??
-          edgeRecord["from"]
-      );
-      const targetId = normalizeNodeId(
-        edgeRecord["target"] ??
-          edgeRecord["target_uuid"] ??
-          edgeRecord["target_node_uuid"] ??
-          edgeRecord["to_uuid"] ??
-          edgeRecord["to"]
-      );
-      if (!sourceId || !targetId) return;
-      const edgeType = String(
-        edgeRecord["type"] ??
-          edgeRecord["relationship"] ??
-          edgeRecord["relationship_type"] ??
-          edgeRecord["label"] ??
-          ""
-      );
-      const key = `${sourceId}|${targetId}|${edgeType}`;
-      if (edgeKeys.has(key)) return;
-      edgeKeys.add(key);
-      mergedEdges.push(edge);
-    };
+      const addEdge = (edge: GraphData["edges"][number]) => {
+        const edgeRecord = asRecord(edge);
+        const sourceId = normalizeNodeId(
+          edgeRecord["source"] ??
+            edgeRecord["source_uuid"] ??
+            edgeRecord["source_node_uuid"] ??
+            edgeRecord["from_uuid"] ??
+            edgeRecord["from"]
+        );
+        const targetId = normalizeNodeId(
+          edgeRecord["target"] ??
+            edgeRecord["target_uuid"] ??
+            edgeRecord["target_node_uuid"] ??
+            edgeRecord["to_uuid"] ??
+            edgeRecord["to"]
+        );
+        if (!sourceId || !targetId) return;
+        const edgeType = String(
+          edgeRecord["type"] ??
+            edgeRecord["relationship"] ??
+            edgeRecord["relationship_type"] ??
+            edgeRecord["label"] ??
+            ""
+        );
+        const key = `${sourceId}|${targetId}|${edgeType}`;
+        if (edgeKeys.has(key)) return;
+        edgeKeys.add(key);
+        mergedEdges.push(edge);
+      };
 
-    for (const edge of base.edges) addEdge(edge);
-    for (const edge of incoming.edges) addEdge(edge);
+      for (const edge of base.edges) addEdge(edge);
+      for (const edge of incoming.edges) addEdge(edge);
 
-    return {
-      nodes: mergedNodes,
-      edges: mergedEdges,
-      metadata: base.metadata ?? incoming.metadata,
-    };
-  }, []);
+      return {
+        nodes: mergedNodes,
+        edges: mergedEdges,
+        metadata: base.metadata ?? incoming.metadata,
+      };
+    },
+    []
+  );
 
   const combinedGraphData = useMemo(
     () => mergeGraphData(activeGraphData, extraGraphData),
     [activeGraphData, extraGraphData, mergeGraphData]
   );
   const isGraphLoading = graphQuery.isLoading || isHydrating;
-  const graphError = graphQuery.error ?? (hydrationError ? new Error(hydrationError) : null);
+  const graphError =
+    graphQuery.error ?? (hydrationError ? new Error(hydrationError) : null);
 
   // Convert graph data to elements (match graph/GraphExplorer + Sigma: duplicate nodes get unique ids so display matches)
   const elements: GraphElement[] = useMemo(() => {
@@ -609,13 +659,19 @@ export function GraphExplorer({
       const nodeRecord = asRecord(node);
       const rawLabels = nodeRecord["labels"];
       const labels = Array.isArray(rawLabels)
-        ? rawLabels.filter((label): label is string => typeof label === "string")
+        ? rawLabels.filter(
+            (label): label is string => typeof label === "string"
+          )
         : [];
       const nodeType = resolveNodeType(
-        nodeRecord["type"] ?? nodeRecord["node_type"] ?? nodeRecord["entity_type"],
+        nodeRecord["type"] ??
+          nodeRecord["node_type"] ??
+          nodeRecord["entity_type"],
         labels
       );
-      const nodeId = String(nodeRecord["uuid"] ?? nodeRecord["id"] ?? "").replace(/^n:/, "");
+      const nodeId = String(
+        nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
+      ).replace(/^n:/, "");
       if (!nodeId) continue;
       const seen = usedNodeIds.get(nodeId) ?? 0;
       const uniqueId = seen === 0 ? nodeId : `${nodeId}__dup_${seen + 1}`;
@@ -638,9 +694,10 @@ export function GraphExplorer({
       result.push({
         data: {
           id: `n:${uniqueId}`,
-          label: (nodeRecord["name"] ?? nodeRecord["label"] ?? nodeRecord["title"] ?? "") as
-            | string
-            | undefined,
+          label: (nodeRecord["name"] ??
+            nodeRecord["label"] ??
+            nodeRecord["title"] ??
+            "") as string | undefined,
           node_type: nodeType,
           labels,
           ...properties,
@@ -673,13 +730,13 @@ export function GraphExplorer({
       nodeIds.add(targetId);
       const baseEdgeId = `e:${sourceId}-${targetId}`;
       const seen = usedEdgeIds.get(baseEdgeId) ?? 0;
-      const uniqueEdgeId = seen === 0 ? baseEdgeId : `${baseEdgeId}__dup_${seen + 1}`;
+      const uniqueEdgeId =
+        seen === 0 ? baseEdgeId : `${baseEdgeId}__dup_${seen + 1}`;
       usedEdgeIds.set(baseEdgeId, seen + 1);
-      const edgeType =
-        (edgeRecord["type"] ??
-          edgeRecord["relationship"] ??
-          edgeRecord["relationship_type"] ??
-          edgeRecord["label"]) as string | undefined;
+      const edgeType = (edgeRecord["type"] ??
+        edgeRecord["relationship"] ??
+        edgeRecord["relationship_type"] ??
+        edgeRecord["label"]) as string | undefined;
       const edgeName = edgeRecord["name"] as string | undefined;
       const edgeFact = edgeRecord["fact"] as string | undefined;
       const properties =
@@ -716,7 +773,8 @@ export function GraphExplorer({
           id: `n:${centerId}`,
           label: cachedLabel ?? `center:${centerId.slice(0, 8)}`,
           node_type:
-            (cached?.node_type as "episode" | "entity" | undefined) ?? "episode",
+            (cached?.node_type as "episode" | "entity" | undefined) ??
+            "episode",
           placeholder: !cached,
         },
       });
@@ -789,11 +847,12 @@ export function GraphExplorer({
         return {
           uuid: String(nodeRecord["uuid"] ?? "").replace(/^n:/, ""),
           name: nodeRecord["name"] as string | undefined,
-          valid_at: (properties["valid_at"] ??
-            nodeRecord["valid_at"]) as string | undefined,
-          content: (properties["content"] ??
-            nodeRecord["content"]) as string | undefined,
-          
+          valid_at: (properties["valid_at"] ?? nodeRecord["valid_at"]) as
+            | string
+            | undefined,
+          content: (properties["content"] ?? nodeRecord["content"]) as
+            | string
+            | undefined,
         };
       });
 
@@ -811,22 +870,28 @@ export function GraphExplorer({
     if (!element?.data) return null;
     return {
       uuid: (element.data["id"] as string).replace(/^n:/, ""),
-      name: (element.data["label"] as string) || (element.data["name"] as string),
+      name:
+        (element.data["label"] as string) || (element.data["name"] as string),
       label: element.data["label"] as string | undefined,
       type: element.data["node_type"] as "episode" | "entity" | undefined,
       node_type: element.data["node_type"] as "episode" | "entity" | undefined,
       summary: element.data["summary"] as string | undefined,
       content: element.data["content"] as string | undefined,
       valid_at: element.data["valid_at"] as string | undefined,
-      attributes: element.data["attributes"] as Record<string, unknown> | undefined,
+      attributes: element.data["attributes"] as
+        | Record<string, unknown>
+        | undefined,
       labels: element.data["labels"] as string[] | undefined,
     };
   }, [selection.selectedNodeId, elements]);
 
   const selectedEdge = useMemo((): WikiEdgeData | null => {
     if (!selection.selectedEdgeId) return null;
-    const element = elements.find((el) => el.data?.id === selection.selectedEdgeId);
-    if (!element?.data || !element.data["source"] || !element.data["target"]) return null;
+    const element = elements.find(
+      (el) => el.data?.id === selection.selectedEdgeId
+    );
+    if (!element?.data || !element.data["source"] || !element.data["target"])
+      return null;
     return {
       id: element.data["id"] as string,
       label: element.data["name"] as string | undefined,
@@ -837,7 +902,9 @@ export function GraphExplorer({
       target: element.data["target"] as string,
       strength: element.data["rel_strength"] as number | undefined,
       fact: element.data["fact"] as string | undefined,
-      attributes: element.data["attributes"] as Record<string, unknown> | undefined,
+      attributes: element.data["attributes"] as
+        | Record<string, unknown>
+        | undefined,
     };
   }, [selection.selectedEdgeId, elements]);
 
@@ -860,7 +927,7 @@ export function GraphExplorer({
           (el.data!.label as string | undefined),
         source: el.data!.source!,
         target: el.data!.target!,
-        fact: el.data!['fact'] as string | undefined,
+        fact: el.data!["fact"] as string | undefined,
       }));
   }, [selection.selectedNodeId, elements]);
 
@@ -871,8 +938,7 @@ export function GraphExplorer({
       const element = elements.find(
         (el) =>
           el.data?.node_type != null &&
-          (el.data?.id === normalizedId ||
-            el.data?.id === `n:${normalizedId}`)
+          (el.data?.id === normalizedId || el.data?.id === `n:${normalizedId}`)
       );
       if (!element?.data) return undefined;
       const title =
@@ -916,7 +982,10 @@ export function GraphExplorer({
         (el) => el.data?.id === nodeId || el.data?.id === `n:${nodeId}`
       );
       if (element?.data) {
-        const nodeType = element.data.node_type as "episode" | "entity" | undefined;
+        const nodeType = element.data.node_type as
+          | "episode"
+          | "entity"
+          | undefined;
         wikiNav.navigateTo({
           type: nodeType || "entity",
           id: nodeId.replace(/^n:/, ""),
@@ -930,10 +999,20 @@ export function GraphExplorer({
           dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
         }
         dispatchPanel({ type: PanelActionType.SET_WIKI_MODE, mode: "full" });
-        dispatchPanel({ type: PanelActionType.SET_WIKI_MINIMIZED, minimized: false });
+        dispatchPanel({
+          type: PanelActionType.SET_WIKI_MINIMIZED,
+          minimized: false,
+        });
       }
     },
-    [dispatchSelection, dispatchPanel, elements, panel.wikiEnabled, panel.rightPanelMode, wikiNav]
+    [
+      dispatchSelection,
+      dispatchPanel,
+      elements,
+      panel.wikiEnabled,
+      panel.rightPanelMode,
+      wikiNav,
+    ]
   );
 
   const handleEdgeClick = useCallback(
@@ -966,12 +1045,15 @@ export function GraphExplorer({
     setSearchSubmitCount((c) => c + 1);
   }, [searchQuery]);
 
-  const handleSearchAroundNode = useCallback((nodeUuid: string) => {
-    const trimmed = searchQuery.trim();
-    setSearchQuery(trimmed);
-    setEffectiveSearchQuery(trimmed);
-    setEffectiveCenterNode(nodeUuid);
-  }, [searchQuery]);
+  const handleSearchAroundNode = useCallback(
+    (nodeUuid: string) => {
+      const trimmed = searchQuery.trim();
+      setSearchQuery(trimmed);
+      setEffectiveSearchQuery(trimmed);
+      setEffectiveCenterNode(nodeUuid);
+    },
+    [searchQuery]
+  );
 
   const onNavigateToCenter = useCallback((nodeId: string) => {
     setEffectiveCenterNode(nodeId);
@@ -1032,7 +1114,8 @@ export function GraphExplorer({
       setChatMessages((prev) => [...prev, userMessage]);
 
       try {
-        const centerNodeId = selection.selectedNodeId ?? effectiveCenterNode ?? null;
+        const centerNodeId =
+          selection.selectedNodeId ?? effectiveCenterNode ?? null;
         const graphState = buildGraphStatePayload(elements, centerNodeId);
         const response = await chatMutation.mutateAsync({
           agentId: agentSelection.selectedAgentId,
@@ -1058,11 +1141,18 @@ export function GraphExplorer({
         throw error;
       }
     },
-    [agentSelection.selectedAgentId, agentSelection.selectedBonfireId, chatMutation]
+    [
+      agentSelection.selectedAgentId,
+      agentSelection.selectedBonfireId,
+      chatMutation,
+    ]
   );
 
   const handleToggleChatPanel = useCallback(() => {
-    dispatchPanel({ type: PanelActionType.SET_CHAT_OPEN, open: !panel.chatOpen });
+    dispatchPanel({
+      type: PanelActionType.SET_CHAT_OPEN,
+      open: !panel.chatOpen,
+    });
   }, [panel.chatOpen, dispatchPanel]);
 
   const handleRetry = useCallback(() => {
@@ -1075,12 +1165,7 @@ export function GraphExplorer({
 
   // Loading state
   if (!agentSelection.isInitialized) {
-    return (
-      <GraphStatusOverlay
-        isLoading={true}
-        message="Initializing..."
-      />
-    );
+    return <GraphStatusOverlay isLoading={true} message="Initializing..." />;
   }
 
   return (
@@ -1091,139 +1176,163 @@ export function GraphExplorer({
         urlAgentId={urlAgentId ?? null}
         searchSubmitCount={searchSubmitCount}
         effectiveCenterNode={effectiveCenterNode}
-        render={({ searchHistoryBreadcrumbs, activeBreadcrumb, handleSearchAroundNode: wrappedSearchAround }) => (
-    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
-      {/* Header */}
-      <GraphExplorerPanel
-        availableBonfires={agentSelection.availableBonfires}
-        availableAgents={agentSelection.availableAgents}
-        selectedBonfireId={agentSelection.selectedBonfireId}
-        selectedAgentId={agentSelection.selectedAgentId}
-        loading={agentSelection.loading}
-        error={agentSelection.error}
-        onSelectBonfire={agentSelection.selectBonfire}
-        onSelectAgent={agentSelection.selectAgent}
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        onSearch={handleSearch}
-        isSearching={isGraphLoading}
-        searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
-        activeBreadcrumb={activeBreadcrumb}
-        episodes={episodes}
-        selectedEpisodeId={selectedEpisodeId}
-        onEpisodeSelect={handleEpisodeSelect}
-        episodesLoading={isGraphLoading}
-        graphVisible={elements.length > 0}
-        onOpenChat={handleToggleChatPanel}
-        hideGraphSelector={!!staticGraph}
-      />
+        render={({
+          searchHistoryBreadcrumbs,
+          activeBreadcrumb,
+          handleSearchAroundNode: wrappedSearchAround,
+        }) => (
+          <div
+            className={cn("flex flex-col h-full overflow-hidden", className)}
+          >
+            {/* Header */}
+            <GraphExplorerPanel
+              availableBonfires={agentSelection.availableBonfires}
+              availableAgents={agentSelection.availableAgents}
+              selectedBonfireId={agentSelection.selectedBonfireId}
+              selectedAgentId={agentSelection.selectedAgentId}
+              loading={agentSelection.loading}
+              error={agentSelection.error}
+              onSelectBonfire={agentSelection.selectBonfire}
+              onSelectAgent={agentSelection.selectAgent}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              onSearch={handleSearch}
+              isSearching={isGraphLoading}
+              searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
+              activeBreadcrumb={activeBreadcrumb}
+              episodes={episodes}
+              selectedEpisodeId={selectedEpisodeId}
+              onEpisodeSelect={handleEpisodeSelect}
+              episodesLoading={isGraphLoading}
+              graphVisible={elements.length > 0}
+              onOpenChat={handleToggleChatPanel}
+              hideGraphSelector={!!staticGraph}
+            />
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <h1 className="sr-only">Graph Explorer</h1>
+            {/* Main Content */}
+            <main className="flex-1 flex flex-col overflow-hidden">
+              <h1 className="sr-only">Graph Explorer</h1>
 
-        {/* Graph and Panels */}
-        <div className="flex-1 flex overflow-hidden relative">
-          {/* Graph Visualization */}
-          <div className="flex-1 relative">
-            {graphError && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
-                <ErrorMessage
-                  message={(graphError as Error | null)?.message ?? "Failed to load graph"}
-                  onRetry={handleRetry}
-                  variant="card"
-                />
+              {/* Graph and Panels */}
+              <div className="flex-1 flex overflow-hidden relative">
+                {/* Graph Visualization */}
+                <div className="flex-1 relative">
+                  {graphError && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
+                      <ErrorMessage
+                        message={
+                          (graphError as Error | null)?.message ??
+                          "Failed to load graph"
+                        }
+                        onRetry={handleRetry}
+                        variant="card"
+                      />
+                    </div>
+                  )}
+
+                  <GraphWrapper
+                    elements={elements}
+                    loading={isGraphLoading}
+                    error={graphError}
+                    selectedNodeId={selection.selectedNodeId}
+                    selectedEdgeId={selection.selectedEdgeId}
+                    highlightedNodeIds={highlightedNodeIds}
+                    centerNodeId={effectiveCenterNode}
+                    panToNodeId={panToNodeId}
+                    onPanToNodeComplete={() => setPanToNodeId(null)}
+                    onNodeClick={handleNodeClick}
+                    onEdgeClick={handleEdgeClick}
+                  />
+                </div>
+
+                {/* Wiki Panel (draggable container) */}
+                {panel.rightPanelMode === "wiki" && (
+                  <WikiPanelContainer
+                    node={selectedNode}
+                    edge={selectedEdge}
+                    edgeSourceNode={null} // TODO: Implement
+                    edgeTargetNode={null} // TODO: Implement
+                    nodeRelationships={nodeRelationships}
+                    enabled={panel.wikiEnabled}
+                    mode={panel.wikiMode}
+                    minimized={panel.wikiMinimized}
+                    onMinimizedChange={(minimized) =>
+                      dispatchPanel({
+                        type: PanelActionType.SET_WIKI_MINIMIZED,
+                        minimized,
+                      })
+                    }
+                    breadcrumbs={wikiNav.breadcrumbs}
+                    canGoBack={wikiNav.canGoBack}
+                    canGoForward={wikiNav.canGoForward}
+                    onClose={() => {
+                      dispatchSelection({
+                        type: SelectionActionType.CLEAR_SELECTION,
+                      });
+                      dispatchPanel({
+                        type: PanelActionType.SET_PANEL_MODE,
+                        mode: "none",
+                      });
+                    }}
+                    onToggleMode={() =>
+                      dispatchPanel({
+                        type: PanelActionType.SET_WIKI_MODE,
+                        mode: panel.wikiMode === "sidebar" ? "full" : "sidebar",
+                      })
+                    }
+                    onBack={wikiNav.back}
+                    onForward={wikiNav.forward}
+                    onNodeSelect={handleNodeClick}
+                    onSearchAroundNode={wrappedSearchAround}
+                    getRelatedNodeTitle={getRelatedNodeTitle}
+                  />
+                )}
               </div>
+            </main>
+
+            {/* Chat Panel */}
+            {!embedded && (
+              <>
+                <ChatPanel
+                  agentId={agentSelection.selectedAgentId ?? undefined}
+                  agentName={agentSelection.selectedAgent?.name}
+                  messages={chatMessages}
+                  isSending={chatMutation.isPending}
+                  mode={panel.chatOpen ? "chat" : "none"}
+                  error={chatMutation.error?.message}
+                  onSendMessage={handleSendChatMessage}
+                  onModeChange={(mode) =>
+                    dispatchPanel({
+                      type: PanelActionType.SET_CHAT_OPEN,
+                      open: mode === "chat",
+                    })
+                  }
+                  onClearError={() => chatMutation.reset()}
+                />
+
+                <FloatingChatButton
+                  mode={panel.chatOpen ? "chat" : "none"}
+                  onToggle={handleToggleChatPanel}
+                />
+              </>
             )}
 
-            <GraphWrapper
-              elements={elements}
-              loading={isGraphLoading}
-              error={graphError}
-              selectedNodeId={selection.selectedNodeId}
-              selectedEdgeId={selection.selectedEdgeId}
-              highlightedNodeIds={highlightedNodeIds}
-              centerNodeId={effectiveCenterNode}
-              panToNodeId={panToNodeId}
-              onPanToNodeComplete={() => setPanToNodeId(null)}
-              onNodeClick={handleNodeClick}
-              onEdgeClick={handleEdgeClick}
+            {/* Context Menu */}
+            <NodeContextMenu
+              visible={contextMenu.visible}
+              position={contextMenu.position}
+              nodeData={contextMenu.nodeData ?? { id: "" }}
+              isWalletConnected={isWalletConnected}
+              onExpand={handleExpandNode}
+              onDelete={handleDeleteNode}
+              onCreateDataRoom={
+                onCreateDataRoom ? handleCreateDataRoom : undefined
+              }
+              onClose={() =>
+                setContextMenu((prev) => ({ ...prev, visible: false }))
+              }
             />
           </div>
-
-          {/* Wiki Panel (draggable container) */}
-          {panel.rightPanelMode === "wiki" && (
-            <WikiPanelContainer
-              node={selectedNode}
-              edge={selectedEdge}
-              edgeSourceNode={null} // TODO: Implement
-              edgeTargetNode={null} // TODO: Implement
-              nodeRelationships={nodeRelationships}
-              enabled={panel.wikiEnabled}
-              mode={panel.wikiMode}
-              minimized={panel.wikiMinimized}
-              onMinimizedChange={(minimized) =>
-                dispatchPanel({ type: PanelActionType.SET_WIKI_MINIMIZED, minimized })
-              }
-              breadcrumbs={wikiNav.breadcrumbs}
-              canGoBack={wikiNav.canGoBack}
-              canGoForward={wikiNav.canGoForward}
-              onClose={() => {
-                dispatchSelection({ type: SelectionActionType.CLEAR_SELECTION });
-                dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "none" });
-              }}
-              onToggleMode={() =>
-                dispatchPanel({
-                  type: PanelActionType.SET_WIKI_MODE,
-                  mode: panel.wikiMode === "sidebar" ? "full" : "sidebar",
-                })
-              }
-              onBack={wikiNav.back}
-              onForward={wikiNav.forward}
-              onNodeSelect={handleNodeClick}
-              onSearchAroundNode={wrappedSearchAround}
-              getRelatedNodeTitle={getRelatedNodeTitle}
-            />
-          )}
-        </div>
-      </main>
-
-      {/* Chat Panel */}
-      {!embedded && (
-        <>
-          <ChatPanel
-            agentId={agentSelection.selectedAgentId ?? undefined}
-            agentName={agentSelection.selectedAgent?.name}
-            messages={chatMessages}
-            isSending={chatMutation.isPending}
-            mode={panel.chatOpen ? "chat" : "none"}
-            error={chatMutation.error?.message}
-            onSendMessage={handleSendChatMessage}
-            onModeChange={(mode) =>
-              dispatchPanel({ type: PanelActionType.SET_CHAT_OPEN, open: mode === "chat" })
-            }
-            onClearError={() => chatMutation.reset()}
-          />
-
-          <FloatingChatButton
-            mode={panel.chatOpen ? "chat" : "none"}
-            onToggle={handleToggleChatPanel}
-          />
-        </>
-      )}
-
-      {/* Context Menu */}
-      <NodeContextMenu
-        visible={contextMenu.visible}
-        position={contextMenu.position}
-        nodeData={contextMenu.nodeData ?? { id: "" }}
-        isWalletConnected={isWalletConnected}
-        onExpand={handleExpandNode}
-        onDelete={handleDeleteNode}
-        onCreateDataRoom={onCreateDataRoom ? handleCreateDataRoom : undefined}
-        onClose={() => setContextMenu((prev) => ({ ...prev, visible: false }))}
-      />
-    </div>
         )}
       />
     </GraphSearchHistoryProvider>

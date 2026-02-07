@@ -1,15 +1,17 @@
 "use client";
 
 import {
+  type ReactNode,
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
+
 import { useRouter } from "next/navigation";
+
 import { getSubdomainLabel } from "@/lib/utils/subdomain";
 
 export interface SubdomainConfig {
@@ -29,7 +31,8 @@ interface SubdomainBonfireContextValue {
   error: string | null;
 }
 
-const SubdomainBonfireContext = createContext<SubdomainBonfireContextValue | null>(null);
+const SubdomainBonfireContext =
+  createContext<SubdomainBonfireContextValue | null>(null);
 
 interface SubdomainBonfireProviderProps {
   children: ReactNode;
@@ -45,44 +48,59 @@ export function SubdomainBonfireProvider({
   hostname,
 }: SubdomainBonfireProviderProps) {
   const router = useRouter();
-  const [config, setConfig] = useState<SubdomainConfig | null>(initialConfig ?? null);
+  const [config, setConfig] = useState<SubdomainConfig | null>(
+    initialConfig ?? null
+  );
   const [isLoading, setIsLoading] = useState(!initialConfig && !!hostname);
   const [error, setError] = useState<string | null>(null);
 
-  const resolvedHostname = hostname ?? (typeof window !== "undefined" ? window.location.hostname : null);
+  const resolvedHostname =
+    hostname ??
+    (typeof window !== "undefined" ? window.location.hostname : null);
   const subdomainLabel = useMemo(
     () => (resolvedHostname ? getSubdomainLabel(resolvedHostname) : null),
     [resolvedHostname]
   );
 
-  const resolveSubdomain = useCallback(async (label: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/bonfires/resolve-subdomain/${encodeURIComponent(label)}`, {
-        method: "GET",
-      });
-      if (!res.ok) {
-        if (res.status === 404) {
-          router.replace("/subdomain-not-found");
-          return;
+  const resolveSubdomain = useCallback(
+    async (label: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(
+          `/api/bonfires/resolve-subdomain/${encodeURIComponent(label)}`,
+          {
+            method: "GET",
+          }
+        );
+        if (!res.ok) {
+          if (res.status === 404) {
+            router.replace("/subdomain-not-found");
+            return;
+          }
+          throw new Error(res.statusText || "Failed to resolve subdomain");
         }
-        throw new Error(res.statusText || "Failed to resolve subdomain");
+        const data = (await res.json()) as {
+          bonfire_id: string;
+          agent_id: string | null;
+          is_public: boolean;
+        };
+        setConfig({
+          bonfireId: data.bonfire_id,
+          agentId: data.agent_id ?? null,
+          isPublic: data.is_public,
+        });
+      } catch (e) {
+        const msg =
+          e instanceof Error ? e.message : "Failed to resolve subdomain";
+        setError(msg);
+        router.replace("/subdomain-not-found");
+      } finally {
+        setIsLoading(false);
       }
-      const data = (await res.json()) as { bonfire_id: string; agent_id: string | null; is_public: boolean };
-      setConfig({
-        bonfireId: data.bonfire_id,
-        agentId: data.agent_id ?? null,
-        isPublic: data.is_public,
-      });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to resolve subdomain";
-      setError(msg);
-      router.replace("/subdomain-not-found");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   useEffect(() => {
     if (initialConfig) {

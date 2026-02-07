@@ -4,12 +4,23 @@
  * React Query hook for fetching documents with filtering by bonfire.
  * Supports pagination, status filtering, and label filtering.
  */
-
 "use client";
 
+import type {
+  DocumentChunk,
+  DocumentInfo,
+  LabeledChunksResponse,
+} from "@/types";
 import { useQuery } from "@tanstack/react-query";
+
 import { apiClient } from "@/lib/api/client";
-import type { DocumentInfo, DocumentChunk, LabeledChunksResponse } from "@/types";
+
+/**
+ * useDocumentsQuery Hook
+ *
+ * React Query hook for fetching documents with filtering by bonfire.
+ * Supports pagination, status filtering, and label filtering.
+ */
 
 type DocumentStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -88,7 +99,9 @@ export function useDocumentsQuery(params: UseDocumentsQueryParams) {
     queryKey: documentsQueryKey(filterParams),
     queryFn: () => {
       const queryString = buildQueryString(filterParams);
-      return apiClient.get<DocumentsListResponse>(`/api/documents${queryString}`);
+      return apiClient.get<DocumentsListResponse>(
+        `/api/documents${queryString}`
+      );
     },
     enabled: enabled && !!filterParams.bonfireId,
     staleTime: 2 * 60 * 1000, // 2 minutes

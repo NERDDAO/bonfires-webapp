@@ -8,9 +8,9 @@ import { usePathname } from "next/navigation";
 
 import { navigationItems } from "@/content";
 
-import { NavbarButton } from "./navbar-button";
-import Drawer from "./drawer";
 import ConnectWallet from "./connect-wallet";
+import Drawer from "./drawer";
+import { NavbarButton } from "./navbar-button";
 import Signin from "./signin";
 
 export interface NavigationItem {
@@ -24,11 +24,15 @@ export function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeSection = useMemo((): NavigationItem => {
     const segment = pathname.split("/")[1];
-    if (!segment) return navigationItems[0] ?? { label: "Home", dropdownItems: [] };
+    if (!segment)
+      return navigationItems[0] ?? { label: "Home", dropdownItems: [] };
     const matched = navigationItems.find(
-      (item) => item.href?.startsWith("/") && item.href.split("/")[1] === segment
+      (item) =>
+        item.href?.startsWith("/") && item.href.split("/")[1] === segment
     );
-    return matched ?? navigationItems[0] ?? { label: "Home", dropdownItems: [] };
+    return (
+      matched ?? navigationItems[0] ?? { label: "Home", dropdownItems: [] }
+    );
   }, [pathname]);
 
   const closeDrawer = () => setDrawerOpen(false);
@@ -76,10 +80,7 @@ export function Navbar() {
         </button>
       </div>
 
-      <Drawer
-        drawerOpen={drawerOpen}
-        closeDrawer={closeDrawer}
-      />
+      <Drawer drawerOpen={drawerOpen} closeDrawer={closeDrawer} />
 
       {/* Auth and Wallet buttons */}
       <div className="navbar-end items-center gap-2 hidden lg:flex">

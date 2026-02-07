@@ -6,10 +6,11 @@
  * Multi-step wizard for creating new data rooms.
  * Steps: 1) Select Bonfire, 2) Description & Settings, 3) Center Node Selection
  */
-
 import { useCallback, useEffect, useState } from "react";
-import { useAgentSelection } from "@/hooks/web3";
+
 import type { BonfireInfo } from "@/types";
+
+import { useAgentSelection } from "@/hooks/web3";
 
 interface DataRoomConfig {
   bonfireId: string;
@@ -143,8 +144,7 @@ export function DataRoomWizard({
 
       const data = await response.json();
 
-      const entityCandidates =
-        data.entities ?? data.nodes ?? [];
+      const entityCandidates = data.entities ?? data.nodes ?? [];
 
       const entities: PreviewEntity[] =
         entityCandidates
@@ -388,7 +388,9 @@ export function DataRoomWizard({
               </label>
               <textarea
                 className={`textarea textarea-bordered h-24 ${
-                  description.length > 0 && !isStep2Valid ? "textarea-error" : ""
+                  description.length > 0 && !isStep2Valid
+                    ? "textarea-error"
+                    : ""
                 }`}
                 placeholder="Describe the data room purpose and scope..."
                 value={description}
@@ -402,7 +404,9 @@ export function DataRoomWizard({
                 <span className="label-text font-semibold">
                   System Prompt (optional)
                 </span>
-                <span className="label-text-alt">{systemPrompt.length}/1000</span>
+                <span className="label-text-alt">
+                  {systemPrompt.length}/1000
+                </span>
               </label>
               <textarea
                 className={`textarea textarea-bordered h-32 ${!isSystemPromptValid ? "textarea-error" : ""}`}
@@ -418,7 +422,9 @@ export function DataRoomWizard({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-semibold">Price (USD) *</span>
+                  <span className="label-text font-semibold">
+                    Price (USD) *
+                  </span>
                 </label>
                 <input
                   type="number"
@@ -434,7 +440,9 @@ export function DataRoomWizard({
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-semibold">Query Limit *</span>
+                  <span className="label-text font-semibold">
+                    Query Limit *
+                  </span>
                 </label>
                 <input
                   type="number"
@@ -615,7 +623,9 @@ export function DataRoomWizard({
                             <span className="badge badge-primary badge-sm mb-1">
                               {entity.entity_type}
                             </span>
-                            <p className="font-semibold text-sm">{entity.name}</p>
+                            <p className="font-semibold text-sm">
+                              {entity.name}
+                            </p>
                             {entity.summary && (
                               <p className="text-xs opacity-70 line-clamp-2">
                                 {entity.summary}

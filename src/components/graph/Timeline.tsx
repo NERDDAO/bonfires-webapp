@@ -2,12 +2,18 @@
  * Timeline Component
  * Displays episode history in a horizontal timeline
  */
-
 "use client";
 
 import React, { useMemo } from "react";
-import { cn } from "@/lib/cn";
+
 import { SkeletonLoader } from "@/components/common";
+
+import { cn } from "@/lib/cn";
+
+/**
+ * Timeline Component
+ * Displays episode history in a horizontal timeline
+ */
 
 export interface EpisodeTimelineItem {
   uuid: string;
@@ -89,7 +95,12 @@ export function Timeline({
   // Loading skeleton
   if (loading) {
     return (
-      <div className={cn("bg-base-200 border-b border-base-300 px-4 py-3", className)}>
+      <div
+        className={cn(
+          "bg-base-200 border-b border-base-300 px-4 py-3",
+          className
+        )}
+      >
         <div className="flex items-center justify-between mb-2">
           <SkeletonLoader width={120} height={16} />
           <SkeletonLoader width={100} height={14} />
@@ -121,7 +132,12 @@ export function Timeline({
   // Empty state
   if (episodes.length === 0) {
     return (
-      <div className={cn("bg-base-200 border-b border-base-300 px-4 py-3", className)}>
+      <div
+        className={cn(
+          "bg-base-200 border-b border-base-300 px-4 py-3",
+          className
+        )}
+      >
         <div className="text-sm text-base-content/50 text-center">
           No episodes available
         </div>
@@ -131,7 +147,10 @@ export function Timeline({
 
   return (
     <div
-      className={cn("bg-base-200 border-b border-base-300 px-4 py-3", className)}
+      className={cn(
+        "bg-base-200 border-b border-base-300 px-4 py-3",
+        className
+      )}
       aria-label="Episode timeline"
       role="list"
     >
@@ -182,12 +201,16 @@ export function Timeline({
 
               {/* Content */}
               <span className="flex flex-col items-start min-w-0">
-                <span className="font-medium truncate max-w-[120px]">{label}</span>
+                <span className="font-medium truncate max-w-[120px]">
+                  {label}
+                </span>
                 {timestamp && (
                   <span
                     className={cn(
                       "text-xs",
-                      isSelected ? "text-primary-content/80" : "text-base-content/60"
+                      isSelected
+                        ? "text-primary-content/80"
+                        : "text-base-content/60"
                     )}
                   >
                     {timestamp}

@@ -4,12 +4,19 @@
  * Displays recent payment transactions for the connected wallet.
  * Shows transaction type, amount, status, and link to transaction.
  */
-
 "use client";
 
-import { DashboardSection } from "./DashboardSection";
 import type { DashboardSectionState } from "@/types/dashboard";
 import type { PaymentTransaction, PaymentType } from "@/types/web3";
+
+import { DashboardSection } from "./DashboardSection";
+
+/**
+ * PaymentHistorySection Component
+ *
+ * Displays recent payment transactions for the connected wallet.
+ * Shows transaction type, amount, status, and link to transaction.
+ */
 
 interface PaymentHistorySectionProps {
   data: DashboardSectionState<PaymentTransaction[]>;
@@ -43,7 +50,10 @@ function formatDate(dateString: string): string {
 /**
  * Get icon and label for payment type
  */
-function getPaymentTypeInfo(type: PaymentType): { icon: string; label: string } {
+function getPaymentTypeInfo(type: PaymentType): {
+  icon: string;
+  label: string;
+} {
   switch (type) {
     case "chat":
       return { icon: "💬", label: "Chat Message" };

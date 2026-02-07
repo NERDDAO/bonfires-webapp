@@ -1,6 +1,8 @@
 import Image from "next/image";
-import { Button } from "../ui/button";
+
 import { heroCopy, siteCopy } from "@/content";
+
+import { Button } from "../ui/button";
 import { HeroRecentActivity } from "./hero-recent-activity";
 
 interface HeroProps {
@@ -9,7 +11,17 @@ interface HeroProps {
 }
 
 export default function Hero({ staticGraph: staticGraphProp }: HeroProps = {}) {
-  const { logo, logoAlt, title, description, primaryCta, primaryCtaHref, secondaryCta, secondaryCtaMobile, secondaryCtaHref } = heroCopy;
+  const {
+    logo,
+    logoAlt,
+    title,
+    description,
+    primaryCta,
+    primaryCtaHref,
+    secondaryCta,
+    secondaryCtaMobile,
+    secondaryCtaHref,
+  } = heroCopy;
   const staticGraph =
     staticGraphProp ??
     ("staticGraph" in siteCopy ? siteCopy.staticGraph : undefined);
@@ -27,11 +39,23 @@ export default function Hero({ staticGraph: staticGraphProp }: HeroProps = {}) {
         <div className="font-montserrat text-2xl lg:text-5xl font-black max-w-[348px] lg:max-w-none">
           {title}
         </div>
-        <div className="font-laro-soft text-sm lg:text-base max-w-[348px] lg:max-w-none">{description}</div>
+        <div className="font-laro-soft text-sm lg:text-base max-w-[348px] lg:max-w-none">
+          {description}
+        </div>
 
         <div className="mt-3 lg:mt-3 flex gap-3 lg:gap-6 flex-row flex-wrap lg:max-w-none">
-          <Button variant="primary" className="z-10 w-auto" href={primaryCtaHref}>{primaryCta}</Button>
-          <Button variant="outline" className="z-10 w-auto" href={secondaryCtaHref}>
+          <Button
+            variant="primary"
+            className="z-10 w-auto"
+            href={primaryCtaHref}
+          >
+            {primaryCta}
+          </Button>
+          <Button
+            variant="outline"
+            className="z-10 w-auto"
+            href={secondaryCtaHref}
+          >
             <span className="block lg:hidden">{secondaryCtaMobile}</span>
             <span className="hidden lg:inline">{secondaryCta}</span>
           </Button>
@@ -40,7 +64,10 @@ export default function Hero({ staticGraph: staticGraphProp }: HeroProps = {}) {
 
       {staticGraph && (
         <div className="mt-8 shrink-0 lg:w-[468px] lg:max-h-[calc(100dvh-8rem)] flex flex-col z-10">
-          <HeroRecentActivity staticGraph={staticGraph} className="lg:absolute" />
+          <HeroRecentActivity
+            staticGraph={staticGraph}
+            className="lg:absolute"
+          />
         </div>
       )}
     </div>

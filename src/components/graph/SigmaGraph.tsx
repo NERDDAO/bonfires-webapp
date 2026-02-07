@@ -2,26 +2,38 @@
  * SigmaGraph Component
  * Low-level sigma.js graph rendering with interactivity
  */
-
 "use client";
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
 import {
-  SigmaContainer,
-  useRegisterEvents,
-  useSigma,
-  useSetSettings,
   ControlsContainer,
-  ZoomControl,
   FullScreenControl,
+  SigmaContainer,
+  ZoomControl,
+  useRegisterEvents,
+  useSetSettings,
+  useSigma,
 } from "@react-sigma/core";
 import "@react-sigma/core/lib/style.css";
-import { NodeCircleProgram } from "sigma/rendering";
-import forceLayout from "graphology-layout-force";
 import type { MultiDirectedGraph } from "graphology";
+import forceLayout from "graphology-layout-force";
+import { NodeCircleProgram } from "sigma/rendering";
 
-import { GraphThemeColors, NODE_COLOR_DEFAULTS, SigmaSettings } from "@/lib/utils/graph-theme";
-import type { SigmaNodeAttributes, SigmaEdgeAttributes } from "@/lib/utils/sigma-adapter";
+import {
+  GraphThemeColors,
+  NODE_COLOR_DEFAULTS,
+  SigmaSettings,
+} from "@/lib/utils/graph-theme";
+import type {
+  SigmaEdgeAttributes,
+  SigmaNodeAttributes,
+} from "@/lib/utils/sigma-adapter";
+
+/**
+ * SigmaGraph Component
+ * Low-level sigma.js graph rendering with interactivity
+ */
 
 type WebGLSupportStatus = "unknown" | "supported" | "unsupported";
 
@@ -146,8 +158,14 @@ function SigmaEvents({
     const graph = sigma.getGraph();
 
     // Dynamic label sizes based on zoom
-    const dynamicNodeLabelSize = Math.max(4, Math.min(40, 11 / Math.sqrt(cameraRatio)));
-    const dynamicEdgeLabelSize = Math.max(4, Math.min(36, 10 / Math.sqrt(cameraRatio)));
+    const dynamicNodeLabelSize = Math.max(
+      4,
+      Math.min(40, 11 / Math.sqrt(cameraRatio))
+    );
+    const dynamicEdgeLabelSize = Math.max(
+      4,
+      Math.min(36, 10 / Math.sqrt(cameraRatio))
+    );
 
     setSettings({
       labelSize: dynamicNodeLabelSize,
@@ -160,7 +178,8 @@ function SigmaEvents({
           try {
             const source = graph.source(edge);
             const target = graph.target(edge);
-            isConnectedToActiveNode = source === activeNode || target === activeNode;
+            isConnectedToActiveNode =
+              source === activeNode || target === activeNode;
           } catch {
             // Edge might not exist
           }
@@ -171,7 +190,9 @@ function SigmaEvents({
         return {
           ...data,
           label: isActive ? data["label"] : undefined,
-          color: isActive ? EDGE_HIGHLIGHT_COLOR : (data["color"] || EDGE_DEFAULT_COLOR),
+          color: isActive
+            ? EDGE_HIGHLIGHT_COLOR
+            : data["color"] || EDGE_DEFAULT_COLOR,
           size: isActive ? 4 : 2,
           zIndex: isActive ? 1 : 0,
         };
@@ -187,9 +208,11 @@ function SigmaEvents({
 
       graph.forEachNode((node: string) => {
         const normalizedNodeId = node.replace(/^n:/, "");
-        const isSelected = selectedNodeId === node || selectedNodeId === normalizedNodeId;
+        const isSelected =
+          selectedNodeId === node || selectedNodeId === normalizedNodeId;
         const isHovered = hoveredNode === node;
-        const isExternalHighlight = highlightedSet.current.has(normalizedNodeId);
+        const isExternalHighlight =
+          highlightedSet.current.has(normalizedNodeId);
         const isActive = isSelected || isHovered || isExternalHighlight;
 
         graph.setNodeAttribute(node, "highlighted", isActive);
@@ -201,7 +224,9 @@ function SigmaEvents({
           graph.removeNodeAttribute(node, "labelColor");
         }
 
-        const baseSize = graph.getNodeAttribute(node, "baseSize") ?? graph.getNodeAttribute(node, "size");
+        const baseSize =
+          graph.getNodeAttribute(node, "baseSize") ??
+          graph.getNodeAttribute(node, "size");
         if (!graph.hasNodeAttribute(node, "baseSize")) {
           graph.setNodeAttribute(node, "baseSize", baseSize);
         }
@@ -228,7 +253,10 @@ interface LayoutControllerProps {
   onLayoutComplete?: () => void;
 }
 
-function LayoutController({ runLayout, onLayoutComplete }: LayoutControllerProps) {
+function LayoutController({
+  runLayout,
+  onLayoutComplete,
+}: LayoutControllerProps) {
   const sigma = useSigma();
   const layoutRunRef = useRef(false);
 
@@ -354,7 +382,8 @@ export function SigmaGraph({
   highlightedNodeIds,
 }: SigmaGraphProps) {
   const isDraggingNodeRef = useRef<boolean>(false);
-  const [webglSupport, setWebglSupport] = useState<WebGLSupportStatus>("unknown");
+  const [webglSupport, setWebglSupport] =
+    useState<WebGLSupportStatus>("unknown");
 
   useEffect(() => {
     setWebglSupport(detectWebGLSupport() ? "supported" : "unsupported");
@@ -416,7 +445,10 @@ export function SigmaGraph({
         isDraggingNodeRef={isDraggingNodeRef}
       />
       <NodeDrag isDraggingNodeRef={isDraggingNodeRef} />
-      <LayoutController runLayout={runLayout} onLayoutComplete={onLayoutComplete} />
+      <LayoutController
+        runLayout={runLayout}
+        onLayoutComplete={onLayoutComplete}
+      />
       <ControlsContainer position="top-right">
         <ZoomControl />
         <FullScreenControl />

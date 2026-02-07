@@ -2,17 +2,28 @@
  * WikiPanel Component
  * Displays wiki content for selected nodes (episodes, entities, edges)
  */
-
 "use client";
 
 import React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/cn";
+
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
-import { WikiNodeData, WikiEdgeData, parseEpisodeContent } from "./wiki-panel-utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { cn } from "@/lib/cn";
+
+import { EdgeContent } from "./edge-content";
 import { EntityContent } from "./entity-content";
 import { EpisodeContent } from "./episode-content";
-import { EdgeContent } from "./edge-content";
+import {
+  WikiEdgeData,
+  WikiNodeData,
+  parseEpisodeContent,
+} from "./wiki-panel-utils";
+
+/**
+ * WikiPanel Component
+ * Displays wiki content for selected nodes (episodes, entities, edges)
+ */
 
 export type { WikiNodeData, WikiEdgeData };
 
@@ -102,11 +113,7 @@ export function WikiPanel({
     if (node) {
       if (isEpisode) {
         const episodeContent = parseEpisodeContent(node);
-        return (
-          <EpisodeContent
-            episode={episodeContent}
-          />
-        );
+        return <EpisodeContent episode={episodeContent} />;
       }
       return (
         <EntityContent
@@ -134,7 +141,7 @@ export function WikiPanel({
       return ["episode"];
     }
     return ["entity"];
-  }
+  };
 
   const headerBadges = getHeaderBadges();
 
@@ -161,7 +168,7 @@ export function WikiPanel({
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          
+
           {headerBadges.map((label, idx) => (
             <span
               key={idx}
@@ -200,7 +207,9 @@ export function WikiPanel({
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 min-h-0">{renderContent()}</div>
+      <div className="flex-1 overflow-y-auto p-3 min-h-0">
+        {renderContent()}
+      </div>
       {canSearchAroundNode && (
         <div className="p-3 border-t border-base-300 shrink-0">
           <button

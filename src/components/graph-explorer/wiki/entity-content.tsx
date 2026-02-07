@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import type { WikiNodeData, WikiEdgeData } from "./wiki-panel-utils";
-import { formatAttributeValue, formatLabel } from "./wiki-panel-utils";
+
 import Attributes from "./attributes";
+import type { WikiEdgeData, WikiNodeData } from "./wiki-panel-utils";
+import { formatAttributeValue, formatLabel } from "./wiki-panel-utils";
 
 export interface EntityContentProps {
   node: WikiNodeData;

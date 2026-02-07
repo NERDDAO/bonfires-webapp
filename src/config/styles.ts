@@ -1,6 +1,6 @@
-import localFont from "next/font/local";
-import { DM_Sans, Montserrat } from "next/font/google";
 import { Viewport } from "next";
+import { DM_Sans, Montserrat } from "next/font/google";
+import localFont from "next/font/local";
 
 /* Custom Fonts */
 

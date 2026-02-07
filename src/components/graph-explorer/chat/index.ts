@@ -10,7 +10,4 @@ export { ChatMessageList } from "./chat-message-list";
 export { ChatErrorBanner } from "./chat-error-banner";
 export { ChatInput } from "./chat-input";
 export { ChatPanelCollapsed } from "./chat-panel-collapsed";
-export type {
-  ChatMessage,
-  ChatPanelProps,
-} from "./types";
+export type { ChatMessage, ChatPanelProps } from "./types";

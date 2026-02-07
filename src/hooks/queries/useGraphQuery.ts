@@ -4,14 +4,28 @@
  * React Query hook for graph queries with async polling support.
  * Long-running graph operations use the job system to avoid serverless timeouts.
  */
-
 "use client";
 
+import { useCallback, useState } from "react";
+
+import type {
+  DelveRequest,
+  DelveResponse,
+  JobInitiateResponse,
+  VectorSearchResponse,
+} from "@/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useCallback } from "react";
+
 import { apiClient } from "@/lib/api/client";
-import type { GraphQueryParams, GraphData } from "@/types/graph";
-import type { DelveRequest, DelveResponse, JobInitiateResponse, VectorSearchResponse } from "@/types";
+
+import type { GraphData, GraphQueryParams } from "@/types/graph";
+
+/**
+ * useGraphQuery Hook
+ *
+ * React Query hook for graph queries with async polling support.
+ * Long-running graph operations use the job system to avoid serverless timeouts.
+ */
 
 interface UseGraphQueryParams extends GraphQueryParams {
   enabled?: boolean;
@@ -145,9 +159,15 @@ export function useGraphQuery({
         timestamp: new Date().toISOString(),
       });
       if (!graphData) {
-        if (typeof response === "object" && response !== null && "error" in response) {
+        if (
+          typeof response === "object" &&
+          response !== null &&
+          "error" in response
+        ) {
           const errorMessage =
-            typeof response.error === "string" ? response.error : "Graph query failed";
+            typeof response.error === "string"
+              ? response.error
+              : "Graph query failed";
           throw new Error(errorMessage);
         }
         throw new Error("Graph query failed");

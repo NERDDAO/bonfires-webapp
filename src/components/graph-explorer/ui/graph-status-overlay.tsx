@@ -11,14 +11,13 @@ export default function GraphStatusOverlay({
   isError?: boolean;
   errorMessage?: string;
 }) {
-
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/50">
-      {isLoading && <LoadingSpinner size="lg" text={message ?? "Loading graph..."} />}
+      {isLoading && (
+        <LoadingSpinner size="lg" text={message ?? "Loading graph..."} />
+      )}
       {isError && (
-        <div className="text-center text-base-content/60">
-          {errorMessage}
-        </div>
+        <div className="text-center text-base-content/60">{errorMessage}</div>
       )}
     </div>
   );

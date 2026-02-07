@@ -1,6 +1,9 @@
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 
-export function getNodeCount(elements: GraphElement[]): { nodeCount: number; edgeCount: number } {
+export function getNodeCount(elements: GraphElement[]): {
+  nodeCount: number;
+  edgeCount: number;
+} {
   const nodes = elements.filter(
     (el) =>
       el.data &&

@@ -6,5 +6,11 @@
 
 export { DocumentUpload } from "./DocumentUpload";
 export { DocumentsTable, DocumentsTableSkeleton } from "./DocumentsTable";
-export { DocumentSummaryCards, DocumentSummaryCardsSkeleton } from "./DocumentSummaryCards";
-export { TaxonomyLabelsPanel, TaxonomyLabelsPanelSkeleton } from "./TaxonomyLabelsPanel";
+export {
+  DocumentSummaryCards,
+  DocumentSummaryCardsSkeleton,
+} from "./DocumentSummaryCards";
+export {
+  TaxonomyLabelsPanel,
+  TaxonomyLabelsPanelSkeleton,
+} from "./TaxonomyLabelsPanel";

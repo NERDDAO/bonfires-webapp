@@ -4,13 +4,21 @@
  * Generic hook for polling async job status.
  * Used for long-running operations like graph queries and hyperblog generation.
  */
-
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
-import { apiClient } from "@/lib/api/client";
+
 import type { JobResponse, JobStatus } from "@/types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { apiClient } from "@/lib/api/client";
+
+/**
+ * useJobStatusPolling Hook
+ *
+ * Generic hook for polling async job status.
+ * Used for long-running operations like graph queries and hyperblog generation.
+ */
 
 interface UseJobStatusPollingParams {
   /** The job ID to poll */
@@ -70,8 +78,13 @@ export function useJobStatusPolling({
 
   const query = useQuery({
     queryKey: jobStatusQueryKey(jobId),
-    queryFn: () => apiClient.get<JobResponse>(`/api/jobs/${jobId}`, { cache: false }),
-    enabled: enabled && !!jobId && state.status !== "complete" && state.status !== "failed",
+    queryFn: () =>
+      apiClient.get<JobResponse>(`/api/jobs/${jobId}`, { cache: false }),
+    enabled:
+      enabled &&
+      !!jobId &&
+      state.status !== "complete" &&
+      state.status !== "failed",
     refetchInterval: (query) => {
       const data = query.state.data;
       // Stop polling if job is complete or failed
@@ -192,7 +205,9 @@ export function useStartJob() {
 /**
  * Combined hook for starting a job and polling its status
  */
-export function useJobWithPolling(options?: Omit<UseJobStatusPollingParams, "jobId">) {
+export function useJobWithPolling(
+  options?: Omit<UseJobStatusPollingParams, "jobId">
+) {
   const { jobId, startJob, resetJob } = useStartJob();
 
   const polling = useJobStatusPolling({

@@ -8,11 +8,12 @@
  * can be used with AgentSelector and similar UIs. Does not modify the
  * original useAgentSelection hook (used elsewhere).
  */
-
 import { useCallback, useMemo, useState } from "react";
+
+import type { AgentInfo, AgentSelectionState, BonfireInfo } from "@/types";
+
 import { useAgentsQuery } from "./useAgentsQuery";
 import { useBonfiresQuery } from "./useBonfiresQuery";
-import type { AgentInfo, AgentSelectionState, BonfireInfo } from "@/types";
 
 interface UseAgentSelectionQueryConfig {
   initialBonfireId?: string | null;
@@ -30,7 +31,9 @@ function normalizeAgent(a: AgentInfo, bonfireId: string): AgentInfo {
   };
 }
 
-export function useAgentSelectionQuery(selectionConfig?: UseAgentSelectionQueryConfig) {
+export function useAgentSelectionQuery(
+  selectionConfig?: UseAgentSelectionQueryConfig
+) {
   const [selectedBonfireId, setSelectedBonfireId] = useState<string | null>(
     selectionConfig?.initialBonfireId ?? null
   );

@@ -64,8 +64,7 @@ export function NavbarButton({
           />
         </button>
       )}
-    > 
-
+    >
       {dropdownItems && (
         <ul
           id="navbar-dropdown-menu"

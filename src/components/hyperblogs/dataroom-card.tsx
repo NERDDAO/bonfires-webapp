@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
+
 import { DataRoomInfo } from "@/types";
 
 import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/utils";
-import { useState } from "react";
-import HyperblogFeed from "./hyperblog-feed";
+
 import { Button } from "../ui/button";
 import { CreateBlogModal } from "./create-blog";
+import HyperblogFeed from "./hyperblog-feed";
 
 function DataroomCardSkeleton({
   className,
@@ -44,7 +46,10 @@ function DataroomCardSkeleton({
       {/* Stats row: matches icon height 18px + alignment */}
       <div className="mt-4 flex gap-4 items-center">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-4 lg:h-[18px] w-12 bg-[#FFFFFF10] rounded" />
+          <div
+            key={i}
+            className="h-4 lg:h-[18px] w-12 bg-[#FFFFFF10] rounded"
+          />
         ))}
       </div>
     </div>
@@ -89,12 +94,13 @@ export default function DataroomCard({
         <span className=" text-center lg:text-left font-bold text-xs rounded-full px-3 py-1 bg-dark-s-700 text-white whitespace-nowrap">
           {formattedAuthor}
         </span>
-        {[
-          { value: cost, className: "" },
-        ].map((item) => (
+        {[{ value: cost, className: "" }].map((item) => (
           <span
             key={item.value}
-            className={cn("text-xs text-center lg:text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap", item.className)}
+            className={cn(
+              "text-xs text-center lg:text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap",
+              item.className
+            )}
           >
             {item.value}
           </span>

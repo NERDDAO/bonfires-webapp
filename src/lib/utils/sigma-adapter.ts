@@ -2,7 +2,6 @@
  * Sigma.js Graph Adapter
  * Converts graph data to graphology format for sigma.js rendering
  */
-
 import { MultiDirectedGraph } from "graphology";
 import type { Attributes } from "graphology-types";
 
@@ -70,7 +69,10 @@ export function adaptToSigma(
   nodeColors?: NodeTypeColors
 ): MultiDirectedGraph<SigmaNodeAttributes, SigmaEdgeAttributes> {
   // Create a multi-directed graph that allows multiple edges and self-loops
-  const graph = new MultiDirectedGraph<SigmaNodeAttributes, SigmaEdgeAttributes>();
+  const graph = new MultiDirectedGraph<
+    SigmaNodeAttributes,
+    SigmaEdgeAttributes
+  >();
 
   // Use provided colors or fall back to defaults
   const colors = {
@@ -112,25 +114,28 @@ export function adaptToSigma(
     usedNodeIds.set(baseId, seen + 1);
 
     // Get the label value for display (truncated to 30 chars for sigma)
-    const rawLabel = ((data.labelFull ?? data.label ?? data.labelShort ?? "") as string);
+    const rawLabel = (data.labelFull ??
+      data.label ??
+      data.labelShort ??
+      "") as string;
     const labelValue = truncate(rawLabel, 30);
 
     // Check if node has "User" in its labels array (case-insensitive)
     const labelsArray = data.labels as string[] | undefined;
-    const hasUserLabel = labelsArray?.some(
-      (lbl) => typeof lbl === "string" && lbl.toLowerCase() === "user"
-    ) ?? false;
+    const hasUserLabel =
+      labelsArray?.some(
+        (lbl) => typeof lbl === "string" && lbl.toLowerCase() === "user"
+      ) ?? false;
 
     // Set color based on labels array or node type
     const nodeType = data.node_type as string | undefined;
-    const fillColor =
-      hasUserLabel
-        ? colors.user
-        : nodeType === "episode"
-          ? colors.episode
-          : nodeType === "entity"
-            ? colors.entity
-            : colors.unknown;
+    const fillColor = hasUserLabel
+      ? colors.user
+      : nodeType === "episode"
+        ? colors.episode
+        : nodeType === "entity"
+          ? colors.entity
+          : colors.unknown;
 
     // Random initial positions (will be recalculated by force-directed layout)
     const x = Math.random() * 200 - 100;
@@ -160,7 +165,9 @@ export function adaptToSigma(
     // Only add edge if both nodes exist
     if (graph.hasNode(sourceId) && graph.hasNode(targetId)) {
       graph.addEdgeWithKey(uniqueId, sourceId, targetId, {
-        label: (data.label ?? data.relationship ?? undefined) as string | undefined,
+        label: (data.label ?? data.relationship ?? undefined) as
+          | string
+          | undefined,
         size: 1,
         color: "#555",
       });
@@ -184,7 +191,8 @@ export function adaptToSigma(
       const degree = graph.degree(node);
       // Use logarithmic scaling for better visual distribution
       const normalizedDegree = Math.log(degree + 1) / Math.log(maxDegree + 1);
-      const size = MIN_NODE_SIZE + normalizedDegree * (MAX_NODE_SIZE - MIN_NODE_SIZE);
+      const size =
+        MIN_NODE_SIZE + normalizedDegree * (MAX_NODE_SIZE - MIN_NODE_SIZE);
       graph.setNodeAttribute(node, "size", size);
     });
   }

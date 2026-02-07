@@ -2,17 +2,23 @@
  * Graph Explorer Page
  * Main graph visualization and exploration interface
  */
-
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+
+import dynamicImport from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
+
 import { LoadingSpinner } from "@/components/common";
 import type { NodeData } from "@/components/graph";
-import dynamicImport from "next/dynamic";
 import { Header } from "@/components/shared/Header";
+
+/**
+ * Graph Explorer Page
+ * Main graph visualization and exploration interface
+ */
+
+export const dynamic = "force-dynamic";
 
 const GraphExplorer = dynamicImport(
   () => import("@/components/graph").then((mod) => mod.GraphExplorer),

@@ -1,10 +1,11 @@
 "use client";
 
-import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import { WagmiProvider } from "wagmi";
+import { type ReactNode, useState } from "react";
+
+import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
 import { defineChain } from "viem";
+import { WagmiProvider } from "wagmi";
 
 // Abstract Testnet chain configuration
 const abstractTestnet = defineChain({
@@ -59,10 +60,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={web3QueryClient}>
-        <RainbowKitProvider
-          modalSize="compact"
-          showRecentTransactions={true}
-        >
+        <RainbowKitProvider modalSize="compact" showRecentTransactions={true}>
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>

@@ -7,13 +7,13 @@
  * collection (single source of truth). Used by the frontend to determine
  * where to redirect when a user manually switches org.
  */
-
 import { NextResponse } from "next/server";
+
 import {
-  proxyToBackend,
-  handleCorsOptions,
-  createErrorResponse,
   CORS_HEADERS,
+  createErrorResponse,
+  handleCorsOptions,
+  proxyToBackend,
 } from "@/lib/api/server-utils";
 
 /** Cache TTL in seconds — controls shared (CDN/edge) cache via s-maxage */
@@ -29,10 +29,7 @@ interface RouteParams {
   params: Promise<{ orgId: string }>;
 }
 
-export async function GET(
-  _request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   const { orgId } = await params;
 
   if (!orgId) {

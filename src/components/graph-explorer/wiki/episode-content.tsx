@@ -1,9 +1,14 @@
 "use client";
 
 import React from "react";
-import type { WikiEpisodeContent } from "./wiki-panel-utils";
-import { formatAttributeValue, formatDate, formatLabel } from "./wiki-panel-utils";
+
 import Attributes from "./attributes";
+import type { WikiEpisodeContent } from "./wiki-panel-utils";
+import {
+  formatAttributeValue,
+  formatDate,
+  formatLabel,
+} from "./wiki-panel-utils";
 
 export interface EpisodeContentProps {
   episode: WikiEpisodeContent;
@@ -12,9 +17,7 @@ export interface EpisodeContentProps {
 /**
  * Displays wiki content for an episode node.
  */
-export function EpisodeContent({
-  episode,
-}: EpisodeContentProps) {
+export function EpisodeContent({ episode }: EpisodeContentProps) {
   return (
     <div className="space-y-4">
       {/* Summary */}
@@ -51,10 +54,13 @@ export function EpisodeContent({
           </h3>
           <div className="bg-base-200 rounded-lg divide-y divide-base-300">
             {episode.updates.map((update) => (
-              <div key={update.description} className="px-3 py-2.5 text-sm first:pt-2.5 last:pb-2.5">
+              <div
+                key={update.description}
+                className="px-3 py-2.5 text-sm first:pt-2.5 last:pb-2.5"
+              >
                 <div className="text-base-content/90 wrap-break-word leading-relaxed">
                   {update.description || "—"}
-                </div>  
+                </div>
               </div>
             ))}
           </div>

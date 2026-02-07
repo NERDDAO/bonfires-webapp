@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 
 // Server-side timeout (60s for Vercel Pro compatibility)
 const DEFAULT_TIMEOUT_MS = 60000;
@@ -74,21 +75,31 @@ export const CORS_HEADERS = {
  */
 export async function getAuthHeaders(): Promise<Record<string, string>> {
   try {
-    const { getToken } = await auth();
+    const authResult = await auth();
+    const { getToken, userId, orgId, sessionId } = authResult;
 
-    // Get the Clerk session JWT
+    console.debug(
+      `[Auth Headers] userId=${userId ?? "null"} orgId=${orgId ?? "null"} sessionId=${sessionId ?? "null"}`
+    );
+
+    // Strategy 1: Use getToken() (preferred — generates a fresh JWT)
     const token = await getToken();
-
     if (token) {
-      return {
-        Authorization: `Bearer ${token}`,
-      };
+      return { Authorization: `Bearer ${token}` };
     }
 
+    // Strategy 2: Read Clerk's __session cookie directly.
+    // This cookie IS the Clerk JWT and can be forwarded to the backend.
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("__session");
+    if (sessionCookie?.value) {
+      return { Authorization: `Bearer ${sessionCookie.value}` };
+    }
+
+    console.debug("[Auth Headers] No Clerk token available (getToken=null, no __session cookie)");
     return {};
   } catch (error) {
-    // Auth not available (public route) - return empty headers
-    console.debug("[Auth Headers] No auth context available:", error);
+    console.debug("[Auth Headers] auth() threw:", error);
     return {};
   }
 }
@@ -227,17 +238,15 @@ export async function proxyToBackend<T = unknown>(
   // Get auth headers if requested
   const authHeaders = includeAuth ? await getAuthHeaders() : {};
 
-  console.log(`[API Proxy] ${method} ${url}`, {
-    hasAuth: Object.keys(authHeaders).length > 0,
-  });
+  const hasClerkJwt = !!authHeaders['Authorization'];
+  console.debug(`[API Proxy] ${method} ${url} | clerkJwt=${hasClerkJwt} includeAuth=${includeAuth}`);
 
   try {
     const response = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${"7n4l-rj0mKjywrTnJ3rJCjo1fxLMfTJYy_yLgq_t8-o"}`,
-        // ...authHeaders,
+        ...authHeaders,
         ...headers,
       },
       body: body ? JSON.stringify(body) : undefined,

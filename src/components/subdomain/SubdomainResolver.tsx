@@ -92,10 +92,11 @@ export async function SubdomainResolver({ children }: SubdomainResolverProps) {
           });
           redirect("/subdomain-not-found");
         }
-        const data = (await res.json()) as { bonfire_id: string; agent_id: string | null };
+        const data = (await res.json()) as { bonfire_id: string; agent_id: string | null; is_public: boolean };
         const subdomainConfig: SubdomainConfig = {
           bonfireId: data.bonfire_id,
           agentId: data.agent_id ?? null,
+          isPublic: data.is_public,
         };
         setCached(subdomainLabel, {
           found: true,

@@ -117,3 +117,10 @@ export {
 
 // Auth Hooks
 export { useAuth, default as useAuthDefault } from "./useAuth";
+
+// Subdomain Org Auto-Switch
+export {
+  useAutoOrgSwitch,
+  default as useAutoOrgSwitchDefault,
+  type AccessStatus,
+} from "./useAutoOrgSwitch";

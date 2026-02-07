@@ -222,7 +222,7 @@ class ApiClient {
         method: config.method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${"7n4l-rj0mKjywrTnJ3rJCjo1fxLMfTJYy_yLgq_t8-o"}`,
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_DELVE_API_KEY ?? ""}`,
           ...config.headers,
         },
         body: config.body ? JSON.stringify(config.body) : undefined,

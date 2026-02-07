@@ -15,6 +15,7 @@ import { getSubdomainLabel } from "@/lib/utils/subdomain";
 export interface SubdomainConfig {
   bonfireId: string;
   agentId: string | null;
+  isPublic: boolean;
 }
 
 interface SubdomainBonfireContextValue {
@@ -68,10 +69,11 @@ export function SubdomainBonfireProvider({
         }
         throw new Error(res.statusText || "Failed to resolve subdomain");
       }
-      const data = (await res.json()) as { bonfire_id: string; agent_id: string | null };
+      const data = (await res.json()) as { bonfire_id: string; agent_id: string | null; is_public: boolean };
       setConfig({
         bonfireId: data.bonfire_id,
         agentId: data.agent_id ?? null,
+        isPublic: data.is_public,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to resolve subdomain";

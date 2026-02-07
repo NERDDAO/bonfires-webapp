@@ -9,6 +9,7 @@
 
 import { useCallback, useState } from "react";
 import { useSignTypedData } from "wagmi";
+import type { SignTypedDataParameters } from "viem";
 import { buildPaymentTypedData, encodePaymentHeader, resolveIntermediaryAddress } from "@/lib/payment";
 import type { X402PaymentHeader } from "@/lib/payment";
 import { isE2EWalletEnabled, useWalletAccount } from "@/lib/wallet/e2e";
@@ -107,16 +108,11 @@ export function usePaymentHeader(): UsePaymentHeaderReturn {
         });
 
         const signature = await signTypedDataAsync({
-          domain: typedData.domain as {
-            name?: string;
-            version?: string;
-            chainId?: number;
-            verifyingContract?: `0x${string}`;
-          },
+          domain: typedData.domain,
           types: typedData.types,
           primaryType: typedData.primaryType,
-          message: typedData.message as unknown as Record<string, unknown>,
-        });
+          message: typedData.message,
+        } as unknown as SignTypedDataParameters);
 
         return encodePaymentHeader(
           typedData.message,

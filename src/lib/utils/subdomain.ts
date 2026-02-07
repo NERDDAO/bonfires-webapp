@@ -1,30 +1,40 @@
 /**
  * Subdomain parsing utilities for bonfire-specific subdomains.
  *
- * App roots are configured via NEXT_PUBLIC_APP_ROOTS (comma-separated).
- * Defaults: app.bonfires.ai, staging-app.bonfires.ai
+ * App roots come from NEXT_PUBLIC_APP_ROOTS (comma-separated) plus VERCEL_URL
+ * when on Vercel (for preview URLs like boulder.project-git-branch.vercel.app).
  *
  * Supports:
  * - app roots (no subdomain)
  * - boulder.app.bonfires.ai (bonfire subdomain)
+ * - boulder.{VERCEL_URL} on Vercel preview deployments
  * - localhost / 127.0.0.1 always return null (no subdomain)
  */
 
 import { config } from "@/lib/config";
 
 /**
- * Check if a string is a valid MongoDB ObjectId format (24 hex chars).
+ * Normalize hostname: take first host before comma (x-forwarded-host list),
+ * strip port (handles IPv6 [::1]:3000 and IPv4 localhost:3000).
  */
-export function isObjectIdFormat(str: string): boolean {
-  if (!str || typeof str !== "string") return false;
-  return /^[a-fA-F0-9]{24}$/.test(str.trim());
+function normalizeHostname(raw: string): string {
+  const first = raw.trim().toLowerCase().split(",")[0]?.trim() ?? "";
+  if (!first) return "";
+  // IPv6: [::1]:3000 -> [::1]
+  if (first.startsWith("[")) {
+    const close = first.indexOf("]");
+    if (close >= 0) return first.slice(0, close + 1);
+  }
+  // IPv4/hostname: host:port -> host
+  const colon = first.indexOf(":");
+  return colon >= 0 ? first.slice(0, colon) : first;
 }
 
 /**
  * Get the subdomain label when on a bonfire-specific subdomain.
  *
- * Uses config.subdomain.appRoots (from NEXT_PUBLIC_APP_ROOTS). Returns the first label
- * when hostname is {label}.{appRoot} and is not exactly the app root.
+ * Uses config.subdomain.appRoots (from NEXT_PUBLIC_APP_ROOTS). Returns the label
+ * immediately before the app root (e.g. boulder.app.bonfires.ai -> "boulder").
  * Returns null for app roots, localhost, 127.0.0.1, or other hosts.
  *
  * @param hostname - The hostname from the request (e.g., from headers or window.location)
@@ -32,15 +42,13 @@ export function isObjectIdFormat(str: string): boolean {
  */
 export function getSubdomainLabel(hostname: string): string | null {
   if (!hostname || typeof hostname !== "string") return null;
-  const h = hostname.trim().toLowerCase();
+  const hostWithoutPort = normalizeHostname(hostname);
 
-  // Strip port if present (e.g. localhost:3000)
-  const hostWithoutPort = h.split(":")[0] ?? h;
-
-  // localhost, 127.0.0.1, or bare hostname - no subdomain
+  // localhost, 127.0.0.1, [::1], or bare hostname - no subdomain
   if (
     hostWithoutPort === "localhost" ||
     hostWithoutPort === "127.0.0.1" ||
+    hostWithoutPort === "[::1]" ||
     !hostWithoutPort.includes(".")
   ) {
     return null;

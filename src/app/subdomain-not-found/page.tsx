@@ -8,10 +8,10 @@ export default function SubdomainNotFoundPage() {
         This bonfire is not available or the subdomain could not be resolved.
       </p>
       <Link
-        href="https://app.bonfires.ai"
+        href="/"
         className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
       >
-        Go to app.bonfires.ai
+        Go to home
       </Link>
     </div>
   );

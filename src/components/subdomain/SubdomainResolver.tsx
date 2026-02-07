@@ -1,20 +1,15 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  SubdomainBonfireProvider,
+  type SubdomainConfig,
+} from "@/contexts/SubdomainBonfireContext";
+import { config as appConfig } from "@/lib/config";
 import { getSubdomainLabel } from "@/lib/utils/subdomain";
-import { SubdomainBonfireProvider } from "@/contexts/SubdomainBonfireContext";
-
-const BACKEND_URL =
-  process.env["DELVE_API_URL"] ??
-  process.env["NEXT_PUBLIC_DELVE_API_URL"] ??
-  "http://localhost:8000";
 
 const CACHE_TTL_SUCCESS_SEC = 3600; // 1 hour when subdomain exists
 const CACHE_TTL_NOT_FOUND_SEC = 60; // 1 min when subdomain doesn't exist
-
-export interface SubdomainConfig {
-  bonfireId: string;
-  agentId: string | null;
-}
+const MAX_CACHE_SIZE = 500;
 
 interface SubdomainResolverProps {
   children: React.ReactNode;
@@ -36,6 +31,18 @@ function getCached(key: string): CacheEntry | null {
 }
 
 function setCached(key: string, entry: CacheEntry): void {
+  if (resolutionCache.size >= MAX_CACHE_SIZE) {
+    const now = Date.now();
+    for (const [k, v] of resolutionCache.entries()) {
+      if (now >= v.expiresAt) resolutionCache.delete(k);
+    }
+    if (resolutionCache.size >= MAX_CACHE_SIZE) {
+      const oldest = [...resolutionCache.entries()].sort(
+        (a, b) => a[1].expiresAt - b[1].expiresAt
+      )[0];
+      if (oldest) resolutionCache.delete(oldest[0]);
+    }
+  }
   resolutionCache.set(key, entry);
 }
 
@@ -47,7 +54,8 @@ function setCached(key: string, entry: CacheEntry): void {
  */
 export async function SubdomainResolver({ children }: SubdomainResolverProps) {
   const headersList = await headers();
-  if (headersList.get("x-skip-subdomain-resolution") === "true") {
+  const isProd = appConfig.app.environment === "production";
+  if (!isProd && headersList.get("x-skip-subdomain-resolution") === "true") {
     return (
       <SubdomainBonfireProvider initialConfig={null} hostname={null}>
         {children}
@@ -66,8 +74,9 @@ export async function SubdomainResolver({ children }: SubdomainResolverProps) {
       initialConfig = cached.config;
     } else {
       try {
+        const backendUrl = appConfig.server.backendUrl;
         const res = await fetch(
-          `${BACKEND_URL}/bonfires/resolve-subdomain/${encodeURIComponent(subdomainLabel)}`,
+          `${backendUrl}/bonfires/resolve-subdomain/${encodeURIComponent(subdomainLabel)}`,
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -82,24 +91,29 @@ export async function SubdomainResolver({ children }: SubdomainResolverProps) {
           redirect("/subdomain-not-found");
         }
         const data = (await res.json()) as { bonfire_id: string; agent_id: string | null };
-        const config: SubdomainConfig = {
+        const subdomainConfig: SubdomainConfig = {
           bonfireId: data.bonfire_id,
           agentId: data.agent_id ?? null,
         };
         setCached(subdomainLabel, {
           found: true,
-          config,
+          config: subdomainConfig,
           expiresAt: Date.now() + CACHE_TTL_SUCCESS_SEC * 1000,
         });
-        initialConfig = config;
+        initialConfig = subdomainConfig;
       } catch {
         redirect("/subdomain-not-found");
       }
     }
   }
 
+  const hostnameForContext = subdomainLabel ? host : null;
+
   return (
-    <SubdomainBonfireProvider initialConfig={initialConfig} hostname={host}>
+    <SubdomainBonfireProvider
+      initialConfig={initialConfig}
+      hostname={hostnameForContext}
+    >
       {children}
     </SubdomainBonfireProvider>
   );

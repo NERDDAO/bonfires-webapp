@@ -1,3 +1,36 @@
+# Onchain x402 Alignment
+
+Align unified-webapp x402 header creation with the updated Onchain docs and
+add mocked hyperblog purchase coverage.
+
+## Completed Tasks
+
+- [x] Add/adjust hyperblog e2e mocks/tests
+- [x] Rework x402 header creation + intermediaries
+
+## In Progress Tasks
+
+- [ ] None
+
+## Future Tasks
+
+- [ ] None
+
+## Implementation Plan
+
+1. Update x402 header builder to ERC-3009 + base64 header string
+2. Centralize intermediary address selection for signing
+3. Add hyperblog purchase e2e test + mocks
+
+### Relevant Files
+
+- `src/hooks/web3/usePaymentHeader.ts` - x402 header signing hook ✅
+- `src/lib/payment/build-payment-header.ts` - ERC-3009 typed data + header encoding ✅
+- `src/lib/payment/types.ts` - x402/typed data type definitions ✅
+- `src/components/hyperblogs/create-blog.tsx` - hyperblog purchase flow ✅
+- `e2e/hyperblogs.spec.ts` - hyperblog purchase e2e coverage ✅
+- `e2e/utils/mockApi.ts` - hyperblog purchase mock API responses ✅
+
 # Unified Dashboard and Search SSR Fix
 
 Implementation tasks for the unified dashboard work and the WebGL SSR fix.

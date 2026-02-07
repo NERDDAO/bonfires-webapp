@@ -67,7 +67,7 @@ export function CreateBlogModal({
 
       // 3. POST /api/hyperblogs/purchase
       await apiClient.post("/api/hyperblogs/purchase", {
-        payment_header: btoa(JSON.stringify(paymentHeader)),
+        payment_header: paymentHeader,
         dataroom_id: dataroomId,
         user_query: description.trim(),
         is_public: true,

@@ -9,8 +9,8 @@
 
 import { useCallback, useState } from "react";
 import { useSignTypedData } from "wagmi";
-import { config } from "@/lib/config";
-import { buildPaymentTypedData, encodePaymentHeader } from "@/lib/payment";
+import type { SignTypedDataParameters } from "viem";
+import { buildPaymentTypedData, encodePaymentHeader, resolveIntermediaryAddress } from "@/lib/payment";
 import type { X402PaymentHeader } from "@/lib/payment";
 import { isE2EWalletEnabled, useWalletAccount } from "@/lib/wallet/e2e";
 
@@ -21,7 +21,7 @@ export interface UsePaymentHeaderReturn {
    * @param amount - Optional payment amount in token units. Defaults to config amount.
    * @param skipSigning - When true, skips wallet signing and returns null.
    *                      Used when an existing microsub is selected.
-   * @returns X402PaymentHeader object or null if skipSigning is true.
+   * @returns X402PaymentHeader string or null if skipSigning is true.
    */
   buildAndSignPaymentHeader: (
     amount?: string,
@@ -33,14 +33,21 @@ export interface UsePaymentHeaderReturn {
 }
 
 // Payment configuration from environment
+const PAYMENT_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "abstract-testnet";
+const SOURCE_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_SOURCE_NETWORK"] ?? PAYMENT_NETWORK;
+const DESTINATION_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_DESTINATION_NETWORK"] ?? PAYMENT_NETWORK;
+const INTERMEDIARY_OVERRIDE = process.env["NEXT_PUBLIC_ONCHAINFI_INTERMEDIARY_ADDRESS"] ?? null;
+
 const PAYMENT_CONFIG = {
   tokenAddress:
     process.env["NEXT_PUBLIC_PAYMENT_TOKEN_ADDRESS"] ??
     "0x0000000000000000000000000000000000000000",
-  intermediaryAddress:
-    process.env["NEXT_PUBLIC_ONCHAINFI_INTERMEDIARY_ADDRESS"] ??
-    "0x0000000000000000000000000000000000000000",
-  network: process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "abstract-testnet",
+  intermediaryAddress: resolveIntermediaryAddress({
+    sourceNetwork: SOURCE_NETWORK,
+    destinationNetwork: DESTINATION_NETWORK,
+    override: INTERMEDIARY_OVERRIDE,
+  }),
+  network: PAYMENT_NETWORK,
   chainId: parseInt(process.env["NEXT_PUBLIC_CHAIN_ID"] ?? "11124", 10),
   amount: process.env["NEXT_PUBLIC_PAYMENT_DEFAULT_AMOUNT"] ?? "0.01",
 };
@@ -76,19 +83,19 @@ export function usePaymentHeader(): UsePaymentHeaderReturn {
 
         const paymentAmount = amount || PAYMENT_CONFIG.amount;
         if (isE2EWalletEnabled()) {
-          const typedData = buildPaymentTypedData({
-            tokenAddress: PAYMENT_CONFIG.tokenAddress,
-            recipientAddress: PAYMENT_CONFIG.intermediaryAddress,
-            amount: paymentAmount,
-            network: PAYMENT_CONFIG.network,
-            chainId: PAYMENT_CONFIG.chainId,
-            userAddress: address,
-          });
-          return encodePaymentHeader(
-            typedData.message,
-            "0xe2e-signature",
-            PAYMENT_CONFIG.network
-          );
+        const typedData = buildPaymentTypedData({
+          tokenAddress: PAYMENT_CONFIG.tokenAddress,
+          recipientAddress: PAYMENT_CONFIG.intermediaryAddress,
+          amount: paymentAmount,
+          network: PAYMENT_CONFIG.network,
+          chainId: PAYMENT_CONFIG.chainId,
+          userAddress: address,
+        });
+        return encodePaymentHeader(
+          typedData.message,
+          "0xe2e-signature",
+          PAYMENT_CONFIG.network
+        );
         }
 
         const typedData = buildPaymentTypedData({
@@ -101,16 +108,11 @@ export function usePaymentHeader(): UsePaymentHeaderReturn {
         });
 
         const signature = await signTypedDataAsync({
-          domain: typedData.domain as {
-            name?: string;
-            version?: string;
-            chainId?: number;
-            verifyingContract?: `0x${string}`;
-          },
+          domain: typedData.domain,
           types: typedData.types,
           primaryType: typedData.primaryType,
-          message: typedData.message as unknown as Record<string, unknown>,
-        });
+          message: typedData.message,
+        } as unknown as SignTypedDataParameters);
 
         return encodePaymentHeader(
           typedData.message,

@@ -1,4 +1,5 @@
 import { NavigationItem } from "@/components/navbar";
+import { siteCopy } from "./site";
 
 export const navigationItems: NavigationItem[] = [
   {
@@ -15,6 +16,6 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     label: "Docs",
-    href: "https://docs.bonfires.ai/bonfires/docs/docs26/Welcome",
+    href: siteCopy.docsUrl,
   },
 ] as const;

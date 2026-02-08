@@ -6,13 +6,16 @@
  * Card component for displaying data room information in the marketplace.
  * Includes subscribe and create blog actions.
  */
-
 import { useState } from "react";
+
 import { useRouter } from "next/navigation";
-import { useWalletAccount } from "@/lib/wallet/e2e";
-import { usePaymentHeader } from "@/hooks/web3";
+
 import type { DataRoomInfo } from "@/types";
+
+import { usePaymentHeader } from "@/hooks/web3";
+
 import { formatTimestamp, truncateAddress, truncateText } from "@/lib/utils";
+import { useWalletAccount } from "@/lib/wallet/e2e";
 
 interface DataRoomMarketplaceCardProps {
   dataroom: DataRoomInfo;
@@ -103,7 +106,8 @@ export function DataRoomMarketplaceCard({
             <span className="text-2xl mt-0.5">📁</span>
             <div className="flex-1 min-w-0">
               <h2 className="card-title text-lg leading-tight mb-2">
-                {truncateText(dataroom.description, 100) || "Untitled Data Room"}
+                {truncateText(dataroom.description, 100) ||
+                  "Untitled Data Room"}
               </h2>
               {dataroom.bonfire_name && (
                 <span className="badge badge-info badge-sm">
@@ -159,7 +163,9 @@ export function DataRoomMarketplaceCard({
         <div className="flex flex-wrap gap-2 mb-3 text-xs">
           <div className="flex items-center gap-1">
             <span>💰</span>
-            <span className="font-semibold">${currentPrice.toFixed(2)} USD</span>
+            <span className="font-semibold">
+              ${currentPrice.toFixed(2)} USD
+            </span>
             {dataroom.dynamic_pricing_enabled && (
               <span className="badge badge-warning badge-xs">Dynamic</span>
             )}

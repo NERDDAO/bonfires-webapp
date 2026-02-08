@@ -2,13 +2,26 @@
  * ChatPanel Component
  * Chat interface for interacting with AI agents in the graph explorer
  */
-
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Send, X, Loader2, MessageSquare, Minimize2, Maximize2 } from "lucide-react";
-import { cn } from "@/lib/cn";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
 import type { PanelMode } from "@/hooks";
+import {
+  Loader2,
+  Maximize2,
+  MessageSquare,
+  Minimize2,
+  Send,
+  X,
+} from "lucide-react";
+
+import { cn } from "@/lib/cn";
+
+/**
+ * ChatPanel Component
+ * Chat interface for interacting with AI agents in the graph explorer
+ */
 
 export interface ChatMessage {
   id: string;
@@ -166,9 +179,7 @@ export function ChatPanel({
             {/* No agent selected */}
             {!agentId && (
               <div className="flex items-center justify-center h-full text-center text-base-content/50">
-                <p className="text-sm">
-                  Select an agent to start chatting
-                </p>
+                <p className="text-sm">Select an agent to start chatting</p>
               </div>
             )}
 
@@ -198,7 +209,9 @@ export function ChatPanel({
                       : "bg-base-200 text-base-content"
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {message.content}
+                  </p>
                 </div>
                 <span className="text-xs text-base-content/40 px-1">
                   {new Date(message.timestamp).toLocaleTimeString([], {
@@ -246,7 +259,9 @@ export function ChatPanel({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={agentId ? "Type a message..." : "Select an agent first"}
+                placeholder={
+                  agentId ? "Type a message..." : "Select an agent first"
+                }
                 disabled={!agentId || isSending}
                 rows={1}
                 className={cn(

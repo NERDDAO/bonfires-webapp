@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { WalletButton } from "./WalletButton";
+
+import { OrganizationSwitcher, SignInButton, UserButton } from "@clerk/nextjs";
+
+import { useAuth } from "@/hooks/useAuth";
+
+import ConnectWallet from "../navbar/connect-wallet";
 
 type NavSection = "graph" | "web3" | "documents" | "dashboard" | null;
 
@@ -127,7 +133,9 @@ export function Header({ className = "" }: HeaderProps) {
   }, []);
 
   return (
-    <header className={`navbar bg-base-100 shadow-sm sticky top-0 z-40 ${className}`}>
+    <header
+      className={`navbar bg-base-100 shadow-sm sticky top-0 z-40 ${className}`}
+    >
       <div className="navbar-start">
         {/* Mobile menu button */}
         <div className="dropdown lg:hidden">
@@ -226,7 +234,10 @@ export function Header({ className = "" }: HeaderProps) {
               <ul className="absolute left-0 top-full mt-2 menu p-2 shadow-lg bg-base-200 rounded-box w-64 z-50">
                 {graphItems.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="flex flex-col items-start py-3">
+                    <Link
+                      href={item.href}
+                      className="flex flex-col items-start py-3"
+                    >
                       <span className="font-medium">{item.label}</span>
                       {item.description && (
                         <span className="text-xs text-base-content/50">
@@ -261,7 +272,10 @@ export function Header({ className = "" }: HeaderProps) {
               <ul className="absolute left-0 top-full mt-2 menu p-2 shadow-lg bg-base-200 rounded-box w-64 z-50">
                 {web3Items.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="flex flex-col items-start py-3">
+                    <Link
+                      href={item.href}
+                      className="flex flex-col items-start py-3"
+                    >
                       <span className="font-medium">{item.label}</span>
                       {item.description && (
                         <span className="text-xs text-base-content/50">
@@ -297,11 +311,62 @@ export function Header({ className = "" }: HeaderProps) {
         </ul>
       </div>
 
-      {/* Wallet button */}
-      <div className="navbar-end">
-        <WalletButton />
+      {/* Auth and Wallet buttons */}
+      <div className="navbar-end flex items-center gap-2">
+        <AuthSection />
+        <ConnectWallet />
       </div>
     </header>
+  );
+}
+
+/**
+ * Authentication section of the header
+ * Shows sign-in button when not authenticated,
+ * or organization switcher and user button when authenticated.
+ */
+function AuthSection() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Don't render until auth is loaded to prevent flash
+  if (!isLoaded) {
+    return <div className="skeleton h-8 w-20 rounded-full" />;
+  }
+
+  if (!isSignedIn) {
+    return (
+      <SignInButton mode="modal">
+        <button className="btn btn-ghost btn-sm">Sign In</button>
+      </SignInButton>
+    );
+  }
+
+  return (
+    <>
+      <OrganizationSwitcher
+        hidePersonal={true}
+        afterSelectOrganizationUrl="/dashboard"
+        appearance={{
+          elements: {
+            // Trigger button styling for dark header
+            rootBox: "flex items-center",
+            organizationSwitcherTrigger:
+              "btn btn-ghost btn-sm normal-case gap-2 [&_*]:!text-base-content",
+            organizationSwitcherTriggerIcon: "!text-base-content",
+            // Dropdown - dark text on white background
+            organizationSwitcherPopoverCard: "[&_*]:!text-gray-900",
+          },
+        }}
+      />
+      <UserButton
+        afterSignOutUrl="/"
+        appearance={{
+          elements: {
+            avatarBox: "w-8 h-8",
+          },
+        }}
+      />
+    </>
   );
 }
 
@@ -335,7 +400,11 @@ function ChevronDownIcon({ className = "" }: { className?: string }) {
       stroke="currentColor"
       className={className}
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+      />
     </svg>
   );
 }

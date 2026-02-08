@@ -4,12 +4,19 @@
  * A dropdown selector for choosing a bonfire with localStorage persistence.
  * Used across multiple features (Documents, Graph, etc.) with feature-specific storage keys.
  */
-
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import { useBonfiresQuery } from "@/hooks";
 import type { BonfireInfo } from "@/types";
+
+/**
+ * BonfireSelector Component
+ *
+ * A dropdown selector for choosing a bonfire with localStorage persistence.
+ * Used across multiple features (Documents, Graph, etc.) with feature-specific storage keys.
+ */
 
 interface BonfireSelectorProps {
   /** Currently selected bonfire ID */
@@ -91,13 +98,22 @@ export function BonfireSelector({
       }
     }
     setInitialized(true);
-  }, [bonfires, isLoading, initialized, storageKey, selectedBonfireId, onBonfireChange]);
+  }, [
+    bonfires,
+    isLoading,
+    initialized,
+    storageKey,
+    selectedBonfireId,
+    onBonfireChange,
+  ]);
 
   // Handle selection change
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const bonfireId = e.target.value;
-      const bonfire = bonfireId ? bonfires.find((b) => b.id === bonfireId) ?? null : null;
+      const bonfire = bonfireId
+        ? (bonfires.find((b) => b.id === bonfireId) ?? null)
+        : null;
 
       persistBonfireId(storageKey, bonfireId || null);
       onBonfireChange(bonfire);
@@ -107,9 +123,7 @@ export function BonfireSelector({
 
   // Loading state
   if (isLoading && showSkeleton) {
-    return (
-      <div className={`skeleton h-12 w-full rounded-lg ${className}`} />
-    );
+    return <div className={`skeleton h-12 w-full rounded-lg ${className}`} />;
   }
 
   // Error state
@@ -143,7 +157,9 @@ export function BonfireSelector({
  * Hook for managing bonfire selection with localStorage persistence
  */
 export function useBonfireSelection(storageKey: string) {
-  const [selectedBonfire, setSelectedBonfire] = useState<BonfireInfo | null>(null);
+  const [selectedBonfire, setSelectedBonfire] = useState<BonfireInfo | null>(
+    null
+  );
   const { data, isLoading } = useBonfiresQuery();
   const bonfires = data?.bonfires ?? [];
 

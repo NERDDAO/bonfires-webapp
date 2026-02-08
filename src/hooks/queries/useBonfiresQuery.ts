@@ -4,12 +4,19 @@
  * React Query hook for fetching the list of available bonfires.
  * Uses a longer staleTime since bonfire list changes infrequently.
  */
-
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
 import type { BonfireListResponse } from "@/types";
+import { useQuery } from "@tanstack/react-query";
+
+import { apiClient } from "@/lib/api/client";
+
+/**
+ * useBonfiresQuery Hook
+ *
+ * React Query hook for fetching the list of available bonfires.
+ * Uses a longer staleTime since bonfire list changes infrequently.
+ */
 
 /**
  * Query key for bonfires
@@ -34,7 +41,7 @@ export function useBonfireById(bonfireId: string | null) {
   const { data, ...rest } = useBonfiresQuery();
 
   const bonfire = bonfireId
-    ? data?.bonfires.find((b) => b.id === bonfireId) ?? null
+    ? (data?.bonfires.find((b) => b.id === bonfireId) ?? null)
     : null;
 
   return {

@@ -3,13 +3,13 @@
  *
  * GET /api/payments/status - Check payment/subscription status
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
   extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 /**

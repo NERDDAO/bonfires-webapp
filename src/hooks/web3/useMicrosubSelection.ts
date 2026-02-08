@@ -6,7 +6,6 @@
  * Manages microsub (subscription) selection for Web3 payment features.
  * Handles fetching, validation, and selection of user subscriptions.
  */
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export interface MicrosubInfo {

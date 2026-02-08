@@ -2,20 +2,26 @@
  * WikiPanel Component
  * Displays wiki content for selected nodes (episodes, entities, edges)
  */
-
 "use client";
 
 import React from "react";
+
+import type { WikiBreadcrumb, WikiMode } from "@/hooks";
 import {
-  X,
   ChevronLeft,
   ChevronRight,
   Maximize2,
   Minimize2,
+  X,
 } from "lucide-react";
+
 import { cn } from "@/lib/cn";
-import type { WikiBreadcrumb, WikiMode } from "@/hooks";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
+/**
+ * WikiPanel Component
+ * Displays wiki content for selected nodes (episodes, entities, edges)
+ */
 
 // Types for wiki content
 export interface WikiNodeData {
@@ -59,6 +65,8 @@ export interface WikiPanelProps {
   mode: WikiMode;
   /** Navigation breadcrumbs */
   breadcrumbs: WikiBreadcrumb[];
+  /** Search-around history as breadcrumbs (clickable to navigate to that center) */
+  searchHistoryBreadcrumbs?: { label: string; onClick: () => void }[];
   /** Whether back navigation is available */
   canGoBack: boolean;
   /** Whether forward navigation is available */
@@ -103,6 +111,7 @@ export function WikiPanel({
   enabled,
   mode,
   breadcrumbs,
+  searchHistoryBreadcrumbs = [],
   canGoBack,
   canGoForward,
   onClose,
@@ -135,7 +144,9 @@ export function WikiPanel({
             </h3>
             <div className="flex items-center gap-2 text-sm">
               <button
-                onClick={() => edgeSourceNode && onNodeSelect(edgeSourceNode.uuid)}
+                onClick={() =>
+                  edgeSourceNode && onNodeSelect(edgeSourceNode.uuid)
+                }
                 className="link text-base-content"
               >
                 {edgeSourceNode?.name || edgeSourceNode?.label || edge.source}
@@ -146,7 +157,9 @@ export function WikiPanel({
               </span>
               <span className="text-base-content/50">→</span>
               <button
-                onClick={() => edgeTargetNode && onNodeSelect(edgeTargetNode.uuid)}
+                onClick={() =>
+                  edgeTargetNode && onNodeSelect(edgeTargetNode.uuid)
+                }
                 className="link text-base-content"
               >
                 {edgeTargetNode?.name || edgeTargetNode?.label || edge.target}
@@ -166,7 +179,9 @@ export function WikiPanel({
                   value={edge.strength * 100}
                   max="100"
                 />
-                <span className="text-sm">{(edge.strength * 100).toFixed(0)}%</span>
+                <span className="text-sm">
+                  {(edge.strength * 100).toFixed(0)}%
+                </span>
               </div>
             </section>
           )}
@@ -388,7 +403,28 @@ export function WikiPanel({
         </div>
       </div>
 
-      {/* Breadcrumbs */}
+      {/* Search history breadcrumbs (path of "search around" centers) */}
+      {searchHistoryBreadcrumbs.length > 0 && (
+        <div className="px-4 py-2 border-b border-base-300 overflow-x-auto">
+          <div className="breadcrumbs text-xs">
+            <ul>
+              {searchHistoryBreadcrumbs.map((crumb, idx) => (
+                <li key={idx}>
+                  <button
+                    type="button"
+                    onClick={crumb.onClick}
+                    className="link text-primary hover:underline"
+                  >
+                    {crumb.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Wiki navigation breadcrumbs */}
       {breadcrumbs.length > 1 && (
         <div className="px-4 py-2 border-b border-base-300 overflow-x-auto">
           <div className="breadcrumbs text-xs">
@@ -437,9 +473,7 @@ export function WikiPanel({
   }
 
   // Sidebar mode
-  return (
-    <div className="w-80 h-full flex-shrink-0">{panelContent}</div>
-  );
+  return <div className="w-80 h-full shrink-0">{panelContent}</div>;
 }
 
 export default WikiPanel;

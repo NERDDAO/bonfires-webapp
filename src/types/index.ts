@@ -93,3 +93,12 @@ export type {
   RecentChatSummary,
   SubscribedDataRoom,
 } from "./dashboard";
+
+// Auth Types
+export type {
+  AuthUser,
+  AuthOrganization,
+  AuthState,
+  BonfireRole,
+  BonfirePermission,
+} from "./auth";

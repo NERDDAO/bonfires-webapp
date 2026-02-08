@@ -3,10 +3,10 @@
  *
  * Ensures the wiki panel renders node actions correctly.
  */
-
-import { fireEvent, render, screen } from "@testing-library/react";
-import { WikiPanel, type WikiNodeData } from "@/components/graph/WikiPanel";
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
+import { fireEvent, render, screen } from "@testing-library/react";
+
+import { type WikiNodeData, WikiPanel } from "@/components/graph/WikiPanel";
 
 const baseNode: WikiNodeData = {
   uuid: "node-123",
@@ -42,7 +42,9 @@ describe("WikiPanel", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Search around this node" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Search around this node" })
+    );
     expect(onSearchAroundNode).toHaveBeenCalledWith("node-123");
   });
 

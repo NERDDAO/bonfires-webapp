@@ -5,14 +5,26 @@
  *
  * Payment-gated AI chat interface with subscription management.
  */
-
 import { useEffect, useRef, useState } from "react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useWalletAccount } from "@/lib/wallet/e2e";
-import { usePaymentHeader, useMicrosubSelection, useAgentSelection } from "@/hooks/web3";
-import { AgentSelector } from "@/components/shared/AgentSelector";
-import { formatErrorMessage, isMicrosubError, truncateAddress, truncateText } from "@/lib/utils";
+
 import type { ChatMessage } from "@/types";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+
+import { AgentSelector } from "@/components/shared/AgentSelector";
+
+import {
+  useAgentSelection,
+  useMicrosubSelection,
+  usePaymentHeader,
+} from "@/hooks/web3";
+
+import {
+  formatErrorMessage,
+  isMicrosubError,
+  truncateAddress,
+  truncateText,
+} from "@/lib/utils";
+import { useWalletAccount } from "@/lib/wallet/e2e";
 
 type GraphMode = "adaptive" | "static" | "dynamic" | "none";
 
@@ -49,7 +61,8 @@ export function PaidChatInterface({
   className = "",
 }: PaidChatInterfaceProps) {
   const { isConnected, address } = useWalletAccount();
-  const { buildAndSignPaymentHeader, isLoading: isSigningPayment } = usePaymentHeader();
+  const { buildAndSignPaymentHeader, isLoading: isSigningPayment } =
+    usePaymentHeader();
   const microsubSelection = useMicrosubSelection({ walletAddress: address });
   const agentSelection = useAgentSelection();
 
@@ -57,12 +70,17 @@ export function PaidChatInterface({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [payment, setPayment] = useState<ChatResponseWithPayment["payment"] | null>(null);
-  const [graphMode, setGraphMode] = useState<GraphMode>(initialGraphMode || "adaptive");
+  const [payment, setPayment] = useState<
+    ChatResponseWithPayment["payment"] | null
+  >(null);
+  const [graphMode, setGraphMode] = useState<GraphMode>(
+    initialGraphMode || "adaptive"
+  );
   const [isRetrying, setIsRetrying] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const effectiveAgentId = propAgentId || agentSelection.selectedAgentId || "default-agent";
+  const effectiveAgentId =
+    propAgentId || agentSelection.selectedAgentId || "default-agent";
 
   // Auto-select subscription on mount
   useEffect(() => {
@@ -80,7 +98,11 @@ export function PaidChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const send = async (messageText: string, chatHistory: ChatMessage[], retrying: boolean) => {
+  const send = async (
+    messageText: string,
+    chatHistory: ChatMessage[],
+    retrying: boolean
+  ) => {
     setError(null);
     setIsLoading(true);
 
@@ -89,7 +111,9 @@ export function PaidChatInterface({
         const validation = microsubSelection.validateSelectedMicrosub();
         if (!validation.isValid) {
           setIsLoading(false);
-          setError("Selected subscription is invalid. Please select a different subscription or use new payment.");
+          setError(
+            "Selected subscription is invalid. Please select a different subscription or use new payment."
+          );
           return;
         }
       }
@@ -108,7 +132,8 @@ export function PaidChatInterface({
       if (microsubSelection.selectedMicrosub) {
         requestBody["tx_hash"] = microsubSelection.selectedMicrosub.tx_hash;
         if (microsubSelection.selectedMicrosub.center_node_uuid) {
-          requestBody["center_node_uuid"] = microsubSelection.selectedMicrosub.center_node_uuid;
+          requestBody["center_node_uuid"] =
+            microsubSelection.selectedMicrosub.center_node_uuid;
         }
       } else if (paymentHeader) {
         requestBody["payment_header"] = paymentHeader;
@@ -133,12 +158,19 @@ export function PaidChatInterface({
       }
 
       const data: ChatResponseWithPayment = await response.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply },
+      ]);
       setPayment(data.payment);
       setIsRetrying(false);
       setIsLoading(false);
 
-      if (data.payment?.tx_hash && !microsubSelection.selectedMicrosub && onSubscriptionCreated) {
+      if (
+        data.payment?.tx_hash &&
+        !microsubSelection.selectedMicrosub &&
+        onSubscriptionCreated
+      ) {
         onSubscriptionCreated(data.payment.tx_hash);
       }
 
@@ -187,7 +219,9 @@ export function PaidChatInterface({
   }
 
   return (
-    <div className={`flex flex-col h-[calc(100vh-4rem)] bg-base-100 ${className}`}>
+    <div
+      className={`flex flex-col h-[calc(100vh-4rem)] bg-base-100 ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-base-300">
         <h2 className="font-bold text-lg">AI Agent Chat</h2>
@@ -228,7 +262,9 @@ export function PaidChatInterface({
       {dataroomId && !microsubSelection.selectedMicrosub && (
         <div className="alert alert-info mx-4 mt-2">
           <div className="flex-1">
-            <div className="text-sm font-semibold mb-1">📁 Subscribing to Data Room</div>
+            <div className="text-sm font-semibold mb-1">
+              📁 Subscribing to Data Room
+            </div>
             <div className="text-xs opacity-80">
               Your first message will create a subscription to this data room.
             </div>
@@ -239,13 +275,19 @@ export function PaidChatInterface({
       {microsubSelection.selectedMicrosub?.description && (
         <div className="alert alert-info mx-4 mt-2">
           <div className="flex-1">
-            <div className="text-sm font-semibold mb-1">📁 Data Room Active</div>
+            <div className="text-sm font-semibold mb-1">
+              📁 Data Room Active
+            </div>
             <div className="text-xs opacity-80">
               {microsubSelection.selectedMicrosub.description}
             </div>
             {microsubSelection.selectedMicrosub.center_node_uuid && (
               <div className="text-xs opacity-70 mt-1">
-                🎯 Center node: {truncateAddress(microsubSelection.selectedMicrosub.center_node_uuid, 6)}
+                🎯 Center node:{" "}
+                {truncateAddress(
+                  microsubSelection.selectedMicrosub.center_node_uuid,
+                  6
+                )}
               </div>
             )}
           </div>
@@ -268,7 +310,9 @@ export function PaidChatInterface({
           >
             <div
               className={`chat-bubble ${
-                msg.role === "user" ? "chat-bubble-primary" : "chat-bubble-secondary"
+                msg.role === "user"
+                  ? "chat-bubble-primary"
+                  : "chat-bubble-secondary"
               }`}
             >
               {msg.content}
@@ -304,7 +348,12 @@ export function PaidChatInterface({
                 handleSend();
               }
             }}
-            disabled={isLoading || isSigningPayment || microsubSelection.loading || isRetrying}
+            disabled={
+              isLoading ||
+              isSigningPayment ||
+              microsubSelection.loading ||
+              isRetrying
+            }
           />
           <button
             className="btn btn-primary"

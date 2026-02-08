@@ -196,6 +196,33 @@ export async function mockApiRoutes(page: Page, options: MockApiOptions = {}) {
       });
     }
 
+    if (pathname === "/api/hyperblogs/purchase" && method === "POST") {
+      return jsonResponse(route, 201, {
+        hyperblog: {
+          id: "hyperblog-2",
+          dataroom_id: "dataroom-1",
+          user_query: "Mocked hyperblog purchase",
+          generation_status: "generating",
+          author_wallet: "0xE2E0000000000000000000000000000000000000",
+          created_at: new Date().toISOString(),
+          is_public: true,
+          tx_hash: "0xhyperblog123",
+          word_count: 0,
+          blog_length: "medium",
+          htn_graph_hash: "",
+          preview: "",
+        },
+        payment: {
+          verified: true,
+          settled: true,
+          tx_hash: "0xhyperblog123",
+          from_address: "0xE2E0000000000000000000000000000000000000",
+          facilitator: "mock",
+          amount: "1.25",
+        },
+      });
+    }
+
     if (pathname === "/api/payments/history" && method === "GET") {
       return jsonResponse(route, 200, { transactions: mockPaymentHistory });
     }

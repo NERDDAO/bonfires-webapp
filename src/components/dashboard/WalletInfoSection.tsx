@@ -4,12 +4,20 @@
  * Displays wallet connection status, balance, and connection controls.
  * Shows a prompt to connect if not connected.
  */
-
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { DashboardSection } from "./DashboardSection";
+
 import type { WalletState } from "@/types/web3";
+
+import { DashboardSection } from "./DashboardSection";
+
+/**
+ * WalletInfoSection Component
+ *
+ * Displays wallet connection status, balance, and connection controls.
+ * Shows a prompt to connect if not connected.
+ */
 
 interface WalletInfoSectionProps {
   wallet: WalletState;
@@ -86,7 +94,9 @@ function ConnectedWallet({ wallet }: { wallet: WalletState }) {
           <div>
             <p className="text-sm text-base-content/70">Network</p>
             <p className="font-medium">
-              {wallet.chainId === 11124 ? "Abstract Testnet" : `Chain ${wallet.chainId}`}
+              {wallet.chainId === 11124
+                ? "Abstract Testnet"
+                : `Chain ${wallet.chainId}`}
             </p>
           </div>
         </div>
@@ -124,10 +134,7 @@ function DisconnectedWallet() {
       </p>
       <ConnectButton.Custom>
         {({ openConnectModal }) => (
-          <button
-            onClick={openConnectModal}
-            className="btn btn-primary btn-lg"
-          >
+          <button onClick={openConnectModal} className="btn btn-primary btn-lg">
             Connect Wallet
           </button>
         )}

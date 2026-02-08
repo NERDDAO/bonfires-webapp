@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+
 import { QueryProvider, Web3Provider } from "@/contexts";
+
 import { ToastProvider } from "@/components/common";
 
 interface ProvidersProps {

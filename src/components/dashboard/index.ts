@@ -4,7 +4,12 @@
  * Re-exports all dashboard components for convenient imports.
  */
 
-export { DashboardSection, SectionSkeleton, SectionError, SectionEmpty } from "./DashboardSection";
+export {
+  DashboardSection,
+  SectionSkeleton,
+  SectionError,
+  SectionEmpty,
+} from "./DashboardSection";
 export { RecentChatsSection } from "./RecentChatsSection";
 export { DataRoomsSection } from "./DataRoomsSection";
 export { HyperBlogsSection } from "./HyperBlogsSection";

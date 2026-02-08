@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
+
+import type { AgentInfo, AgentSelectionState, BonfireInfo } from "@/types";
+
+import { useAgentsQuery, useBonfiresQuery } from "./queries";
 import { useLocalStorage } from "./useLocalStorage";
-import { useBonfiresQuery, useAgentsQuery } from "./queries";
-import type { AgentSelectionState, BonfireInfo, AgentInfo } from "@/types";
 
 /**
  * Storage keys for different features
@@ -15,7 +17,10 @@ export type FeatureStorageKey =
   | "delve"
   | "datarooms";
 
-const STORAGE_KEY_MAP: Record<FeatureStorageKey, { bonfire: string; agent: string }> = {
+const STORAGE_KEY_MAP: Record<
+  FeatureStorageKey,
+  { bonfire: string; agent: string }
+> = {
   graph: {
     bonfire: "delve.graph.bonfireId",
     agent: "delve.graph.agentId",
@@ -148,7 +153,12 @@ export function useFeatureAgentSelection({
       setStoredBonfireId(null);
       setStoredAgentId(null);
     }
-  }, [effectiveBonfireId, availableBonfires, setStoredBonfireId, setStoredAgentId]);
+  }, [
+    effectiveBonfireId,
+    availableBonfires,
+    setStoredBonfireId,
+    setStoredAgentId,
+  ]);
 
   useEffect(() => {
     // If stored agent doesn't exist in available agents, clear it

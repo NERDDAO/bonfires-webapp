@@ -1,0 +1,217 @@
+@import "./palette.css";
+@import "tailwindcss";
+
+/* DaisyUI configuration */
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark;
+}
+
+/* Font families: use CSS variables set by Next.js font loader on body */
+@theme {
+  --font-laro-soft: var(--font-laro-soft);
+  --font-dm-sans: var(--font-dm-sans);
+  --font-montserrat: var(--font-montserrat);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom CSS Variables for Graph Theme */
+:root {
+  /* Graph canvas colors */
+  --graph-background: #0a0a0a;
+  --graph-node-default: #4f46e5;
+  --graph-node-entity: #22c55e;
+  --graph-node-episode: #f59e0b;
+  --graph-edge-default: #6b7280;
+  --graph-edge-highlight: #8b5cf6;
+  --graph-selection: #ec4899;
+
+  /* Graph text */
+  --graph-label-color: #e5e7eb;
+  --graph-label-font: "Inter", system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --graph-background: #0a0a0a;
+  --graph-label-color: #e5e7eb;
+}
+
+[data-theme="light"] {
+  --graph-background: #fafafa;
+  --graph-label-color: #1f2937;
+}
+
+/* Graph canvas styling */
+.graph-canvas {
+  background-color: var(--graph-background);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(var(--b2));
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--bc) / 0.5);
+}
+
+/* Selection styling */
+/* ::selection {
+  background-color: oklch(var(--p) / 0.3);
+} */
+
+/* Focus ring styling */
+:focus-visible {
+  outline: 2px solid oklch(var(--p));
+  outline-offset: 2px;
+}
+
+/* Graph Visualization Styles */
+.graph-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--graph-background);
+  border-radius: var(--rounded-box, 0.5rem);
+  overflow: hidden;
+}
+
+.graph-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: oklch(var(--b1) / 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.graph-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: oklch(var(--bc) / 0.5);
+  font-size: 0.875rem;
+}
+
+/* Sigma.js container fixes */
+.sigma-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sigma-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Timeline scrollbar */
+.timeline-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.timeline-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timeline-scroll::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.2);
+  border-radius: 2px;
+}
+
+/* Custom scrollbar for thin variant */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.2);
+  border-radius: 2px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--bc) / 0.3);
+}
+
+/* Animation utilities */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}

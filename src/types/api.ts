@@ -4,7 +4,6 @@
  * TypeScript interfaces for backend API responses.
  * These mirror the backend DTOs for type safety.
  */
-
 import type { GraphStatePayload } from "./graph";
 
 // Agent & Bonfire Types
@@ -14,6 +13,7 @@ export interface BonfireInfo {
   description?: string;
   created_at: string;
   agent_count: number;
+  is_public?: boolean;
   latest_taxonomies?: TaxonomyInfo[];
 }
 
@@ -487,6 +487,9 @@ export interface HyperBlogInfo {
   view_count?: number;
   taxonomy_keywords?: string[] | null;
   dataroom_description?: string | null;
+  blog_content?: {
+    formatted_content?: string | null;
+  };
 }
 
 export interface HyperBlogListResponse {

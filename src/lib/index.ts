@@ -59,6 +59,8 @@ export {
   encodePaymentHeader,
   type X402PaymentHeader,
   type PaymentConfig,
-  type PaymentTypedData,
-  type X402PaymentMessage,
+  type TypedData,
+  type TransferWithAuthorization,
+  type X402PaymentPayload,
+  type BuildPaymentHeaderParams,
 } from "./payment";

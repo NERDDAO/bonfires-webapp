@@ -16,7 +16,9 @@ export function Footer({ className = "" }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className={`footer footer-center p-10 bg-base-200 text-base-content ${className}`}>
+    <footer
+      className={`footer footer-center p-10 bg-base-200 text-base-content ${className}`}
+    >
       <nav className="grid grid-flow-col gap-4">
         <Link href="/graph" className="link link-hover">
           Graph Explorer

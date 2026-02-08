@@ -4,14 +4,30 @@
  * React Query mutation hook for sending chat messages to agents.
  * Integrates with localStorage chat history for persistence.
  */
-
 "use client";
 
+import type {
+  ChatContextPayload,
+  ChatMessage,
+  ChatRequest,
+  ChatResponse,
+} from "@/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
+
 import { apiClient } from "@/lib/api/client";
-import { addChatMessage, getChatHistory, type ChatMessage as StoredChatMessage } from "@/lib/storage/chatHistory";
-import type { ChatContextPayload, ChatRequest, ChatResponse, ChatMessage } from "@/types";
+import {
+  type ChatMessage as StoredChatMessage,
+  addChatMessage,
+  getChatHistory,
+} from "@/lib/storage/chatHistory";
+
+/**
+ * useSendChatMessage Hook
+ *
+ * React Query mutation hook for sending chat messages to agents.
+ * Integrates with localStorage chat history for persistence.
+ */
 
 interface SendChatMessageParams {
   /** The agent ID to chat with */
@@ -58,7 +74,9 @@ export function useSendChatMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: SendChatMessageParams): Promise<SendChatMessageResult> => {
+    mutationFn: async (
+      params: SendChatMessageParams
+    ): Promise<SendChatMessageResult> => {
       const {
         agentId,
         message,

@@ -2,9 +2,10 @@
  * Error Message Component
  * Displays error messages with optional retry action
  */
-
 import React from "react";
+
 import { AlertCircle } from "lucide-react";
+
 import { cn } from "@/lib/cn";
 
 interface ErrorMessageProps {
@@ -33,10 +34,7 @@ export function ErrorMessage({
         <AlertCircle className="w-4 h-4 flex-shrink-0" />
         <span className="text-sm">{message}</span>
         {onRetry && (
-          <button
-            onClick={onRetry}
-            className="btn btn-xs btn-ghost text-error"
-          >
+          <button onClick={onRetry} className="btn btn-xs btn-ghost text-error">
             Retry
           </button>
         )}
@@ -54,10 +52,7 @@ export function ErrorMessage({
               <h3 className="font-medium text-error">{title}</h3>
               <p className="text-sm text-base-content/70 mt-1">{message}</p>
               {onRetry && (
-                <button
-                  onClick={onRetry}
-                  className="btn btn-sm btn-error mt-3"
-                >
+                <button onClick={onRetry} className="btn btn-sm btn-error mt-3">
                   Try Again
                 </button>
               )}
@@ -70,10 +65,7 @@ export function ErrorMessage({
 
   // Default: alert variant
   return (
-    <div
-      role="alert"
-      className={cn("alert alert-error", className)}
-    >
+    <div role="alert" className={cn("alert alert-error", className)}>
       <AlertCircle className="w-5 h-5" />
       <div className="flex flex-col">
         <span className="font-medium">{title}</span>

@@ -5,29 +5,42 @@
  * Each section loads independently and displays as soon as data is available.
  * Failed sections show errors without blocking other sections.
  */
-
 "use client";
 
-import { useMemo, useCallback, useState, useEffect } from "react";
-import { useMyCreatedDataRooms, useMySubscribedDataRooms } from "./useDataRoomsQuery";
-import { useMyHyperBlogs } from "./useHyperBlogsQuery";
-import { useMyPaymentHistory } from "./usePaymentHistoryQuery";
-import { useBonfiresQuery } from "./useBonfiresQuery";
-import { useAgentsQuery } from "./useAgentsQuery";
-import { useWalletIdentity, useUserWallet } from "@/lib/wallet/identification";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import { getRecentChats } from "@/lib/storage/chatHistory";
+import { useUserWallet, useWalletIdentity } from "@/lib/wallet/identification";
+
 import type {
-  RecentChatSummary,
-  DashboardSectionState,
-  DashboardData,
-} from "@/types/dashboard";
-import type {
+  AgentInfo,
   DataRoomInfo,
   DataRoomSubscription,
   HyperBlogInfo,
-  AgentInfo,
 } from "@/types/api";
+import type {
+  DashboardData,
+  DashboardSectionState,
+  RecentChatSummary,
+} from "@/types/dashboard";
 import type { PaymentTransaction, WalletState } from "@/types/web3";
+
+import { useAgentsQuery } from "./useAgentsQuery";
+import { useBonfiresQuery } from "./useBonfiresQuery";
+import {
+  useMyCreatedDataRooms,
+  useMySubscribedDataRooms,
+} from "./useDataRoomsQuery";
+import { useMyHyperBlogs } from "./useHyperBlogsQuery";
+import { useMyPaymentHistory } from "./usePaymentHistoryQuery";
+
+/**
+ * useDashboardData Hook
+ *
+ * Combines all dashboard data sources with independent loading states.
+ * Each section loads independently and displays as soon as data is available.
+ * Failed sections show errors without blocking other sections.
+ */
 
 /**
  * Create a section state object from React Query result
@@ -52,7 +65,9 @@ function createSectionState<T>(
  * Hook for fetching recent chats from localStorage
  * Includes agent name resolution
  */
-function useRecentChatsData(bonfireId: string | null): DashboardSectionState<RecentChatSummary[]> {
+function useRecentChatsData(
+  bonfireId: string | null
+): DashboardSectionState<RecentChatSummary[]> {
   const [chats, setChats] = useState<RecentChatSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -80,7 +95,8 @@ function useRecentChatsData(bonfireId: string | null): DashboardSectionState<Rec
       const recentChats = getRecentChats();
       const chatsWithNames: RecentChatSummary[] = recentChats.map((chat) => ({
         agentId: chat.agentId,
-        agentName: agentNameMap.get(chat.agentId) ?? `Agent ${chat.agentId.slice(0, 8)}`,
+        agentName:
+          agentNameMap.get(chat.agentId) ?? `Agent ${chat.agentId.slice(0, 8)}`,
         lastMessage: chat.lastMessage,
         lastUpdated: chat.lastUpdated,
         messageCount: chat.messageCount,
@@ -108,14 +124,19 @@ function useRecentChatsData(bonfireId: string | null): DashboardSectionState<Rec
 /**
  * Main dashboard data hook
  * Aggregates all data sources with independent loading states
+ *
+ * @param bonfireIdOverride - When provided (e.g. from subdomain context), use for bonfire-scoped data
  */
-export function useDashboardData(): DashboardData {
+export function useDashboardData(
+  bonfireIdOverride?: string | null
+): DashboardData {
   const walletAddress = useUserWallet();
   const walletState = useWalletIdentity();
 
-  // Fetch first bonfire for agent name resolution in chats
+  // Fetch first bonfire for agent name resolution in chats (or use override from subdomain)
   const { data: bonfiresData } = useBonfiresQuery();
-  const firstBonfireId = bonfiresData?.bonfires?.[0]?.id ?? null;
+  const firstBonfireId =
+    bonfireIdOverride ?? bonfiresData?.bonfires?.[0]?.id ?? null;
 
   // Recent chats from localStorage (no wallet required)
   const recentChats = useRecentChatsData(firstBonfireId);
@@ -141,7 +162,9 @@ export function useDashboardData(): DashboardData {
       dataroom_id: dr.id,
       user_wallet: walletAddress ?? "",
       queries_remaining: dr.query_limit, // Placeholder - backend should provide actual subscription data
-      expires_at: new Date(Date.now() + dr.expiration_days * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(
+        Date.now() + dr.expiration_days * 24 * 60 * 60 * 1000
+      ).toISOString(),
       status: "active" as const,
       created_at: dr.created_at,
     })) ?? [],

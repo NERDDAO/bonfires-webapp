@@ -3,16 +3,17 @@
  *
  * POST /api/payments/verify - Verify a payment transaction
  */
-
 import { NextRequest } from "next/server";
+
+import type { PaymentVerifyRequest } from "@/types";
+
 import {
-  proxyToBackend,
-  handleCorsOptions,
   createErrorResponse,
   createSuccessResponse,
+  handleCorsOptions,
   parseJsonBody,
+  proxyToBackend,
 } from "@/lib/api/server-utils";
-import type { PaymentVerifyRequest } from "@/types";
 
 /**
  * POST /api/payments/verify
@@ -26,7 +27,8 @@ import type { PaymentVerifyRequest } from "@/types";
  * - resource_id?: string - ID of the resource being paid for
  */
 export async function POST(request: NextRequest) {
-  const { data: body, error } = await parseJsonBody<Partial<PaymentVerifyRequest>>(request);
+  const { data: body, error } =
+    await parseJsonBody<Partial<PaymentVerifyRequest>>(request);
 
   if (error) {
     return createErrorResponse(error, 400);
@@ -101,10 +103,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const responseData = typeof result.data === 'object' && result.data !== null 
-    ? result.data as Record<string, unknown>
-    : {};
-    
+  const responseData =
+    typeof result.data === "object" && result.data !== null
+      ? (result.data as Record<string, unknown>)
+      : {};
+
   return createSuccessResponse({
     verified: true,
     ...responseData,

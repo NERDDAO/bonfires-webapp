@@ -1,7 +1,9 @@
 "use client";
 
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from "react";
+
 import { cn } from "@/lib/cn";
+
 import { LoadingSpinner } from "./LoadingSpinner";
 
 type ButtonVariant =

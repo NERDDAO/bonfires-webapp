@@ -5,12 +5,18 @@
  *
  * Payment-gated knowledge graph search interface.
  */
-
 import { useState } from "react";
+
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+
+import { useMicrosubSelection, usePaymentHeader } from "@/hooks/web3";
+
+import {
+  formatErrorMessage,
+  isMicrosubError,
+  truncateAddress,
+} from "@/lib/utils";
 import { useWalletAccount } from "@/lib/wallet/e2e";
-import { usePaymentHeader, useMicrosubSelection } from "@/hooks/web3";
-import { formatErrorMessage, isMicrosubError, truncateAddress } from "@/lib/utils";
 
 interface DelveResponse {
   success: boolean;
@@ -40,7 +46,8 @@ export function PaidDelveInterface({
   className = "",
 }: PaidDelveInterfaceProps) {
   const { isConnected, address } = useWalletAccount();
-  const { buildAndSignPaymentHeader, isLoading: isSigningPayment } = usePaymentHeader();
+  const { buildAndSignPaymentHeader, isLoading: isSigningPayment } =
+    usePaymentHeader();
   const microsubSelection = useMicrosubSelection({ walletAddress: address });
 
   const [query, setQuery] = useState("");
@@ -48,10 +55,16 @@ export function PaidDelveInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<DelveResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "results">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "results">(
+    "overview"
+  );
   const [isRetrying, setIsRetrying] = useState(false);
 
-  const search = async (searchQuery: string, resultsCount: number, retrying: boolean) => {
+  const search = async (
+    searchQuery: string,
+    resultsCount: number,
+    retrying: boolean
+  ) => {
     setError(null);
     setIsLoading(true);
 
@@ -140,7 +153,9 @@ export function PaidDelveInterface({
   }
 
   return (
-    <div className={`flex flex-col h-[calc(100vh-4rem)] bg-base-100 ${className}`}>
+    <div
+      className={`flex flex-col h-[calc(100vh-4rem)] bg-base-100 ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-base-300">
         <h2 className="font-bold text-lg">Knowledge Graph Search</h2>
@@ -157,14 +172,19 @@ export function PaidDelveInterface({
       {microsubSelection.selectedMicrosub?.description && (
         <div className="alert alert-info mx-4 mt-2">
           <div className="flex-1">
-            <div className="text-sm font-semibold mb-1">📁 Data Room Active</div>
+            <div className="text-sm font-semibold mb-1">
+              📁 Data Room Active
+            </div>
             <div className="text-xs opacity-80">
               {microsubSelection.selectedMicrosub.description}
             </div>
             {microsubSelection.selectedMicrosub.center_node_uuid && (
               <div className="text-xs opacity-70 mt-1">
                 🎯 Center node:{" "}
-                {truncateAddress(microsubSelection.selectedMicrosub.center_node_uuid, 6)}
+                {truncateAddress(
+                  microsubSelection.selectedMicrosub.center_node_uuid,
+                  6
+                )}
               </div>
             )}
           </div>
@@ -181,7 +201,12 @@ export function PaidDelveInterface({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            disabled={isLoading || isSigningPayment || microsubSelection.loading || isRetrying}
+            disabled={
+              isLoading ||
+              isSigningPayment ||
+              microsubSelection.loading ||
+              isRetrying
+            }
           />
           <select
             className="select select-bordered"
@@ -237,7 +262,10 @@ export function PaidDelveInterface({
               className={`tab ${activeTab === "results" ? "tab-active" : ""}`}
               onClick={() => setActiveTab("results")}
             >
-              Results ({(results.entities?.length || 0) + (results.episodes?.length || 0)})
+              Results (
+              {(results.entities?.length || 0) +
+                (results.episodes?.length || 0)}
+              )
             </button>
           </div>
         )}
@@ -246,15 +274,21 @@ export function PaidDelveInterface({
           <div className="stats stats-vertical lg:stats-horizontal shadow">
             <div className="stat">
               <div className="stat-title">Entities</div>
-              <div className="stat-value">{results.metrics?.entity_count || 0}</div>
+              <div className="stat-value">
+                {results.metrics?.entity_count || 0}
+              </div>
             </div>
             <div className="stat">
               <div className="stat-title">Episodes</div>
-              <div className="stat-value">{results.metrics?.episode_count || 0}</div>
+              <div className="stat-value">
+                {results.metrics?.episode_count || 0}
+              </div>
             </div>
             <div className="stat">
               <div className="stat-title">Edges</div>
-              <div className="stat-value">{results.metrics?.edge_count || 0}</div>
+              <div className="stat-value">
+                {results.metrics?.edge_count || 0}
+              </div>
             </div>
           </div>
         )}
@@ -283,7 +317,9 @@ export function PaidDelveInterface({
                 <div key={idx} className="card bg-base-200 shadow-sm mb-2">
                   <div className="card-body p-4">
                     <div className="badge badge-secondary">Episode</div>
-                    <p className="text-sm">{episode.content || episode.summary || ""}</p>
+                    <p className="text-sm">
+                      {episode.content || episode.summary || ""}
+                    </p>
                   </div>
                 </div>
               ))}

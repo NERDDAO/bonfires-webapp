@@ -5,8 +5,24 @@
  */
 
 // Utility Hooks
-export { useLocalStorage, STORAGE_KEYS, getStorageValue, setStorageValue } from "./useLocalStorage";
-export { useWikiNavigation, type WikiNavState, type WikiBreadcrumb, type WikiContentType } from "./useWikiNavigation";
+export {
+  useMediaQuery,
+  useIsMobile,
+  MOBILE_BREAKPOINT_PX,
+  MOBILE_MEDIA_QUERY,
+} from "./useMediaQuery";
+export {
+  useLocalStorage,
+  STORAGE_KEYS,
+  getStorageValue,
+  setStorageValue,
+} from "./useLocalStorage";
+export {
+  useWikiNavigation,
+  type WikiNavState,
+  type WikiBreadcrumb,
+  type WikiContentType,
+} from "./useWikiNavigation";
 export {
   useGraphExplorerState,
   getNodeFromElements,
@@ -37,6 +53,8 @@ export {
   useAgentById,
   useActiveAgents,
   agentsQueryKey,
+  // Agent selection (React Query)
+  useAgentSelectionQuery,
   // Graph
   useGraphQuery,
   useGraphExpand,
@@ -44,6 +62,7 @@ export {
   graphQueryKey,
   // Data Rooms
   useDataRoomsQuery,
+  useDataRoomsInfiniteQuery,
   useDataRoomById,
   useMyCreatedDataRooms,
   useMySubscribedDataRooms,
@@ -54,6 +73,7 @@ export {
   useMyHyperBlogs,
   usePublicHyperBlogsFeed,
   useDataRoomHyperBlogs,
+  useDataRoomHyperBlogsInfiniteQuery,
   hyperBlogsQueryKey,
   // Documents
   useDocumentsQuery,
@@ -109,3 +129,13 @@ export {
   type MicrosubInfo,
   type MicrosubInfoWithDisabled,
 } from "./web3";
+
+// Auth Hooks
+export { useAuth, default as useAuthDefault } from "./useAuth";
+
+// Subdomain Org Auto-Switch
+export {
+  useAutoOrgSwitch,
+  default as useAutoOrgSwitchDefault,
+  type AccessStatus,
+} from "./useAutoOrgSwitch";

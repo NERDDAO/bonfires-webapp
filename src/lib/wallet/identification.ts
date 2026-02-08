@@ -4,19 +4,30 @@
  * Utilities for wallet-based user identification.
  * Integrates with Wagmi for wallet state management.
  */
-
 "use client";
 
-import { useBalance, useChainId } from "wagmi";
 import { useMemo } from "react";
+
+import { useBalance, useChainId } from "wagmi";
+
 import type { WalletState } from "@/types/web3";
-import { useE2EBalance, useWalletAccount, isE2EWalletEnabled } from "./e2e";
+
+import { isE2EWalletEnabled, useE2EBalance, useWalletAccount } from "./e2e";
+
+/**
+ * Wallet Identification Helpers
+ *
+ * Utilities for wallet-based user identification.
+ * Integrates with Wagmi for wallet state management.
+ */
 
 /**
  * Format wallet address for display
  * Shows first 6 and last 4 characters
  */
-export function formatWalletAddress(address: string | null | undefined): string {
+export function formatWalletAddress(
+  address: string | null | undefined
+): string {
   if (!address) return "";
   if (address.length < 10) return address;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -99,14 +110,16 @@ export function useUserWallet(): string | null {
  * Hook for requiring wallet connection
  * Throws an error message if wallet is not connected
  */
-export function useRequireWallet(): {
-  address: string;
-  isConnected: true;
-} | {
-  address: null;
-  isConnected: false;
-  error: string;
-} {
+export function useRequireWallet():
+  | {
+      address: string;
+      isConnected: true;
+    }
+  | {
+      address: null;
+      isConnected: false;
+      error: string;
+    } {
   const { address, isConnected } = useWalletAccount();
 
   if (!isConnected || !address) {

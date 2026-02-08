@@ -2,11 +2,16 @@
  * useGraphExplorer Hook
  * Centralized state management for the graph explorer component
  */
-
 "use client";
 
-import { useReducer, useCallback } from "react";
+import { useCallback, useReducer } from "react";
+
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
+/**
+ * useGraphExplorer Hook
+ * Centralized state management for the graph explorer component
+ */
 
 // Panel modes
 export type PanelMode = "none" | "chat" | "wiki";
@@ -20,11 +25,16 @@ export interface SelectionState {
   autoSelected: boolean;
 }
 
-// Panel state
+// Panel state (wiki = right sidebar, chat = right panel or overlay)
 export interface PanelState {
+  /** Right panel: none, wiki, or chat */
   rightPanelMode: PanelMode;
+  /** Floating chat overlay open/closed (synced when rightPanelMode === "chat") */
+  chatOpen: boolean;
   wikiEnabled: boolean;
   wikiMode: WikiMode;
+  /** Wiki panel container minimized (header only) vs expanded (contents visible) */
+  wikiMinimized: boolean;
 }
 
 // Timeline state
@@ -50,8 +60,10 @@ export enum SelectionActionType {
 
 export enum PanelActionType {
   SET_PANEL_MODE = "SET_PANEL_MODE",
+  SET_CHAT_OPEN = "SET_CHAT_OPEN",
   SET_WIKI_ENABLED = "SET_WIKI_ENABLED",
   SET_WIKI_MODE = "SET_WIKI_MODE",
+  SET_WIKI_MINIMIZED = "SET_WIKI_MINIMIZED",
   TOGGLE_WIKI = "TOGGLE_WIKI",
 }
 
@@ -62,16 +74,26 @@ export enum TimelineActionType {
 
 // Selection actions
 type SelectionAction =
-  | { type: SelectionActionType.SELECT_NODE; nodeId: string; userTriggered?: boolean }
-  | { type: SelectionActionType.SELECT_EDGE; edgeId: string; userTriggered?: boolean }
+  | {
+      type: SelectionActionType.SELECT_NODE;
+      nodeId: string;
+      userTriggered?: boolean;
+    }
+  | {
+      type: SelectionActionType.SELECT_EDGE;
+      edgeId: string;
+      userTriggered?: boolean;
+    }
   | { type: SelectionActionType.CLEAR_SELECTION }
   | { type: SelectionActionType.SET_AUTO_SELECTED; autoSelected: boolean };
 
 // Panel actions
 type PanelAction =
   | { type: PanelActionType.SET_PANEL_MODE; mode: PanelMode }
+  | { type: PanelActionType.SET_CHAT_OPEN; open: boolean }
   | { type: PanelActionType.SET_WIKI_ENABLED; enabled: boolean }
   | { type: PanelActionType.SET_WIKI_MODE; mode: WikiMode }
+  | { type: PanelActionType.SET_WIKI_MINIMIZED; minimized: boolean }
   | { type: PanelActionType.TOGGLE_WIKI };
 
 // Timeline actions
@@ -80,7 +102,10 @@ type TimelineAction =
   | { type: TimelineActionType.SET_FALLBACK_CENTER; centerId: string | null };
 
 // Reducers
-function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
+function selectionReducer(
+  state: SelectionState,
+  action: SelectionAction
+): SelectionState {
   switch (action.type) {
     case SelectionActionType.SELECT_NODE:
       return {
@@ -117,12 +142,22 @@ function selectionReducer(state: SelectionState, action: SelectionAction): Selec
 
 function panelReducer(state: PanelState, action: PanelAction): PanelState {
   switch (action.type) {
-    case PanelActionType.SET_PANEL_MODE:
-      return { ...state, rightPanelMode: action.mode };
+    case PanelActionType.SET_PANEL_MODE: {
+      const mode = action.mode;
+      return {
+        ...state,
+        rightPanelMode: mode,
+        chatOpen: mode === "chat",
+      };
+    }
+    case PanelActionType.SET_CHAT_OPEN:
+      return { ...state, chatOpen: action.open };
     case PanelActionType.SET_WIKI_ENABLED:
       return { ...state, wikiEnabled: action.enabled };
     case PanelActionType.SET_WIKI_MODE:
       return { ...state, wikiMode: action.mode };
+    case PanelActionType.SET_WIKI_MINIMIZED:
+      return { ...state, wikiMinimized: action.minimized };
     case PanelActionType.TOGGLE_WIKI:
       return {
         ...state,
@@ -134,7 +169,10 @@ function panelReducer(state: PanelState, action: PanelAction): PanelState {
   }
 }
 
-function timelineReducer(state: TimelineState, action: TimelineAction): TimelineState {
+function timelineReducer(
+  state: TimelineState,
+  action: TimelineAction
+): TimelineState {
   switch (action.type) {
     case TimelineActionType.TOGGLE_EXPANDED:
       return { ...state, expanded: !state.expanded };
@@ -155,8 +193,10 @@ const initialSelectionState: SelectionState = {
 
 const initialPanelState: PanelState = {
   rightPanelMode: "none",
+  chatOpen: false,
   wikiEnabled: true,
   wikiMode: "sidebar",
+  wikiMinimized: false,
 };
 
 const initialTimelineState: TimelineState = {
@@ -168,9 +208,15 @@ const initialTimelineState: TimelineState = {
  * Hook for managing graph explorer state
  */
 export function useGraphExplorerState() {
-  const [selection, dispatchSelection] = useReducer(selectionReducer, initialSelectionState);
+  const [selection, dispatchSelection] = useReducer(
+    selectionReducer,
+    initialSelectionState
+  );
   const [panel, dispatchPanel] = useReducer(panelReducer, initialPanelState);
-  const [timeline, dispatchTimeline] = useReducer(timelineReducer, initialTimelineState);
+  const [timeline, dispatchTimeline] = useReducer(
+    timelineReducer,
+    initialTimelineState
+  );
 
   return {
     state: {
@@ -214,9 +260,11 @@ export function getEdgeFromElements(
   edgeId: string | null
 ): GraphElement | null {
   if (!edgeId) return null;
-  return elements.find(
-    (el) => el.data?.id === edgeId && el.data?.source && el.data?.target
-  ) ?? null;
+  return (
+    elements.find(
+      (el) => el.data?.id === edgeId && el.data?.source && el.data?.target
+    ) ?? null
+  );
 }
 
 export default useGraphExplorerState;

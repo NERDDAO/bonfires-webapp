@@ -3,7 +3,6 @@
  *
  * Tests for the API client's caching, retry, and deduplication logic.
  */
-
 import { ApiClient } from "@/lib/api/client";
 
 describe("ApiClient", () => {
@@ -79,12 +78,11 @@ describe("ApiClient", () => {
         resolveRequest = resolve;
       });
 
-      (global.fetch as jest.Mock).mockImplementationOnce(
-        () =>
-          requestPromise.then(() => ({
-            ok: true,
-            json: () => Promise.resolve(mockData),
-          }))
+      (global.fetch as jest.Mock).mockImplementationOnce(() =>
+        requestPromise.then(() => ({
+          ok: true,
+          json: () => Promise.resolve(mockData),
+        }))
       );
 
       // Start two requests simultaneously
@@ -377,7 +375,9 @@ describe("ApiClient", () => {
       // Advance past timeout
       await jest.advanceTimersByTimeAsync(3500);
 
-      await expect(resultPromise).rejects.toThrow("Job polling timeout exceeded");
+      await expect(resultPromise).rejects.toThrow(
+        "Job polling timeout exceeded"
+      );
     });
   });
 });

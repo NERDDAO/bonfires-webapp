@@ -4,11 +4,18 @@
  * Table displaying documents with expandable chunk preview.
  * Supports copying document IDs and viewing chunk details.
  */
-
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+
 import type { DocumentChunk } from "@/types";
+
+/**
+ * DocumentsTable Component
+ *
+ * Table displaying documents with expandable chunk preview.
+ * Supports copying document IDs and viewing chunk details.
+ */
 
 interface DocumentRow {
   uuid?: string;
@@ -62,7 +69,12 @@ function truncateText(text: string, maxLength: number = 100): string {
   return text.slice(0, maxLength) + "...";
 }
 
-function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowProps) {
+function ExpandableRow({
+  chunk,
+  isExpanded,
+  onToggle,
+  onCopyId,
+}: ExpandableRowProps) {
   const [copied, setCopied] = useState(false);
   const chunkUuid = chunk.uuid ?? "";
   const canCopyUuid = chunkUuid.length > 0;
@@ -109,7 +121,9 @@ function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowP
         </td>
         <td>
           {chunk.category ? (
-            <span className="badge badge-outline badge-sm">{chunk.category}</span>
+            <span className="badge badge-outline badge-sm">
+              {chunk.category}
+            </span>
           ) : (
             <span className="text-base-content/40">—</span>
           )}
@@ -133,11 +147,26 @@ function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowP
             disabled={!canCopyUuid}
           >
             {copied ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -173,7 +202,10 @@ function ExpandableRow({ chunk, isExpanded, onToggle, onCopyId }: ExpandableRowP
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {chunk.labels.map((label) => (
-                      <span key={label} className="badge badge-primary badge-sm">
+                      <span
+                        key={label}
+                        className="badge badge-primary badge-sm"
+                      >
                         {label}
                       </span>
                     ))}
@@ -245,13 +277,27 @@ export function DocumentsTable({
           <tbody>
             {[1, 2, 3, 4, 5].map((i) => (
               <tr key={i}>
-                <td><div className="skeleton w-6 h-6 rounded-full" /></td>
-                <td><div className="skeleton h-4 w-20" /></td>
-                <td><div className="skeleton h-4 w-48" /></td>
-                <td><div className="skeleton h-5 w-16 rounded-full" /></td>
-                <td><div className="skeleton h-4 w-8" /></td>
-                <td><div className="skeleton h-4 w-24" /></td>
-                <td><div className="skeleton w-6 h-6" /></td>
+                <td>
+                  <div className="skeleton w-6 h-6 rounded-full" />
+                </td>
+                <td>
+                  <div className="skeleton h-4 w-20" />
+                </td>
+                <td>
+                  <div className="skeleton h-4 w-48" />
+                </td>
+                <td>
+                  <div className="skeleton h-5 w-16 rounded-full" />
+                </td>
+                <td>
+                  <div className="skeleton h-4 w-8" />
+                </td>
+                <td>
+                  <div className="skeleton h-4 w-24" />
+                </td>
+                <td>
+                  <div className="skeleton w-6 h-6" />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -306,13 +352,13 @@ export function DocumentsTable({
             const rowId =
               chunk.uuid ?? `${chunk.document_id ?? "chunk"}-${chunk.index}`;
             return (
-            <ExpandableRow
-              key={rowId}
-              chunk={chunk}
-              isExpanded={expandedRows.has(rowId)}
-              onToggle={() => toggleRow(rowId)}
-              onCopyId={handleCopyId}
-            />
+              <ExpandableRow
+                key={rowId}
+                chunk={chunk}
+                isExpanded={expandedRows.has(rowId)}
+                onToggle={() => toggleRow(rowId)}
+                onCopyId={handleCopyId}
+              />
             );
           })}
         </tbody>
@@ -324,6 +370,10 @@ export function DocumentsTable({
 /**
  * Skeleton loader for documents table
  */
-export function DocumentsTableSkeleton({ className = "" }: { className?: string }) {
+export function DocumentsTableSkeleton({
+  className = "",
+}: {
+  className?: string;
+}) {
   return <DocumentsTable chunks={[]} isLoading className={className} />;
 }

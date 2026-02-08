@@ -3,12 +3,12 @@
  *
  * GET /api/hyperblogs/[hyperblogId] - Get hyperblog details
  */
-
 import { NextRequest } from "next/server";
+
 import {
-  handleProxyRequest,
-  handleCorsOptions,
   createErrorResponse,
+  handleCorsOptions,
+  handleProxyRequest,
 } from "@/lib/api/server-utils";
 
 interface RouteParams {
@@ -20,10 +20,7 @@ interface RouteParams {
  *
  * Get details of a specific hyperblog.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { hyperblogId } = await params;
 
   if (!hyperblogId) {

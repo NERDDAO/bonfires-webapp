@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "../common/Modal";
+
 import { useBalance } from "wagmi";
-import { useE2EBalance, useWalletAccount, isE2EWalletEnabled } from "@/lib/wallet/e2e";
+
+import {
+  isE2EWalletEnabled,
+  useE2EBalance,
+  useWalletAccount,
+} from "@/lib/wallet/e2e";
+
+import { Modal } from "../common/Modal";
 
 interface PaymentConfirmDialogProps {
   /** Whether the dialog is open */
@@ -69,7 +76,9 @@ export function PaymentConfirmDialog({
       onClose();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Transaction failed. Please try again."
+        err instanceof Error
+          ? err.message
+          : "Transaction failed. Please try again."
       );
     } finally {
       setIsLoading(false);
@@ -104,7 +113,9 @@ export function PaymentConfirmDialog({
             onClick={handleConfirm}
             disabled={isLoading || !isConnected}
           >
-            {isLoading && <span className="loading loading-spinner loading-sm" />}
+            {isLoading && (
+              <span className="loading loading-spinner loading-sm" />
+            )}
             {isLoading ? "Processing..." : "Confirm Payment"}
           </button>
         </>

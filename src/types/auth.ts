@@ -39,8 +39,6 @@ export interface AuthOrganization {
   id: string;
   name: string;
   slug: string | null;
-  /** MongoDB bonfire ID stored in publicMetadata */
-  bonfireId?: string;
 }
 
 /**

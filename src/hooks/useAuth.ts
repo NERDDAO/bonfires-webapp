@@ -66,9 +66,6 @@ export function useAuth(): AuthState & {
           id: organization.id,
           name: organization.name,
           slug: organization.slug,
-          bonfireId:
-            (organization.publicMetadata?.["bonfire_id"] as string) ??
-            undefined,
         }
       : null,
     orgRole,

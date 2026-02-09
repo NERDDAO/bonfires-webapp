@@ -5,7 +5,7 @@
  * bonfire resolved from the current subdomain.
  *
  * All org ↔ bonfire resolution goes through the backend (ClerkOrgMapping),
- * which is the single source of truth. No Clerk publicMetadata dependency.
+ * which is the single source of truth.
  *
  * - Auto-switch: calls GET /resolve-org to find the right org for this bonfire.
  * - Manual switch: calls GET /orgs/{orgId}/bonfire-mapping to find the bonfire
@@ -20,20 +20,6 @@ import { useAuth, useClerk, useOrganization } from "@clerk/nextjs";
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 
 import { config as appConfig } from "@/lib/config";
-
-/**
- * useAutoOrgSwitch Hook
- *
- * Automatically switches the user's active Clerk organization to match the
- * bonfire resolved from the current subdomain.
- *
- * All org ↔ bonfire resolution goes through the backend (ClerkOrgMapping),
- * which is the single source of truth. No Clerk publicMetadata dependency.
- *
- * - Auto-switch: calls GET /resolve-org to find the right org for this bonfire.
- * - Manual switch: calls GET /orgs/{orgId}/bonfire-mapping to find the bonfire
- *   for the new org, then redirects to its subdomain.
- */
 
 export type AccessStatus = "ok" | "sign_in_required" | "no_access" | "loading";
 

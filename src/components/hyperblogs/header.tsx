@@ -11,7 +11,7 @@ export default function HyperBlogsHeader() {
         <div className="font-montserrat text-2xl lg:text-5xl font-black">
           {title}
         </div>
-        <Button variant="primary" className="ml-auto hidden lg:block">
+        <Button variant="primary" className="sr-only ml-auto hidden lg:block">
           Create your own
         </Button>
       </div>

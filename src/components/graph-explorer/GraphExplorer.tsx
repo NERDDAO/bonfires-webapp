@@ -39,6 +39,7 @@ import { ErrorMessage, LoadingSpinner, toast } from "@/components/common";
 
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
+import { synthesizeEpisodicEdges } from "@/lib/utils/graph-utils";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import { useWalletAccount } from "@/lib/wallet/e2e";
 
@@ -749,6 +750,13 @@ export function GraphExplorer({
         },
       });
     }
+
+    // Synthesize episodic edges: connect episode nodes to entities they mention
+    const episodicEdges = synthesizeEpisodicEdges(
+      combinedGraphData.edges,
+      nodeIds
+    );
+    result.push(...episodicEdges);
 
     const centerId = effectiveCenterNode?.replace(/^n:/, "");
     if (centerId && !nodeIds.has(centerId)) {

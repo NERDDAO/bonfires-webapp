@@ -12,6 +12,11 @@
  */
 import { config } from "@/lib/config";
 
+/** Subdomains that are never bonfire slugs (infra, Clerk, etc.) */
+const RESERVED_SUBDOMAINS = new Set([
+  "www", "app", "api", "admin", "clerk", "accounts",
+]);
+
 /**
  * Normalize hostname: take first host before comma (x-forwarded-host list),
  * strip port (handles IPv6 [::1]:3000 and IPv4 localhost:3000).
@@ -68,7 +73,8 @@ export function getSubdomainLabel(hostname: string): string | null {
     ) {
       const prefix = hostWithoutPort.slice(0, -suffix.length);
       const label = prefix.split(".").pop() ?? prefix;
-      return label || null;
+      if (!label || RESERVED_SUBDOMAINS.has(label)) return null;
+      return label;
     }
   }
 

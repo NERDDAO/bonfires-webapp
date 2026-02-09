@@ -31,6 +31,8 @@ export interface EpisodesListProps {
   showTitle?: boolean;
   className?: string;
   variant?: "default" | "hero";
+  /** Ref for the scrollable container (hero variant only). Used for scroll-linked animation. */
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export default function EpisodesList({
@@ -41,6 +43,7 @@ export default function EpisodesList({
   showTitle = true,
   className,
   variant = "default",
+  scrollContainerRef,
 }: EpisodesListProps) {
   const sortedEpisodes = [...episodes]
     .sort((a, b) => {
@@ -61,11 +64,12 @@ export default function EpisodesList({
 
   return (
     <div
+      ref={variant === "hero" ? scrollContainerRef : undefined}
       className={cn(
         panelContainerClass,
         "h-full overflow-y-auto overscroll-x-none gap-0",
         variant === "hero"
-          ? "max-h-[412px] lg:max-h-[calc(100dvh-8rem)] lg:rounded-b-none lg:border-b-0"
+          ? "max-h-[412px] lg:max-h-[calc(100dvh-8rem)] rounded-b-none border-b-0"
           : "mt-3"
       )}
       aria-label="Episodes"
@@ -74,8 +78,9 @@ export default function EpisodesList({
         <h2
           className={cn(
             labelClass,
+            "sticky top-0 z-10 -mx-4 lg:-mx-5 -mt-4 px-4 lg:px-5 pt-4 pb-2 bg-[#181818] backdrop-blur-md",
             variant === "hero"
-              ? "text-xl lg:text-2xl font-bold mb-2 lg:mb-6"
+              ? "text-xl lg:text-2xl font-bold mb-2 lg:mb-6 pt-4 lg:pt-8 pb-2 -top-4"
               : ""
           )}
         >

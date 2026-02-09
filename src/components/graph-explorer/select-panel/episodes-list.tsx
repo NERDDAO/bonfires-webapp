@@ -66,7 +66,7 @@ export default function EpisodesList({
         "h-full overflow-y-auto overscroll-x-none gap-0",
         variant === "hero"
           ? "max-h-[412px] lg:max-h-[calc(100dvh-8rem)] lg:rounded-b-none lg:border-b-0"
-          : "lg:max-h-[40vh]"
+          : "mt-3"
       )}
       aria-label="Episodes"
     >

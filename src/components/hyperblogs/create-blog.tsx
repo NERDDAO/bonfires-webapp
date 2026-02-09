@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import type { DataRoomInfo } from "@/types";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 
@@ -16,6 +17,8 @@ export interface CreateBlogModalProps {
   isOpen: boolean;
   onClose: () => void;
   dataroomId: string;
+  /** Optional: dataroom title shown as a badge */
+  dataroomTitle?: string;
   /** Optional: if not provided, price is fetched from GET /api/datarooms/{dataroomId} */
   dataroomPriceUsd?: number;
   onSuccess?: () => void;
@@ -29,10 +32,14 @@ export function CreateBlogModal({
   isOpen,
   onClose,
   dataroomId,
+  dataroomTitle,
   dataroomPriceUsd,
   onSuccess,
 }: CreateBlogModalProps) {
   const [description, setDescription] = useState("");
+  const [blogLength, setBlogLength] = useState<"short" | "medium" | "long">(
+    "medium"
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +83,7 @@ export function CreateBlogModal({
         dataroom_id: dataroomId,
         user_query: description.trim(),
         is_public: true,
-        blog_length: "medium",
+        blog_length: blogLength,
         generation_mode: "blog",
         expected_amount: expectedAmount,
       });
@@ -111,10 +118,18 @@ export function CreateBlogModal({
       size="lg"
       showCloseButton={true}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+      <div className="flex gap-2 flex-wrap mt-2">
+        {dataroomTitle != null && dataroomTitle !== "" && (
+          <Badge variant="filled">Topic: {dataroomTitle}</Badge>
+        )}
+        <Badge variant="outline">
+          Cost: ${dataroomPriceUsd ?? 0}
+        </Badge>
+      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col mt-3">
         <label
           htmlFor="create-blog-description"
-          className="text-sm font-medium text-dark-s-100"
+          className="text-xs font-medium text-dark-s-100 -mb-2 ml-4 bg-brand-black w-fit z-10"
         >
           Description
         </label>
@@ -124,20 +139,59 @@ export function CreateBlogModal({
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe what you want the blog to cover (Max 600 characters)"
           maxLength={600}
-          rows={4}
+          rows={6}
           className={cn(
-            "w-full rounded-lg border border-dark-s-700 bg-[#FFFFFF05] px-3 py-2",
+            "w-full rounded-lg border border-dark-s-700 bg-[#FFFFFF05] px-3 py-4",
             "text-dark-s-0 placeholder:text-dark-s-500",
+            "resize-none",
             "focus:outline-none focus:ring-2 focus:ring-dark-s-500 focus:border-transparent"
           )}
           disabled={isSubmitting}
         />
+
+        <h2
+          id="modal-title"
+          className="font-semibold text-lg text-dark-s-0 mt-4"
+        >
+          Blog Length
+        </h2>
+
+        {/* blog length options — tab-style like graph explorer select-panel */}
+        <div
+          className="mt-4 flex rounded-xl border border-[#333333] bg-[#181818] p-1"
+          role="group"
+          aria-label="Blog length"
+        >
+          {(
+            [
+              { value: "short" as const, label: "Short (2 min)" },
+              { value: "medium" as const, label: "Medium (5 min)" },
+              { value: "long" as const, label: "Long (10 min)" },
+            ] as const
+          ).map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setBlogLength(value)}
+              className={cn(
+                "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                blogLength === value
+                  ? "bg-[#22252B] text-white"
+                  : "text-[#667085] hover:text-white/90"
+              )}
+              aria-pressed={blogLength === value}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {error && (
           <p className="text-sm text-red-500" role="alert">
             {error}
           </p>
         )}
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 mt-5">
           <Button
             type="button"
             variant="outline"

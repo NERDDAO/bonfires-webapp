@@ -34,7 +34,7 @@ export function SearchHistoryBreadcrumbs({
   // );
 
   return (
-    <p className="text-sm text-white/90 lg:mt-2">
+    <p className="text-sm text-white/90 lg:mt-2 leading-loose bg-[#181818] rounded-xl p-2 border border-[#333333]">
       {breadcrumbs.map((crumb, idx) => (
         <span key={idx}>
           {idx > 0 && <span className="text-white/50 mx-2.5">&gt;</span>}

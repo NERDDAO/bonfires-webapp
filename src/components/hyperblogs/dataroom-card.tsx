@@ -115,6 +115,7 @@ export default function DataroomCard({
         isOpen={createBlogOpen}
         onClose={() => setCreateBlogOpen(false)}
         dataroomId={data?.id ?? ""}
+        dataroomTitle={data?.description}
         dataroomPriceUsd={data?.price_usd}
         onSuccess={() => setCreateBlogOpen(false)}
       />

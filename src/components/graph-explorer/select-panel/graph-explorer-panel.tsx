@@ -60,7 +60,7 @@ export function GraphExplorerPanel({
     <>
       <div
         className={cn(
-          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] lg:max-h-[calc(100dvh-10rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
+          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] lg:max-h-[calc(100dvh-7.5rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
           !isRecentActivityCollapsed && "h-full",
           className
         )}
@@ -73,26 +73,21 @@ export function GraphExplorerPanel({
             onClick={() => setIsCollapsed(true)}
             className={cn(
               "z-10 items-center justify-center hidden lg:flex",
-              "h-7 rounded-full gap-1 px-2 w-fit",
-              border
+              "h-7 rounded-full gap-1 py-2 pl-2 pr-3 w-fit bg-[#22252B]",
+              border,
+              "hover:bg-[#22252B]/80 transition-colors duration-200"
             )}
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-            <span className="text-sm text-white">Collapse</span>
+            <Image 
+              className="rotate-90"
+              src="/icons/chevron-down.svg"
+              alt=""
+              width={12}
+              height={12}
+            />
+            <span className="text-xs font-bold text-white">Collapse</span>
           </button>
         )}
 
@@ -131,7 +126,8 @@ export function GraphExplorerPanel({
             onClick={() => setIsCollapsed(false)}
             className={cn(
               "flex flex-col items-center gap-3 py-4 px-3 rounded-lg min-w-[56px] absolute z-50",
-              border
+              border,
+              " hover:bg-[#22252B]/80 transition-colors duration-200"
             )}
             aria-label="Expand panel"
             title="Expand panel"

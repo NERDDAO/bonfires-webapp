@@ -14,6 +14,7 @@ import { ChatMessageList } from "./chat-message-list";
 import { ChatPanelCollapsed } from "./chat-panel-collapsed";
 import { ChatPanelHeader } from "./chat-panel-header";
 import type { ChatPanelProps } from "./types";
+import { border } from "../select-panel/select-panel-constants";
 
 /**
  * ChatPanel - Agent chat interface
@@ -69,9 +70,6 @@ export function ChatPanel({
     return null;
   }
 
-  const panelBorder =
-    "bg-[#181818]/80 border-[0.78px] border-[#333333] rounded-2xl";
-
   const panelContent = (
     <>
       {!isExpanded && (
@@ -116,7 +114,7 @@ export function ChatPanel({
         <div
           className={cn(
             "flex flex-col overflow-hidden",
-            panelBorder,
+            border,
             "shadow-xl w-full max-w-[calc(100vw-2rem)] h-full",
             className
           )}
@@ -133,7 +131,7 @@ export function ChatPanel({
       className={cn(
         "fixed bottom-4 right-4 z-30",
         "flex flex-col overflow-hidden",
-        panelBorder,
+        border,
         "shadow-xl",
         isExpanded ? "w-96 h-[500px]" : "w-12 h-12",
         "transition-all duration-200",

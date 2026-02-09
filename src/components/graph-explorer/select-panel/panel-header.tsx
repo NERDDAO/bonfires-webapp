@@ -195,7 +195,7 @@ export function PanelHeader({
 
       {searchHistoryBreadcrumbs.length > 0 && (
         <div
-          className={cn(panelContainerClass, "mb-3 lg:mt-2 hidden lg:block")}
+          className={cn(panelContainerClass, "lg:mt-3 hidden lg:block")}
         >
           <label
             htmlFor="search-history-breadcrumbs"

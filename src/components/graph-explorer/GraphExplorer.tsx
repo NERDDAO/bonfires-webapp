@@ -39,6 +39,7 @@ import { ErrorMessage, LoadingSpinner, toast } from "@/components/common";
 
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
+import { synthesizeEpisodicEdges } from "@/lib/utils/graph-utils";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import { useWalletAccount } from "@/lib/wallet/e2e";
 
@@ -645,18 +646,23 @@ export function GraphExplorer({
   const graphError =
     graphQuery.error ?? (hydrationError ? new Error(hydrationError) : null);
 
-  // Convert graph data to elements (match graph/GraphExplorer + Sigma: duplicate nodes get unique ids so display matches)
+  // Convert graph data to elements: one node per canonical id (uuid), all edges preserved
   const elements: GraphElement[] = useMemo(() => {
     if (!combinedGraphData) return [];
 
     const result: GraphElement[] = [];
     const nodeIds = new Set<string>();
-    const usedNodeIds = new Map<string, number>();
     const cachedNodes = nodeCacheRef.current;
 
-    // Convert nodes — assign unique ids for duplicates like sigma-adapter so ForceGraph shows same node count as Sigma
+    // Convert nodes — one element per canonical node id (uuid); duplicates are merged into a single node
     for (const node of combinedGraphData.nodes) {
       const nodeRecord = asRecord(node);
+      const nodeId = String(
+        nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
+      ).replace(/^n:/, "");
+      if (!nodeId || nodeIds.has(nodeId)) continue;
+      nodeIds.add(nodeId);
+
       const rawLabels = nodeRecord["labels"];
       const labels = Array.isArray(rawLabels)
         ? rawLabels.filter(
@@ -669,14 +675,6 @@ export function GraphExplorer({
           nodeRecord["entity_type"],
         labels
       );
-      const nodeId = String(
-        nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
-      ).replace(/^n:/, "");
-      if (!nodeId) continue;
-      const seen = usedNodeIds.get(nodeId) ?? 0;
-      const uniqueId = seen === 0 ? nodeId : `${nodeId}__dup_${seen + 1}`;
-      usedNodeIds.set(nodeId, seen + 1);
-      nodeIds.add(nodeId);
       const properties =
         (nodeRecord["properties"] as Record<string, unknown> | undefined) ??
         (nodeRecord["attributes"] as Record<string, unknown> | undefined) ??
@@ -693,7 +691,7 @@ export function GraphExplorer({
 
       result.push({
         data: {
-          id: `n:${uniqueId}`,
+          id: `n:${nodeId}`,
           label: (nodeRecord["name"] ??
             nodeRecord["label"] ??
             nodeRecord["title"] ??
@@ -705,8 +703,8 @@ export function GraphExplorer({
       });
     }
 
-    // Convert edges (match Sigma: only include when both endpoints exist; assign unique ids for duplicates)
-    const usedEdgeIds = new Map<string, number>();
+    // Convert edges: include every edge whose endpoints exist; one node per id so all connections attach to the single node
+    let edgeIndex = 0;
     for (const edge of combinedGraphData.edges) {
       const edgeRecord = asRecord(edge);
       const sourceValue =
@@ -724,15 +722,9 @@ export function GraphExplorer({
       if (!sourceValue || !targetValue) continue;
       const sourceId = String(sourceValue).replace(/^n:/, "");
       const targetId = String(targetValue).replace(/^n:/, "");
-      // Only include edge if both endpoints exist (same rule as Sigma adaptToSigma)
       if (!nodeIds.has(sourceId) || !nodeIds.has(targetId)) continue;
-      nodeIds.add(sourceId);
-      nodeIds.add(targetId);
-      const baseEdgeId = `e:${sourceId}-${targetId}`;
-      const seen = usedEdgeIds.get(baseEdgeId) ?? 0;
-      const uniqueEdgeId =
-        seen === 0 ? baseEdgeId : `${baseEdgeId}__dup_${seen + 1}`;
-      usedEdgeIds.set(baseEdgeId, seen + 1);
+      const uniqueEdgeId = `e:${sourceId}-${targetId}-${edgeIndex}`;
+      edgeIndex += 1;
       const edgeType = (edgeRecord["type"] ??
         edgeRecord["relationship"] ??
         edgeRecord["relationship_type"] ??
@@ -758,6 +750,13 @@ export function GraphExplorer({
         },
       });
     }
+
+    // Synthesize episodic edges: connect episode nodes to entities they mention
+    const episodicEdges = synthesizeEpisodicEdges(
+      combinedGraphData.edges,
+      nodeIds
+    );
+    result.push(...episodicEdges);
 
     const centerId = effectiveCenterNode?.replace(/^n:/, "");
     if (centerId && !nodeIds.has(centerId)) {

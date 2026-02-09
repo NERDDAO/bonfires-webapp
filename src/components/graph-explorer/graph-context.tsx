@@ -52,14 +52,15 @@ export function GraphSearchHistoryProvider({
 
   const pushSearchAround = useCallback(
     (nodeId: string, label?: string) => {
-      setSearchHistoryStack((prev) => {
-        const next = [...prev.slice(0, currentIndex + 1), { nodeId, label }];
-        setCurrentIndex(next.length - 1);
-        onNavigateToCenter(nodeId);
-        return next;
-      });
+      const next = [
+        ...searchHistoryStack.slice(0, currentIndex + 1),
+        { nodeId, label },
+      ];
+      setSearchHistoryStack(next);
+      setCurrentIndex(next.length - 1);
+      onNavigateToCenter(nodeId);
     },
-    [currentIndex, onNavigateToCenter]
+    [currentIndex, searchHistoryStack, onNavigateToCenter]
   );
 
   const resetSearchHistory = useCallback(() => {
@@ -71,8 +72,10 @@ export function GraphSearchHistoryProvider({
     (index: number) => {
       if (index < 0 || index >= searchHistoryStack.length) return;
       const item = searchHistoryStack[index];
-      if (item) onNavigateToCenter(item.nodeId);
       setCurrentIndex(index);
+      if (item) {
+        queueMicrotask(() => onNavigateToCenter(item.nodeId));
+      }
     },
     [searchHistoryStack, onNavigateToCenter]
   );

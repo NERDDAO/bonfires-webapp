@@ -7,6 +7,7 @@ import { DataRoomInfo } from "@/types";
 import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/utils";
 
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CreateBlogModal } from "./create-blog";
 import HyperblogFeed from "./hyperblog-feed";
@@ -28,29 +29,28 @@ function DataroomCardSkeleton({
       {/* Title: matches text-base lg:text-xl */}
       <div className="h-4 lg:h-7 w-3/4 bg-[#FFFFFF15] rounded" />
       {/* Description: matches line-clamp-2 text-xs lg:text-sm (2 lines) */}
-      <div className="h-8 lg:h-10 w-full bg-[#FFFFFF10] rounded mt-1 lg:mt-2 mb-2" />
-      {/* Single meta row with wrapping pills (matches actual card layout) */}
-      <div className="flex gap-2 flex-wrap items-center">
-        <span className="h-5 lg:h-6 w-full lg:w-24 bg-[#FFFFFF15] rounded-full shrink-0" />
-        <span className="h-5 lg:h-6 w-full lg:w-28 bg-[#FFFFFF15] rounded-full shrink-0" />
-        <span className="h-5 lg:h-6 w-14 bg-[#FFFFFF15] rounded-full shrink-0" />
-        <span className="h-5 lg:h-6 w-16 bg-[#FFFFFF15] rounded-full shrink-0" />
-        <span className="h-5 lg:h-6 w-14 bg-[#FFFFFF15] rounded-full shrink-0" />
+      <div className="h-4 lg:h-7 w-full bg-[#FFFFFF10] rounded mt-1 lg:mt-2 mb-2" />
+      {/* Badges row: matches actual card */}
+      <div className="flex gap-2 flex-wrap">
+        <Badge
+          variant="filled"
+          className="h-5 lg:h-6 w-full lg:w-24 bg-[#FFFFFF15] border-0 text-transparent shrink-0"
+        >
+          {" "}
+        </Badge>
+        <Badge
+          variant="outline"
+          className="h-5 lg:h-6 w-full lg:w-28 bg-[#FFFFFF15] border-0 text-transparent shrink-0"
+        >
+          {" "}
+        </Badge>
       </div>
-      <div
-        className={cn(
-          "mt-4 w-full bg-[#FFFFFF10] rounded-lg border-[0.78px] border-[#333333]",
-          variant === "featured" ? "h-18 lg:h-64" : "h-18 lg:h-32"
-        )}
-      />
-      {/* Stats row: matches icon height 18px + alignment */}
-      <div className="mt-4 flex gap-4 items-center">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-4 lg:h-[18px] w-12 bg-[#FFFFFF10] rounded"
-          />
-        ))}
+      {/* HyperblogFeed placeholder: "Show existing blogs" button area */}
+      <div className="mt-4 w-full rounded-lg min-h-17 bg-[#FFFFFF10] border-[0.78px] border-[#333333]" />
+      {/* Buttons row: Explore Graph + Create Blog */}
+      <div className="mt-4 flex gap-4">
+        <div className="flex-1 h-10 rounded-lg bg-[#FFFFFF10] border-[0.78px] border-[#333333]" />
+        <div className="flex-1 h-10 rounded-lg bg-[#FFFFFF10] border-[0.78px] border-[#333333]" />
       </div>
     </div>
   );
@@ -91,20 +91,8 @@ export default function DataroomCard({
         {bonfireName}
       </div>
       <div className="flex gap-2 flex-wrap">
-        <span className=" text-center lg:text-left font-bold text-xs rounded-full px-3 py-1 bg-dark-s-700 text-white whitespace-nowrap">
-          {formattedAuthor}
-        </span>
-        {[{ value: cost, className: "" }].map((item) => (
-          <span
-            key={item.value}
-            className={cn(
-              "text-xs text-center lg:text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap",
-              item.className
-            )}
-          >
-            {item.value}
-          </span>
-        ))}
+        <Badge variant="filled">{formattedAuthor}</Badge>
+        <Badge variant="outline">{cost}</Badge>
       </div>
 
       <HyperblogFeed dataroomId={data?.id} />
@@ -127,6 +115,7 @@ export default function DataroomCard({
         isOpen={createBlogOpen}
         onClose={() => setCreateBlogOpen(false)}
         dataroomId={data?.id ?? ""}
+        dataroomTitle={data?.description}
         dataroomPriceUsd={data?.price_usd}
         onSuccess={() => setCreateBlogOpen(false)}
       />

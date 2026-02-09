@@ -16,6 +16,8 @@ export interface ModalProps {
   children: ReactNode;
   /** Optional title; when set, used for aria-labelledby */
   title?: string;
+  /** Optional description; when set, used for aria-describedby */
+  description?: string;
   /** Max width of the content box */
   size?: ModalSize;
   /** Close when clicking the backdrop (default: true) */
@@ -45,6 +47,7 @@ export function Modal({
   onClose,
   children,
   title,
+  description,
   size = "md",
   closeOnBackdrop = true,
   closeOnEscape = true,
@@ -104,7 +107,7 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
       >
         {(title != null || showCloseButton) && (
-          <div className="flex items-center justify-between border-b border-dark-s-700">
+          <div className={cn("flex items-center justify-between", !description && "border-b border-dark-s-700")}>
             {title != null ? (
               <h2
                 id="modal-title"
@@ -131,6 +134,15 @@ export function Modal({
               </button>
             )}
           </div>
+        )}
+
+        {description && (
+          <p
+            id="modal-description"
+            className="text-sm text-[#A9A9A9]"
+          >
+            {description}
+          </p>
         )}
 
         <div className="modal-content">{children}</div>

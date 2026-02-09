@@ -14,11 +14,14 @@ import { apiClient } from "@/lib/api/client";
 export interface HeroRecentActivityProps {
   staticGraph: { staticBonfireId: string; staticAgentId: string };
   className?: string;
+  /** Ref for the scrollable container (used for scroll-linked animation). */
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function HeroRecentActivity({
   staticGraph,
   className,
+  scrollContainerRef,
 }: HeroRecentActivityProps) {
   const router = useRouter();
   const [episodes, setEpisodes] = useState<EpisodeTimelineItem[]>([]);
@@ -80,6 +83,7 @@ export function HeroRecentActivity({
         episodesLoading={episodesLoading}
         showTitle={true}
         variant="hero"
+        scrollContainerRef={scrollContainerRef}
       />
     </div>
   );

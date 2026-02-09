@@ -150,6 +150,16 @@ export function WikiPanelContainer({
     }
   }, [isControlled, isMinimized, onMinimizedChange]);
 
+  const handleSearchAroundNode = useCallback(
+    (nodeUuid: string) => {
+      wikiPanelProps.onSearchAroundNode?.(nodeUuid);
+      if (isMobile) {
+        wikiPanelProps.onClose?.();
+      }
+    },
+    [wikiPanelProps.onSearchAroundNode, wikiPanelProps.onClose, isMobile]
+  );
+
   const { enabled, onClose } = wikiPanelProps;
 
   if (!enabled || (!wikiPanelProps.node && !wikiPanelProps.edge)) {
@@ -202,16 +212,6 @@ export function WikiPanelContainer({
   );
 
   const showBody = isMobile ? true : !isMinimized;
-
-  const handleSearchAroundNode = useCallback(
-    (nodeUuid: string) => {
-      wikiPanelProps.onSearchAroundNode?.(nodeUuid);
-      if (isMobile) {
-        onClose?.();
-      }
-    },
-    [wikiPanelProps.onSearchAroundNode, isMobile, onClose]
-  );
 
   const panelContent = (
     <>

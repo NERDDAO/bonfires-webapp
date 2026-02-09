@@ -107,7 +107,8 @@ export function CreateBlogModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Create Blog"
-      size="md"
+      description="Generate an AI-powered blog post from this dataroom’s knowledge graph"
+      size="lg"
       showCloseButton={true}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
@@ -121,7 +122,8 @@ export function CreateBlogModal({
           id="create-blog-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="e.g. Summarize the main findings on climate risk and mitigation strategies"
+          placeholder="Describe what you want the blog to cover (Max 600 characters)"
+          maxLength={600}
           rows={4}
           className={cn(
             "w-full rounded-lg border border-dark-s-700 bg-[#FFFFFF05] px-3 py-2",
@@ -142,6 +144,7 @@ export function CreateBlogModal({
             showElevation={false}
             onClick={handleClose}
             disabled={isSubmitting}
+            className="flex-1"
           >
             Cancel
           </Button>
@@ -150,6 +153,7 @@ export function CreateBlogModal({
             variant="primary"
             showElevation={false}
             disabled={isSubmitting || !description.trim()}
+            className="flex-1"
           >
             {isSubmitting ? "Creating…" : "Create Blog"}
           </Button>

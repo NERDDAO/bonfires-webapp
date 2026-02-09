@@ -4,10 +4,12 @@
  * Utilities for checking if a user can access a bonfire based on:
  * - Public bonfires (is_public: true) → accessible to everyone
  * - Private bonfires (is_public: false) → only accessible if user's Clerk org
- *   has publicMetadata.bonfire_id matching the bonfire ID
+ *   is mapped to the bonfire via ClerkOrgMapping (backend source of truth)
  */
 import type { BonfireInfo } from "@/types";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+
+import { proxyToBackend } from "@/lib/api/server-utils";
 
 /**
  * Result of an access check
@@ -20,10 +22,18 @@ export interface AccessCheckResult {
   userBonfireId?: string | null;
 }
 
+interface OrgBonfireMapping {
+  bonfire_id: string | null;
+  is_admin: boolean;
+  slug: string | null;
+}
+
 /**
- * Get the bonfire ID that the current user's organization is linked to
+ * Get the bonfire ID that the current user's organization is linked to.
  *
- * @returns The bonfire_id from org's publicMetadata, or null if not set/no org
+ * Uses the backend ClerkOrgMapping collection (single source of truth).
+ *
+ * @returns The bonfire_id mapped to the user's active org, or null
  */
 export async function getUserBonfireId(): Promise<string | null> {
   try {
@@ -33,13 +43,21 @@ export async function getUserBonfireId(): Promise<string | null> {
       return null;
     }
 
-    const client = await clerkClient();
-    const org = await client.organizations.getOrganization({
-      organizationId: orgId,
-    });
+    const result = await proxyToBackend<OrgBonfireMapping>(
+      `/orgs/${encodeURIComponent(orgId)}/bonfire-mapping`,
+      { method: "GET", includeAuth: false }
+    );
 
-    const bonfireId = org.publicMetadata?.["bonfire_id"];
-    return typeof bonfireId === "string" ? bonfireId : null;
+    if (!result.success || !result.data) {
+      return null;
+    }
+
+    // Admin orgs have access to all bonfires — return a sentinel
+    if (result.data.is_admin) {
+      return "*";
+    }
+
+    return result.data.bonfire_id;
   } catch (error) {
     console.error("[Bonfire Access] Failed to get user bonfire ID:", error);
     return null;
@@ -65,6 +83,17 @@ export async function checkBonfireAccess(
     return {
       allowed: true,
       reason: "public_bonfire",
+      userId,
+      orgId,
+      userBonfireId,
+    };
+  }
+
+  // Admin org has access to all bonfires
+  if (userBonfireId === "*") {
+    return {
+      allowed: true,
+      reason: "admin_org",
       userId,
       orgId,
       userBonfireId,
@@ -122,6 +151,11 @@ export async function filterAccessibleBonfires(
       return true;
     }
 
+    // Admin org can access all bonfires
+    if (userBonfireId === "*") {
+      return true;
+    }
+
     // Private bonfires are only accessible if user's org matches
     if (userBonfireId && bonfire.id === userBonfireId) {
       return true;
@@ -158,6 +192,17 @@ export async function validateBonfireAccess(
   // Otherwise, we need to check if user has org access
   const userBonfireId = await getUserBonfireId();
   const { userId, orgId } = await auth();
+
+  // Admin org can access all bonfires
+  if (userBonfireId === "*") {
+    return {
+      allowed: true,
+      reason: "admin_org",
+      userId,
+      orgId,
+      userBonfireId,
+    };
+  }
 
   // If user's org matches this bonfire, they have access
   if (userBonfireId && userBonfireId === bonfireId) {
@@ -213,6 +258,17 @@ export async function validateBonfireIdParam(
 
   const userBonfireId = await getUserBonfireId();
   const { userId, orgId } = await auth();
+
+  // Admin org can access all bonfires
+  if (userBonfireId === "*") {
+    return {
+      allowed: true,
+      reason: "admin_org",
+      userId,
+      orgId,
+      userBonfireId,
+    };
+  }
 
   // If user's org matches this bonfire, they have access
   if (userBonfireId && userBonfireId === bonfireId) {

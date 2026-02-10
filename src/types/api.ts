@@ -15,6 +15,34 @@ export interface BonfireInfo {
   agent_count: number;
   is_public?: boolean;
   latest_taxonomies?: TaxonomyInfo[];
+  /**
+   * URL-safe slug for subdomain routing (e.g. "eth-boulder").
+   * When present, used to build subdomain URLs: `{slug}.app.bonfires.ai`.
+   * Falls back to lowercased, hyphenated name if not provided by backend.
+   *
+   * Backend extension: add `slug: str | None` to the BonfireInfo model.
+   */
+  slug?: string;
+  /**
+   * Optional per-bonfire site config overrides from the backend.
+   * When present, merged with defaultSiteConfig in resolveSiteConfig().
+   *
+   * Backend extension: add `site_config: BonfireSiteConfig | None` to the model.
+   * See BonfireSiteConfigOverrides in src/config/sites/types.ts.
+   */
+  site_config?: {
+    theme?: {
+      brandPrimary?: string;
+      brandSecondary?: string;
+      brandBlack?: string;
+      brandSkyblue?: string;
+    };
+    features?: {
+      graphExplorer?: boolean;
+      exploreBonfires?: boolean;
+    };
+    landing_variant?: string;
+  };
 }
 
 export interface AgentInfo {

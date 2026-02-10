@@ -99,7 +99,7 @@ export function HTNTemplateCreator({
     value: string | boolean
   ) => {
     setLengthConfigs((prev) => {
-      const current = prev[length];
+      const current: LengthConfig = prev[length] ?? INITIAL_LENGTH_CONFIGS["medium"];
       const updated: LengthConfig = {
         enabled: field === "enabled" ? (value as boolean) : current.enabled,
         nodeCount: field === "nodeCount" ? (value as string) : current.nodeCount,

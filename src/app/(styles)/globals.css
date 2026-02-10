@@ -15,6 +15,14 @@
   --font-montserrat: var(--font-montserrat);
 }
 
+.tooltip[data-tip]::before {
+  max-width: 20rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border: 1px solid #22252B;
+}
+
 button {
   cursor: pointer;
 }

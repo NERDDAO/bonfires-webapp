@@ -99,7 +99,8 @@ export function HTNTemplateCreator({
     value: string | boolean
   ) => {
     setLengthConfigs((prev) => {
-      const current: LengthConfig = prev[length] ?? INITIAL_LENGTH_CONFIGS["medium"];
+      const fallback: LengthConfig = { enabled: false, nodeCount: "5-7", wordCount: "1500-2500", description: "" };
+      const current: LengthConfig = prev[length] ?? fallback;
       const updated: LengthConfig = {
         enabled: field === "enabled" ? (value as boolean) : current.enabled,
         nodeCount: field === "nodeCount" ? (value as string) : current.nodeCount,
@@ -135,9 +136,9 @@ export function HTNTemplateCreator({
     }
 
     // Ensure default_length references an enabled length
-    const effectiveDefault = nodeCountConfig[defaultLength]
+    const effectiveDefault: string = nodeCountConfig[defaultLength]
       ? defaultLength
-      : Object.keys(nodeCountConfig)[0];
+      : (Object.keys(nodeCountConfig)[0] ?? "medium");
 
     const request: CreateHTNTemplateRequest = {
       name: name.trim(),

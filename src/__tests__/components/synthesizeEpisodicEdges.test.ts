@@ -5,6 +5,7 @@
  * `episodes` metadata on EntityEdge objects.
  */
 import { synthesizeEpisodicEdges } from "@/lib/utils/graph-utils";
+
 import type { GraphEdge } from "@/types/graph";
 
 function makeEdge(
@@ -41,9 +42,7 @@ describe("synthesizeEpisodicEdges", () => {
   });
 
   it("skips episodes not present in nodeIds", () => {
-    const edges: GraphEdge[] = [
-      makeEdge("entityA", "entityB", ["ep-missing"]),
-    ];
+    const edges: GraphEdge[] = [makeEdge("entityA", "entityB", ["ep-missing"])];
     const nodeIds = new Set(["entityA", "entityB"]);
 
     const result = synthesizeEpisodicEdges(edges, nodeIds);
@@ -119,9 +118,7 @@ describe("synthesizeEpisodicEdges", () => {
   });
 
   it("handles multiple episodes on a single edge", () => {
-    const edges: GraphEdge[] = [
-      makeEdge("entityA", "entityB", ["ep1", "ep2"]),
-    ];
+    const edges: GraphEdge[] = [makeEdge("entityA", "entityB", ["ep1", "ep2"])];
     const nodeIds = new Set(["entityA", "entityB", "ep1", "ep2"]);
 
     const result = synthesizeEpisodicEdges(edges, nodeIds);
@@ -131,9 +128,7 @@ describe("synthesizeEpisodicEdges", () => {
   });
 
   it("generates unique edge IDs with ep: prefix", () => {
-    const edges: GraphEdge[] = [
-      makeEdge("entityA", "entityB", ["ep1"]),
-    ];
+    const edges: GraphEdge[] = [makeEdge("entityA", "entityB", ["ep1"])];
     const nodeIds = new Set(["entityA", "entityB", "ep1"]);
 
     const result = synthesizeEpisodicEdges(edges, nodeIds);

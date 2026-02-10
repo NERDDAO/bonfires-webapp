@@ -79,10 +79,10 @@ export default function DataroomCard({
   const router = useRouter();
   const [createBlogOpen, setCreateBlogOpen] = useState(false);
   const [centerNode, setCenterNode] = useState<CenterNodeEntity | null>(null);
+  const centerUuid = data?.center_node_uuid;
+  const bonfireId = data?.bonfire_id;
 
   useEffect(() => {
-    const centerUuid = data?.center_node_uuid;
-    const bonfireId = data?.bonfire_id;
     if (!centerUuid || !bonfireId) return;
 
     const fetchCenterNode = async () => {

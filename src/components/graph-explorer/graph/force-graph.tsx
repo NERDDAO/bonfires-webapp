@@ -38,12 +38,15 @@ const MAX_LABEL_WIDTH = 72;
 
 const GRAPH_COLORS = {
   linkStroke: "rgba(95, 95, 95, 1)",
+  linkStrokeDimmed: "rgb(50, 50, 50)",
   linkStrokeActive: "rgba(255, 255, 255, 0.9)",
   linkLabelFill: "rgb(200, 200, 200)",
+  linkLabelFillDimmed: "rgb(90, 90, 90)",
   linkLabelFillActive: "rgb(255, 255, 255)",
   nodeFill: "rgb(179, 179, 179)",
   nodeStroke: "rgb(179, 179, 179)",
   labelFill: "rgb(246, 246, 246)",
+  labelFillDimmed: "rgb(85, 85, 85)",
   nodeFillHover: "rgb(220, 220, 220)",
   nodeStrokeHover: "rgb(255, 255, 255)",
   labelFillHover: "rgb(255, 255, 255)",
@@ -55,6 +58,34 @@ const GRAPH_COLORS = {
 
 const EDGE_LABEL_MAX_WIDTH = 80;
 const EDGE_HIT_THRESHOLD = 8;
+/** Factor to darken node fill/stroke when dimmed (multiply RGB by this) */
+const DIM_DARKEN_FACTOR = 0.4;
+
+/** Returns a darker rgb string from a color (hex or rgb(r,g,b)) */
+function darkenColor(color: string, factor: number = DIM_DARKEN_FACTOR): string {
+  let r = 0,
+    g = 0,
+    b = 0;
+  const hexMatch = color.match(/^#?([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})$/);
+  if (hexMatch) {
+    r = parseInt(hexMatch[1] ?? "0", 16);
+    g = parseInt(hexMatch[2] ?? "0", 16);
+    b = parseInt(hexMatch[3] ?? "0", 16);
+  } else {
+    const rgbMatch = color.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (rgbMatch) {
+      r = parseInt(rgbMatch[1] ?? "0", 10);
+      g = parseInt(rgbMatch[2] ?? "0", 10);
+      b = parseInt(rgbMatch[3] ?? "0", 10);
+    } else {
+      return "rgb(60, 60, 60)";
+    }
+  }
+  r = Math.round(r * factor);
+  g = Math.round(g * factor);
+  b = Math.round(b * factor);
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 function truncateLabel(
   ctx: CanvasRenderingContext2D,
@@ -191,12 +222,31 @@ function clampNodesToBounds(
   }
 }
 
+/** Set of node IDs that are the hovered node plus all nodes connected to it by an edge */
+function getConnectedNodeIds(
+  hoveredNodeId: string | null,
+  links: ViewLink[]
+): Set<string> {
+  if (!hoveredNodeId) return new Set();
+  const set = new Set<string>([hoveredNodeId]);
+  for (const link of links) {
+    const sid = link.source.id;
+    const tid = link.target.id;
+    if (sid === hoveredNodeId || tid === hoveredNodeId) {
+      set.add(sid);
+      set.add(tid);
+    }
+  }
+  return set;
+}
+
 function drawNode(
   ctx: CanvasRenderingContext2D,
   node: ViewNode,
   colors: typeof GRAPH_COLORS,
   isHovered: boolean,
-  isSelectedOrHighlighted: boolean
+  isSelectedOrHighlighted: boolean,
+  isDimmed: boolean
 ): void {
   const x = node.x ?? 0;
   const y = node.y ?? 0;
@@ -207,17 +257,23 @@ function drawNode(
   ctx.arc(x, y, r, 0, 2 * Math.PI);
   const baseFill = node.color ?? colors.nodeFill;
   const baseStroke = node.color ?? colors.nodeStroke;
-  ctx.fillStyle = active
-    ? isSelectedOrHighlighted
-      ? colors.nodeFillSelected
-      : colors.nodeFillHover
-    : baseFill;
+  const fillColor = isDimmed
+    ? darkenColor(baseFill)
+    : active
+      ? isSelectedOrHighlighted
+        ? colors.nodeFillSelected
+        : colors.nodeFillHover
+      : baseFill;
+  const strokeColor = isDimmed
+    ? darkenColor(baseStroke)
+    : active
+      ? isSelectedOrHighlighted
+        ? colors.nodeStrokeSelected
+        : colors.nodeStrokeHover
+      : baseStroke;
+  ctx.fillStyle = fillColor;
   ctx.fill();
-  ctx.strokeStyle = active
-    ? isSelectedOrHighlighted
-      ? colors.nodeStrokeSelected
-      : colors.nodeStrokeHover
-    : baseStroke;
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth = active ? 2.5 : 1.5;
   ctx.stroke();
 
@@ -231,7 +287,7 @@ function drawNode(
       ? "600"
       : "500";
   ctx.font = `${fontWeight} ${fontSize}px system-ui, sans-serif`;
-  ctx.fillStyle = active ? colors.labelFillHover : colors.labelFill;
+  ctx.fillStyle = isDimmed ? colors.labelFillDimmed : active ? colors.labelFillHover : colors.labelFill;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   const displayLabel = active
@@ -244,6 +300,8 @@ function drawEdgeLabel(
   ctx: CanvasRenderingContext2D,
   link: ViewLink,
   isActive: boolean,
+  isFromHoveredNode: boolean,
+  isDimmed: boolean,
   colors: typeof GRAPH_COLORS
 ): void {
   const sx = link.source.x ?? 0;
@@ -256,7 +314,11 @@ function drawEdgeLabel(
   const fontSize = isActive ? 10 : 9;
   const fontWeight = isActive ? "600" : "500";
   ctx.font = `italic ${fontWeight} ${fontSize}px system-ui, sans-serif`;
-  ctx.fillStyle = isActive ? colors.linkLabelFillActive : colors.linkLabelFill;
+  ctx.fillStyle = isDimmed
+    ? colors.linkLabelFillDimmed
+    : isActive
+      ? colors.linkLabelFillActive
+      : colors.linkLabelFill;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const displayLabel = isActive ? getEdgeLabel(link.label) : "";
@@ -280,10 +342,53 @@ function draw(
   ctx.translate(transform.x, transform.y);
   ctx.scale(transform.k, transform.k);
 
-  // Draw edges (inactive first, then active on top for visibility)
-  for (const link of links) {
+  const connectedNodeIds = getConnectedNodeIds(hoveredNodeId, links);
+  const isHoveringNode = hoveredNodeId != null;
+
+  const getLinkState = (link: ViewLink) => {
     const isActive = link.id === hoveredEdgeId || link.id === selectedEdgeId;
-    if (isActive) continue;
+    const linkConnected =
+      isHoveringNode &&
+      (connectedNodeIds.has(link.source.id) || connectedNodeIds.has(link.target.id));
+    const edgeDimmed = isHoveringNode && !linkConnected;
+    const edgeFromHoveredNode =
+      isHoveringNode &&
+      (link.source.id === hoveredNodeId || link.target.id === hoveredNodeId);
+    return { isActive, edgeDimmed, edgeFromHoveredNode };
+  };
+
+  // —— Layer 1: dimmed edges (below everything)
+  for (const link of links) {
+    const { isActive, edgeDimmed } = getLinkState(link);
+    if (!edgeDimmed || isActive) continue;
+    const sx = link.source.x ?? 0;
+    const sy = link.source.y ?? 0;
+    const tx = link.target.x ?? 0;
+    const ty = link.target.y ?? 0;
+    ctx.strokeStyle = GRAPH_COLORS.linkStrokeDimmed;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+  }
+  // —— Layer 2: dimmed edge labels
+  for (const link of links) {
+    const { isActive, edgeDimmed } = getLinkState(link);
+    if (!edgeDimmed || isActive) continue;
+    drawEdgeLabel(ctx, link, false, false, true, GRAPH_COLORS);
+  }
+  // —— Layer 3: dimmed nodes
+  for (const node of nodes) {
+    const isDimmed = isHoveringNode && !connectedNodeIds.has(node.id);
+    if (!isDimmed) continue;
+    drawNode(ctx, node, GRAPH_COLORS, false, false, true);
+  }
+
+  // —— Layer 4: normal (connected, not from-hovered) edges
+  for (const link of links) {
+    const { isActive, edgeDimmed, edgeFromHoveredNode } = getLinkState(link);
+    if (edgeDimmed || edgeFromHoveredNode || isActive) continue;
     const sx = link.source.x ?? 0;
     const sy = link.source.y ?? 0;
     const tx = link.target.x ?? 0;
@@ -295,8 +400,24 @@ function draw(
     ctx.lineTo(tx, ty);
     ctx.stroke();
   }
+  // —— Layer 5: edges from hovered node (highlighted)
   for (const link of links) {
-    const isActive = link.id === hoveredEdgeId || link.id === selectedEdgeId;
+    const { isActive, edgeFromHoveredNode } = getLinkState(link);
+    if (!edgeFromHoveredNode || isActive) continue;
+    const sx = link.source.x ?? 0;
+    const sy = link.source.y ?? 0;
+    const tx = link.target.x ?? 0;
+    const ty = link.target.y ?? 0;
+    ctx.strokeStyle = GRAPH_COLORS.linkStrokeActive;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+  }
+  // —— Layer 6: active edge (hovered/selected)
+  for (const link of links) {
+    const { isActive } = getLinkState(link);
     if (!isActive) continue;
     const sx = link.source.x ?? 0;
     const sy = link.source.y ?? 0;
@@ -310,15 +431,38 @@ function draw(
     ctx.stroke();
   }
 
-  // Edge labels (draw after edges so they're on top)
+  // —— Layer 7: normal edge labels
   for (const link of links) {
-    const isActive = link.id === hoveredEdgeId || link.id === selectedEdgeId;
-    drawEdgeLabel(ctx, link, isActive, GRAPH_COLORS);
+    const { isActive, edgeDimmed, edgeFromHoveredNode } = getLinkState(link);
+    if (edgeDimmed || edgeFromHoveredNode || isActive) continue;
+    drawEdgeLabel(ctx, link, false, false, false, GRAPH_COLORS);
+  }
+  // —— Layer 8: from-hovered edge labels
+  for (const link of links) {
+    const { isActive, edgeFromHoveredNode } = getLinkState(link);
+    if (!edgeFromHoveredNode || isActive) continue;
+    drawEdgeLabel(ctx, link, false, true, false, GRAPH_COLORS);
+  }
+  // —— Layer 9: active edge label
+  for (const link of links) {
+    const { isActive } = getLinkState(link);
+    if (!isActive) continue;
+    drawEdgeLabel(ctx, link, true, false, false, GRAPH_COLORS);
   }
 
+  // —— Layer 10: non-dimmed nodes (on top)
   for (const node of nodes) {
+    const isDimmed = isHoveringNode && !connectedNodeIds.has(node.id);
+    if (isDimmed) continue;
     const isHighlighted = highlightedNodeIds.has(node.id);
-    drawNode(ctx, node, GRAPH_COLORS, node.id === hoveredNodeId, isHighlighted);
+    drawNode(
+      ctx,
+      node,
+      GRAPH_COLORS,
+      node.id === hoveredNodeId,
+      isHighlighted,
+      false
+    );
   }
   ctx.restore();
 }

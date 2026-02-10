@@ -1021,8 +1021,20 @@ export function GraphExplorer({
         edgeId,
         userTriggered: true,
       });
+
+      // Open wiki panel when closed so edge content is visible (same as node click)
+      if (panel.wikiEnabled) {
+        if (panel.rightPanelMode === "none") {
+          dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
+        }
+        dispatchPanel({ type: PanelActionType.SET_WIKI_MODE, mode: "full" });
+        dispatchPanel({
+          type: PanelActionType.SET_WIKI_MINIMIZED,
+          minimized: false,
+        });
+      }
     },
-    [dispatchSelection]
+    [dispatchSelection, dispatchPanel, panel.wikiEnabled, panel.rightPanelMode]
   );
 
   const handleEpisodeSelect = useCallback(

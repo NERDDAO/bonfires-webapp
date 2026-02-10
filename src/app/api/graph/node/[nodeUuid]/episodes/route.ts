@@ -39,15 +39,15 @@ export async function GET(
     return createErrorResponse("nodeUuid path parameter is required", 400);
   }
 
-  if (!queryParams.bonfire_id) {
+  if (!queryParams["bonfire_id"]) {
     return createErrorResponse("bonfire_id query parameter is required", 400);
   }
 
   return handleProxyRequest(`/knowledge_graph/node/${nodeUuid}/episodes`, {
     method: "GET",
     queryParams: {
-      bonfire_id: queryParams.bonfire_id,
-      limit: queryParams.limit,
+      bonfire_id: queryParams["bonfire_id"],
+      limit: queryParams["limit"],
     },
   });
 }

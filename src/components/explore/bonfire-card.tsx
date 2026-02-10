@@ -9,16 +9,11 @@ import { cn } from "@/lib/cn";
 
 /**
  * Build a subdomain URL for a bonfire.
- * Uses the backend slug if available, otherwise derives from name.
+ * Uses the backend slug if available, otherwise falls back to the bonfire ID
+ * (the resolve-subdomain endpoint accepts both slugs and ObjectIds).
  */
 function getBonfireSlug(bonfire: BonfireInfo): string {
-  return (
-    bonfire.slug ??
-    bonfire.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-  );
+  return bonfire.slug ?? bonfire.id;
 }
 
 function getBonfireBaseUrl(bonfire: BonfireInfo): string {

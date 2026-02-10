@@ -17,7 +17,7 @@ import HyperblogFeed from "./hyperblog-feed";
 
 interface CenterNodeEntity {
   name: string;
-  entity_type: string;
+  labels: string[];
   summary?: string;
 }
 
@@ -87,16 +87,31 @@ export default function DataroomCard({
       try {
         const response = await apiClient.get<{
           success: boolean;
-          entity: CenterNodeEntity;
+          entity: {
+            name: string;
+            labels: string[];
+            summary?: string;
+          } | null;
         }>(
-          `/api/documents/${data.center_node_uuid}?bonfire_id=${data.bonfire_id}`
+          `/api/documents/${data.center_node_uuid}?bonfire_id=${data.bonfire_id}`,
+          { cache: true }
         );
         if (response.success && response.entity) {
-          setCenterNode(response.entity);
+          setCenterNode({
+            name: response.entity.name,
+            labels: response.entity.labels ?? [],
+            summary: response.entity.summary,
+          });
+          return;
         }
       } catch {
-        // Center node display is non-critical; silently ignore errors
+        // Entity lookup failed — fall back to showing the UUID
       }
+      // Fallback: show truncated UUID when entity lookup fails
+      setCenterNode({
+        name: data.center_node_uuid.slice(0, 8),
+        labels: ["Entity"],
+      });
     };
 
     fetchCenterNode();
@@ -136,7 +151,9 @@ export default function DataroomCard({
           <span className="text-xs text-white font-medium truncate">
             {centerNode.name}
           </span>
-          <Badge variant="outline">{centerNode.entity_type}</Badge>
+          {centerNode.labels.length > 0 && (
+            <Badge variant="outline">{centerNode.labels[0]}</Badge>
+          )}
         </div>
       )}
 

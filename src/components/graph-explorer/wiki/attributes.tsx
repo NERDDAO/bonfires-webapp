@@ -6,7 +6,7 @@ export default function Attributes({
   attributes: Record<string, unknown>;
 }) {
   return (
-    <div className="bg-base-200 rounded-lg divide-y divide-base-300">
+    <div className="bg-[#2D2E33] rounded-lg divide-y divide-[#37393F]">
       {Object.entries(attributes).map(([key, val]) => {
         const displayKey = formatLabel(key);
         const displayVal = formatAttributeValue(val);

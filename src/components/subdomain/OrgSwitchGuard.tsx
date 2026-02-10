@@ -33,6 +33,8 @@ interface OrgSwitchGuardProps {
   children: ReactNode;
 }
 
+const containerClass = "flex items-center justify-center h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-5rem)]";
+
 export function OrgSwitchGuard({ children }: OrgSwitchGuardProps) {
   const { isSubdomainScoped } = useSubdomainBonfire();
   const { accessStatus, isOrgSwitching } = useAutoOrgSwitch();
@@ -44,9 +46,9 @@ export function OrgSwitchGuard({ children }: OrgSwitchGuardProps) {
 
   if (accessStatus === "loading" || isOrgSwitching) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className={containerClass}>
         <div className="flex flex-col items-center gap-4">
-          <span className="loading loading-spinner loading-lg text-primary" />
+          <span className="loading loading-spinner loading-lg text-white" />
           <p className="text-sm text-base-content/60">
             Loading bonfire&hellip;
           </p>
@@ -57,7 +59,7 @@ export function OrgSwitchGuard({ children }: OrgSwitchGuardProps) {
 
   if (accessStatus === "sign_in_required") {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className={containerClass}>
         <div className="card bg-base-200 shadow-xl max-w-md w-full">
           <div className="card-body items-center text-center">
             <h2 className="card-title text-lg">Sign In Required</h2>
@@ -78,7 +80,7 @@ export function OrgSwitchGuard({ children }: OrgSwitchGuardProps) {
 
   if (accessStatus === "no_access") {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className={containerClass}>
         <div className="card bg-base-200 shadow-xl max-w-md w-full">
           <div className="card-body items-center text-center">
             <h2 className="card-title text-lg">Access Denied</h2>

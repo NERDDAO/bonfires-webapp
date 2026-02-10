@@ -28,6 +28,8 @@ export interface ModalProps {
   showCloseButton?: boolean;
   /** Extra class for the modal content box */
   className?: string;
+  /** Optional tooltip content; when set, used for data-tip */
+  tooltipContent?: string;
 }
 
 const sizeClasses: Record<ModalSize, string> = {
@@ -52,6 +54,7 @@ export function Modal({
   closeOnBackdrop = true,
   closeOnEscape = true,
   showCloseButton = true,
+  tooltipContent,
   className,
 }: ModalProps) {
   useEffect(() => {
@@ -114,12 +117,28 @@ export function Modal({
             )}
           >
             {title != null ? (
-              <h2
-                id="modal-title"
-                className="font-semibold text-lg text-dark-s-0 truncate"
-              >
-                {title}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2
+                  id="modal-title"
+                  className="font-semibold text-lg text-dark-s-0 truncate"
+                >
+                  {title}
+                </h2>
+                {tooltipContent && (
+                  <div
+                    className="tooltip tooltip-right flex"
+                    data-tip={tooltipContent}
+                  >
+                    <Image
+                      src="/icons/tooltip.svg"
+                      alt="Tooltip"
+                      width={12}
+                      height={12}
+                      className="cursor-help h-3 w-3 lg:h-4 lg:w-4"
+                    />
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex-1" />
             )}

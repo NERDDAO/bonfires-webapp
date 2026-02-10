@@ -19,6 +19,7 @@ import {
   WikiNodeData,
   parseEpisodeContent,
 } from "./wiki-panel-utils";
+import { Button } from "@/components/ui/button";
 
 /**
  * WikiPanel Component
@@ -64,6 +65,8 @@ export interface WikiPanelProps {
   getRelatedNodeTitle?: (nodeId: string) => string | undefined;
   /** Additional CSS classes */
   className?: string;
+  /** Whether the panel is on mobile */
+  isMobile?: boolean;
 }
 
 /**
@@ -88,6 +91,7 @@ export function WikiPanel({
   onSearchAroundNode,
   getRelatedNodeTitle,
   className,
+  isMobile,
 }: WikiPanelProps) {
   // Don't render if not enabled or no selection
   if (!enabled || (!node && !edge)) {
@@ -146,7 +150,7 @@ export function WikiPanel({
   const headerBadges = getHeaderBadges();
 
   return (
-    <div className={cn("flex flex-col h-full min-h-0 bg-base-100", className)}>
+    <div className={cn("flex flex-col h-full min-h-0", className)}>
       {/* Header: nav (sr-only) + labels as badges (title is on container) */}
       <div className="flex items-center justify-between p-3 border-b border-base-300 shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
@@ -208,19 +212,24 @@ export function WikiPanel({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-3 min-h-0">
+        <div className="flex flex-col bg-[#1C1D21] p-3 rounded-lg">
         {renderContent()}
+        </div>
       </div>
+
       {canSearchAroundNode && (
         <div className="p-3 border-t border-base-300 shrink-0">
-          <button
+          <Button
+            variant="outline"
+            showElevation
             onClick={() => onSearchAroundNode?.(node.uuid)}
-            className="btn btn-primary btn-sm w-full"
+            className="w-full"
             aria-label="Search around this node"
             title="Re-query the graph using this node as the center"
             type="button"
           >
             Search around this node
-          </button>
+          </Button>
         </div>
       )}
     </div>

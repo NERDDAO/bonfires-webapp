@@ -48,6 +48,7 @@ export const knowledgeGraphSectionCopy = {
 export const hyperblogsPreviewSectionCopy = {
   title: "Hyperblogs",
   tooltipIcon: "/icons/tooltip.svg",
+  tooltipContent: "Hyperblog tooltip content to be added here.",
   tooltipAlt: "Hyperblogs Info",
   cta: "Create your own",
   ctaHref: "/hyperblogs",

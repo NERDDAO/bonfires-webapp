@@ -16,9 +16,11 @@ const drawerLinkClass =
 export default function Drawer({
   drawerOpen,
   closeDrawer,
+  showSignin = false,
 }: {
   drawerOpen: boolean;
   closeDrawer: () => void;
+  showSignin?: boolean;
 }) {
   const { navigation: navigationItems } = useSiteConfig();
 
@@ -35,7 +37,7 @@ export default function Drawer({
         </button>
 
         <div className="flex items-center gap-2">
-          <Signin />
+          {showSignin && <Signin />}
           <ConnectWallet />
         </div>
       </div>

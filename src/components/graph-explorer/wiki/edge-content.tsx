@@ -46,6 +46,9 @@ export function EdgeContent({
     <div className="space-y-4">
       {/* Connection */}
       <section>
+        <h3 className="font-medium mb-2">
+          Connection
+        </h3>
         <div className="flex flex-col items-center gap-2 text-sm">
           <button
             onClick={() => {
@@ -80,10 +83,10 @@ export function EdgeContent({
       {/* Strength */}
       {typeof edge.strength === "number" && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Strength
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <progress
               className="progress progress-primary w-32"
               value={edge.strength * 100}
@@ -97,17 +100,17 @@ export function EdgeContent({
       {/* Fact */}
       {fact && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Fact
           </h3>
-          <p className="text-sm text-base-content/80 leading-relaxed">{fact}</p>
+          <p className="text-sm leading-relaxed">{fact}</p>
         </section>
       )}
 
       {/* Attributes */}
       {edge.attributes && Object.keys(edge.attributes).length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Attributes
           </h3>
           <Attributes attributes={edge.attributes} />

@@ -81,7 +81,9 @@ export default function DataroomCard({
   const [centerNode, setCenterNode] = useState<CenterNodeEntity | null>(null);
 
   useEffect(() => {
-    if (!data?.center_node_uuid || !data?.bonfire_id) return;
+    const centerUuid = data?.center_node_uuid;
+    const bonfireId = data?.bonfire_id;
+    if (!centerUuid || !bonfireId) return;
 
     const fetchCenterNode = async () => {
       try {
@@ -93,7 +95,7 @@ export default function DataroomCard({
             summary?: string;
           } | null;
         }>(
-          `/api/documents/${data.center_node_uuid}?bonfire_id=${data.bonfire_id}`,
+          `/api/documents/${centerUuid}?bonfire_id=${bonfireId}`,
           { cache: true }
         );
         if (response.success && response.entity) {
@@ -109,13 +111,13 @@ export default function DataroomCard({
       }
       // Fallback: show truncated UUID when entity lookup fails
       setCenterNode({
-        name: data.center_node_uuid.slice(0, 8),
+        name: centerUuid.slice(0, 8),
         labels: ["Entity"],
       });
     };
 
     fetchCenterNode();
-  }, [data?.center_node_uuid, data?.bonfire_id]);
+  }, [centerUuid, bonfireId]);
 
   if (isLoading) {
     return <DataroomCardSkeleton className={className} variant={variant} />;

@@ -79,11 +79,18 @@ export default function DataroomCard({
   const router = useRouter();
   const [createBlogOpen, setCreateBlogOpen] = useState(false);
   const [centerNode, setCenterNode] = useState<CenterNodeEntity | null>(null);
+  const [isFetchingEntity, setIsFetchingEntity] = useState(false);
   const centerUuid = data?.center_node_uuid;
   const bonfireId = data?.bonfire_id;
 
   useEffect(() => {
-    if (!centerUuid || !bonfireId) return;
+    if (!centerUuid || !bonfireId) {
+      setIsFetchingEntity(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsFetchingEntity(true);
 
     const fetchCenterNode = async () => {
       try {
@@ -98,25 +105,35 @@ export default function DataroomCard({
           `/api/documents/${centerUuid}?bonfire_id=${bonfireId}`,
           { cache: true }
         );
+        if (cancelled) return;
         if (response.success && response.entity) {
           setCenterNode({
             name: response.entity.name,
             labels: response.entity.labels ?? [],
             summary: response.entity.summary,
           });
+          if (!cancelled) setIsFetchingEntity(false);
           return;
         }
       } catch {
+        if (cancelled) return;
         // Entity lookup failed — fall back to showing the UUID
       }
       // Fallback: show truncated UUID when entity lookup fails
-      setCenterNode({
-        name: centerUuid.slice(0, 8),
-        labels: ["Entity"],
-      });
+      if (!cancelled) {
+        setCenterNode({
+          name: `${centerUuid.slice(0, 8)}...`,
+          labels: ["Entity"],
+        });
+        setIsFetchingEntity(false);
+      }
     };
 
     fetchCenterNode();
+    return () => {
+      cancelled = true;
+      setIsFetchingEntity(false);
+    };
   }, [centerUuid, bonfireId]);
 
   if (isLoading) {
@@ -140,36 +157,40 @@ export default function DataroomCard({
       <div className="text-[#A9A9A9] text-xs lg:text-sm mb-2 line-clamp-2 shrink-0">
         {bonfireName}
       </div>
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         <Badge variant="filled">{formattedAuthor}</Badge>
         <Badge variant="outline">{cost}</Badge>
+        {isFetchingEntity && (
+          <Badge
+            variant="outline"
+            className="h-5 lg:h-6 w-20 lg:w-24 bg-[#FFFFFF10] border-[#333333] animate-pulse"
+          >
+            <span className="invisible">Focus</span>
+          </Badge>
+        )}
+        {!isFetchingEntity && centerNode && (
+          <Badge variant="outline" className="truncate max-w-32 lg:max-w-40">
+            Graph: {centerNode.name}
+          </Badge>
+        )}
       </div>
-
-      {centerNode && (
-        <div className="mt-3 rounded-lg border border-[#333333] bg-[#FFFFFF05] px-3 py-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#A9A9A9] uppercase tracking-wide shrink-0">
-              Focus Node:
-            </span>
-            <span className="text-xs text-white font-medium truncate">
-              {centerNode.name}
-            </span>
-            {centerNode.labels.length > 0 && (
-              <Badge variant="outline">{centerNode.labels[0]}</Badge>
-            )}
-          </div>
-          {centerNode.summary && (
-            <p className="mt-1.5 text-xs text-[#A9A9A9] line-clamp-2">
-              {centerNode.summary}
-            </p>
-          )}
-        </div>
-      )}
 
       <HyperblogFeed dataroomId={data?.id} />
 
       <div className="mt-auto flex gap-4">
-        <Button showElevation={false} variant="outline" className="flex-1">
+        <Button
+          showElevation={false}
+          variant="outline"
+          className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isFetchingEntity}
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (bonfireId) params.set("bonfireId", bonfireId);
+            if (centerUuid) params.set("centerNode", centerUuid);
+            if (data?.agent_id) params.set("agentId", data.agent_id);
+            router.push(`/graph?${params.toString()}`);
+          }}
+        >
           Explore Graph
         </Button>
         <Button

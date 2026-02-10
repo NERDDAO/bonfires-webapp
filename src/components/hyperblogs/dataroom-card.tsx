@@ -97,7 +97,7 @@ export default function DataroomCard({
 
       <HyperblogFeed dataroomId={data?.id} />
 
-      <div className="mt-4 flex gap-4">
+      <div className="mt-auto flex gap-4">
         <Button showElevation={false} variant="outline" className="flex-1">
           Explore Graph
         </Button>

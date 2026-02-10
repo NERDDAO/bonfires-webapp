@@ -53,29 +53,10 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
     return () => observer.disconnect();
   }, [showBlogs, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  if (!showBlogs) {
-    return (
-      <button
-        type="button"
-        onClick={() => setShowBlogs(true)}
-        className={cn(buttonClassName, "")}
-        disabled={!dataroomId || isLoading}
-      >
-        <span className="font-bold text-white">Show existing blogs</span>
-        <Image
-          src="/icons/chevron-down.svg"
-          alt="Chevron down"
-          width={16}
-          height={16}
-        />
-      </button>
-    );
-  }
-
   return (
     <>
-      <div className="mt-4 w-full rounded-lg overflow-hidden flex flex-col max-h-[462px] h-full">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4">
+      <div className={cn("mt-4 w-full rounded-lg overflow-hidden flex flex-col min-h-[120px] max-h-[520px] h-full", hyperblogs.length > 1 && showBlogs ? "" : "mb-4")}>
+        <div ref={scrollRef} className={cn("flex-1 overflow-y-auto overflow-x-hidden min-h-0", showBlogs ? "space-y-4" : "")}>
           {isError && (
             <div className="text-xs text-destructive py-1">Failed to load</div>
           )}
@@ -84,7 +65,7 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
               No hyperblogs found
             </div>
           )}
-          {hyperblogs.map((blog) => {
+          {hyperblogs.slice(0, showBlogs ? undefined : 1).map((blog) => {
             const title = blog.user_query || blog.preview || "Untitled";
             const description = getTextFromMarkdown(blog.preview || "");
             const {
@@ -135,23 +116,46 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
             className="h-2 min-h-2 shrink-0"
             aria-hidden="true"
           />
+
+          {hyperblogs.length > 1 && !showBlogs && (
+            <button
+              type="button"
+              onClick={() => setShowBlogs(true)}
+              className={buttonClassName}
+            >
+              <Image
+                src="/icons/chevron-down.svg"
+                alt="Chevron down"
+                width={16}
+                height={16}
+                className="rotate-0"
+              />
+              <span className="font-bold text-white">
+                Show more
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setShowBlogs(false)}
-        className={buttonClassName}
-      >
-        <Image
-          src="/icons/chevron-down.svg"
-          alt="Chevron down"
-          width={16}
-          height={16}
-          className="rotate-180"
-        />
-        <span className="font-bold text-white">Hide existing blogs</span>
-      </button>
+      {hyperblogs.length > 1 && showBlogs && (
+        <button
+          type="button"
+          onClick={() => setShowBlogs(false)}
+          className={cn(buttonClassName, "mt-0 mb-4")}
+        >
+          <Image
+            src="/icons/chevron-down.svg"
+            alt="Chevron down"
+            width={16}
+            height={16}
+            className="rotate-180"
+          />
+          <span className="font-bold text-white">
+            Hide blogs
+          </span>
+        </button>
+      )}
     </>
   );
 }

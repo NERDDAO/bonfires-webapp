@@ -1,7 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
-import { navigationItems } from "@/content";
+import { useSiteConfig } from "@/contexts";
 
 import { Drawer as DrawerComponent } from "@/components/ui/drawer";
 
@@ -18,6 +20,8 @@ export default function Drawer({
   drawerOpen: boolean;
   closeDrawer: () => void;
 }) {
+  const { navigation: navigationItems } = useSiteConfig();
+
   return (
     <DrawerComponent isOpen={drawerOpen} onClose={closeDrawer} side="right">
       <div className="flex items-center justify-between px-4 py-3">

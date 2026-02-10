@@ -2,6 +2,7 @@ import { Background } from "@/components/background";
 import { Navbar } from "@/components/navbar";
 import { OrgSwitchGuard } from "@/components/subdomain/OrgSwitchGuard";
 import { SubdomainResolver } from "@/components/subdomain/SubdomainResolver";
+import { SiteConfigProvider } from "@/contexts";
 
 import { Providers } from "../providers";
 
@@ -13,10 +14,12 @@ export default function MainLayout({
   return (
     <SubdomainResolver>
       <Providers>
-        <Background>
-          <Navbar />
-          <OrgSwitchGuard>{children}</OrgSwitchGuard>
-        </Background>
+        <SiteConfigProvider>
+          <Background>
+            <Navbar />
+            <OrgSwitchGuard>{children}</OrgSwitchGuard>
+          </Background>
+        </SiteConfigProvider>
       </Providers>
     </SubdomainResolver>
   );

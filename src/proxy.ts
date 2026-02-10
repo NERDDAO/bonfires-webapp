@@ -41,12 +41,29 @@ export default clerkMiddleware(async (auth, req) => {
   // Public routes and bonfire-specific routes pass through
   // Bonfire access control (is_public check) happens at API route level
 
-  // Subdomain override for Vercel preview URLs (*.vercel.app)
+  // Subdomain override for Vercel preview URLs and local development.
   // Uses ?subdomain= param on first visit, then persists via cookie.
+  // Clear with ?subdomain= (empty value) to return to root domain view.
+  //
+  // Examples:
+  //   http://localhost:3000?subdomain=boulder   → bonfire subdomain
+  //   http://localhost:3000?subdomain=          → clears override, root view
   const host = req.headers.get("host") ?? "";
-  if (host.endsWith(".vercel.app")) {
+  const isLocalhost =
+    host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const isVercelPreview = host.endsWith(".vercel.app");
+
+  if (isVercelPreview || isLocalhost) {
     const subdomainParam = req.nextUrl.searchParams.get("subdomain");
     const subdomainCookie = req.cookies.get("x-subdomain-override")?.value;
+
+    // Explicit empty ?subdomain= clears the cookie
+    if (subdomainParam !== null && subdomainParam === "") {
+      const response = NextResponse.next();
+      response.cookies.delete("x-subdomain-override");
+      return response;
+    }
+
     const subdomain = subdomainParam ?? subdomainCookie;
 
     if (subdomain) {

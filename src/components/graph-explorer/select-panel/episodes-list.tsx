@@ -45,11 +45,12 @@ export default function EpisodesList({
   variant = "default",
   scrollContainerRef,
 }: EpisodesListProps) {
+  // reverse sort episodes by date
   const sortedEpisodes = [...episodes]
     .sort((a, b) => {
       const aTime = a.valid_at ? new Date(a.valid_at).getTime() : Infinity;
       const bTime = b.valid_at ? new Date(b.valid_at).getTime() : Infinity;
-      return aTime - bTime;
+      return bTime - aTime;
     })
     .map((episode) => {
       const episodeContent = parseEpisodeContent({

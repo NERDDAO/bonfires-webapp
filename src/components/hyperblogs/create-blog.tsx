@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useConnectModal } from "@rainbow-me/rainbowkit";
+
 import type { DataRoomInfo } from "@/types";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 
 import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
+import {
+  isE2EWalletEnabled,
+  setE2EWalletState,
+  useWalletAccount,
+} from "@/lib/wallet/e2e";
 
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
@@ -50,7 +57,17 @@ export function CreateBlogModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { isConnected } = useWalletAccount();
+  const { openConnectModal } = useConnectModal();
   const { buildAndSignPaymentHeader } = usePaymentHeader();
+
+  function handleConnectWallet() {
+    if (isE2EWalletEnabled()) {
+      setE2EWalletState(true);
+      return;
+    }
+    openConnectModal?.();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -209,15 +226,27 @@ export function CreateBlogModal({
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            showElevation={false}
-            disabled={isSubmitting || !description.trim()}
-            className="flex-1"
-          >
-            {isSubmitting ? "Creating…" : "Create Blog"}
-          </Button>
+          {!isConnected ? (
+            <Button
+              type="button"
+              variant="primary"
+              showElevation={false}
+              onClick={handleConnectWallet}
+              className="flex-1"
+            >
+              Connect Wallet
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              variant="primary"
+              showElevation={false}
+              disabled={isSubmitting || !description.trim()}
+              className="flex-1"
+            >
+              {isSubmitting ? "Creating…" : "Create Blog"}
+            </Button>
+          )}
         </div>
       </form>
     </Modal>

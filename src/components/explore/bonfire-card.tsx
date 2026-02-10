@@ -4,29 +4,30 @@ import Image from "next/image";
 
 import type { BonfireInfo } from "@/types";
 import { cn } from "@/lib/cn";
+import { config } from "@/lib/config";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/**
- * Build a subdomain URL for a bonfire.
- * Uses the backend slug if available, otherwise derives from name.
- */
-function getBonfireSlug(bonfire: BonfireInfo): string {
-  return (
-    bonfire.slug ??
-    bonfire.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-  );
+/** Pick the app root that matches the current hostname. */
+function getAppRoot(): string {
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    const match = config.subdomain.appRoots.find(
+      (root) => hostname === root || hostname.endsWith(`.${root}`),
+    );
+    if (match) return match;
+  }
+  return config.subdomain.appRoots[0] ?? "app.bonfires.ai";
 }
 
+/**
+ * Build a subdomain URL for a bonfire.
+ * Uses the backend slug if available, otherwise falls back to the bonfire ID
+ * (the resolve-subdomain endpoint accepts both slugs and ObjectIds).
+ */
 function getBonfireBaseUrl(bonfire: BonfireInfo): string {
-  const slug = getBonfireSlug(bonfire);
-  const appRoot =
-    process.env["NEXT_PUBLIC_APP_ROOTS"]?.split(",")[0]?.trim() ??
-    "app.bonfires.ai";
-  return `https://${slug}.${appRoot}`;
+  const slug = bonfire.slug ?? bonfire.id;
+  return `https://${slug}.${getAppRoot()}`;
 }
 
 // ─── Skeleton ───────────────────────────────────────────────────────────────

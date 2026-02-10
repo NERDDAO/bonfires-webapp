@@ -12,6 +12,7 @@ import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
 
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
+import { formatErrorMessage } from "@/lib/utils";
 
 export interface CreateBlogModalProps {
   isOpen: boolean;
@@ -92,11 +93,8 @@ export function CreateBlogModal({
       onSuccess?.();
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create blog. Please try again."
-      );
+      console.log("error", err);
+      setError(formatErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -117,6 +115,7 @@ export function CreateBlogModal({
       description="Generate an AI-powered blog post from this dataroom’s knowledge graph"
       size="lg"
       showCloseButton={true}
+      tooltipContent="Create a blog post from the knowledge graph of this dataroom"
     >
       <div className="flex gap-2 flex-wrap mt-2">
         {dataroomTitle != null && dataroomTitle !== "" && (

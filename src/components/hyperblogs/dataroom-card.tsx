@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { useRouter } from "next/navigation";
 
 import { DataRoomInfo } from "@/types";
 
+import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/utils";
 
@@ -11,6 +14,12 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CreateBlogModal } from "./create-blog";
 import HyperblogFeed from "./hyperblog-feed";
+
+interface CenterNodeEntity {
+  name: string;
+  entity_type: string;
+  summary?: string;
+}
 
 function DataroomCardSkeleton({
   className,
@@ -67,7 +76,31 @@ export default function DataroomCard({
   isLoading?: boolean;
   className?: string;
 }) {
+  const router = useRouter();
   const [createBlogOpen, setCreateBlogOpen] = useState(false);
+  const [centerNode, setCenterNode] = useState<CenterNodeEntity | null>(null);
+
+  useEffect(() => {
+    if (!data?.center_node_uuid || !data?.bonfire_id) return;
+
+    const fetchCenterNode = async () => {
+      try {
+        const response = await apiClient.get<{
+          success: boolean;
+          entity: CenterNodeEntity;
+        }>(
+          `/api/documents/${data.center_node_uuid}?bonfire_id=${data.bonfire_id}`
+        );
+        if (response.success && response.entity) {
+          setCenterNode(response.entity);
+        }
+      } catch {
+        // Center node display is non-critical; silently ignore errors
+      }
+    };
+
+    fetchCenterNode();
+  }, [data?.center_node_uuid, data?.bonfire_id]);
 
   if (isLoading) {
     return <DataroomCardSkeleton className={className} variant={variant} />;
@@ -95,6 +128,18 @@ export default function DataroomCard({
         <Badge variant="outline">{cost}</Badge>
       </div>
 
+      {centerNode && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#333333] bg-[#FFFFFF05] px-3 py-2">
+          <span className="text-xs font-semibold text-[#A9A9A9] uppercase tracking-wide">
+            Focus:
+          </span>
+          <span className="text-xs text-white font-medium truncate">
+            {centerNode.name}
+          </span>
+          <Badge variant="outline">{centerNode.entity_type}</Badge>
+        </div>
+      )}
+
       <HyperblogFeed dataroomId={data?.id} />
 
       <div className="mt-4 flex gap-4">
@@ -117,7 +162,10 @@ export default function DataroomCard({
         dataroomId={data?.id ?? ""}
         dataroomTitle={data?.description}
         dataroomPriceUsd={data?.price_usd}
-        onSuccess={() => setCreateBlogOpen(false)}
+        onSuccess={(hyperblogId) => {
+          setCreateBlogOpen(false);
+          router.push(`/hyperblogs/${hyperblogId}`);
+        }}
       />
     </div>
   );

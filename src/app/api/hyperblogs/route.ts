@@ -21,6 +21,7 @@ import {
  * - limit?: number - Maximum results (default: 10, max: 100)
  * - offset?: number - Pagination offset (default: 0)
  * - dataroom_id?: string - Filter by specific dataroom
+ * - bonfire_id?: string - Filter by bonfire (returns hyperblogs from all datarooms belonging to the bonfire)
  * - status?: string - Filter by status: "generating" | "completed" | "failed"
  * - generation_mode?: string - Filter by mode: "blog" | "card"
  */
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
     "limit",
     "offset",
     "dataroom_id",
+    "bonfire_id",
     "status",
     "generation_mode",
   ]);
@@ -82,6 +84,9 @@ export async function GET(request: NextRequest) {
 
   if (params["dataroom_id"]) {
     queryParams["dataroom_id"] = params["dataroom_id"];
+  }
+  if (params["bonfire_id"]) {
+    queryParams["bonfire_id"] = params["bonfire_id"];
   }
   if (params["status"]) {
     queryParams["status"] = params["status"];

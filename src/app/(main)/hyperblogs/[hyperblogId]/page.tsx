@@ -6,7 +6,7 @@
  * Displays a single hyperblog with full content when a hyperblog is clicked from the feed.
  * UI matches the expanded hyperblog-card: same badges, banner, footer, plus summary and full content.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -86,6 +86,44 @@ export default function HyperBlogDetailPage() {
       fetchBlog();
     }
   }, [hyperblogId, fetchBlog]);
+
+  // Poll for completion when blog is still generating
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (blog?.generation_status !== "generating") {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const pollForCompletion = async () => {
+      try {
+        const response = await fetch(`/api/hyperblogs/${hyperblogId}`);
+        if (!response.ok) return;
+        const data: HyperBlogInfo = await response.json();
+        setBlog(data);
+        if (data.generation_status === "completed") {
+          if (data.blog_content?.formatted_content) {
+            setFullContent(stripHtml(data.blog_content.formatted_content));
+          }
+        }
+      } catch {
+        // Silently ignore poll errors; next poll will retry
+      }
+    };
+
+    pollIntervalRef.current = setInterval(pollForCompletion, 5000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [blog?.generation_status, hyperblogId, stripHtml]);
 
   const layoutClass =
     "flex flex-col items-center px-4 sm:px-6 lg:px-8 py-7 lg:py-18 min-h-screen w-full";

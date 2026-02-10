@@ -13,6 +13,11 @@ import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 
+interface PurchaseResponse {
+  hyperblog: { id: string };
+  payment: Record<string, unknown>;
+}
+
 export interface CreateBlogModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,7 +26,8 @@ export interface CreateBlogModalProps {
   dataroomTitle?: string;
   /** Optional: if not provided, price is fetched from GET /api/datarooms/{dataroomId} */
   dataroomPriceUsd?: number;
-  onSuccess?: () => void;
+  /** Called with the new hyperblog ID on successful purchase */
+  onSuccess?: (hyperblogId: string) => void;
 }
 
 /**
@@ -78,18 +84,22 @@ export function CreateBlogModal({
       }
 
       // 3. POST /api/hyperblogs/purchase
-      await apiClient.post("/api/hyperblogs/purchase", {
-        payment_header: paymentHeader,
-        dataroom_id: dataroomId,
-        user_query: description.trim(),
-        is_public: true,
-        blog_length: blogLength,
-        generation_mode: "blog",
-        expected_amount: expectedAmount,
-      });
+      const response = await apiClient.post<PurchaseResponse>(
+        "/api/hyperblogs/purchase",
+        {
+          payment_header: paymentHeader,
+          dataroom_id: dataroomId,
+          user_query: description.trim(),
+          is_public: true,
+          blog_length: blogLength,
+          generation_mode: "blog",
+          expected_amount: expectedAmount,
+        }
+      );
 
+      const hyperblogId = response.hyperblog.id;
       setDescription("");
-      onSuccess?.();
+      onSuccess?.(hyperblogId);
       onClose();
     } catch (err) {
       setError(

@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { useRouter } from "next/navigation";
 
 import { DataRoomInfo } from "@/types";
 
+import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/utils";
 
@@ -11,6 +14,12 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { CreateBlogModal } from "./create-blog";
 import HyperblogFeed from "./hyperblog-feed";
+
+interface CenterNodeEntity {
+  name: string;
+  labels: string[];
+  summary?: string;
+}
 
 function DataroomCardSkeleton({
   className,
@@ -67,7 +76,48 @@ export default function DataroomCard({
   isLoading?: boolean;
   className?: string;
 }) {
+  const router = useRouter();
   const [createBlogOpen, setCreateBlogOpen] = useState(false);
+  const [centerNode, setCenterNode] = useState<CenterNodeEntity | null>(null);
+  const centerUuid = data?.center_node_uuid;
+  const bonfireId = data?.bonfire_id;
+
+  useEffect(() => {
+    if (!centerUuid || !bonfireId) return;
+
+    const fetchCenterNode = async () => {
+      try {
+        const response = await apiClient.get<{
+          success: boolean;
+          entity: {
+            name: string;
+            labels: string[];
+            summary?: string;
+          } | null;
+        }>(
+          `/api/documents/${centerUuid}?bonfire_id=${bonfireId}`,
+          { cache: true }
+        );
+        if (response.success && response.entity) {
+          setCenterNode({
+            name: response.entity.name,
+            labels: response.entity.labels ?? [],
+            summary: response.entity.summary,
+          });
+          return;
+        }
+      } catch {
+        // Entity lookup failed — fall back to showing the UUID
+      }
+      // Fallback: show truncated UUID when entity lookup fails
+      setCenterNode({
+        name: centerUuid.slice(0, 8),
+        labels: ["Entity"],
+      });
+    };
+
+    fetchCenterNode();
+  }, [centerUuid, bonfireId]);
 
   if (isLoading) {
     return <DataroomCardSkeleton className={className} variant={variant} />;
@@ -95,6 +145,20 @@ export default function DataroomCard({
         <Badge variant="outline">{cost}</Badge>
       </div>
 
+      {centerNode && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#333333] bg-[#FFFFFF05] px-3 py-2">
+          <span className="text-xs font-semibold text-[#A9A9A9] uppercase tracking-wide">
+            Focus:
+          </span>
+          <span className="text-xs text-white font-medium truncate">
+            {centerNode.name}
+          </span>
+          {centerNode.labels.length > 0 && (
+            <Badge variant="outline">{centerNode.labels[0]}</Badge>
+          )}
+        </div>
+      )}
+
       <HyperblogFeed dataroomId={data?.id} />
 
       <div className="mt-4 flex gap-4">
@@ -117,7 +181,10 @@ export default function DataroomCard({
         dataroomId={data?.id ?? ""}
         dataroomTitle={data?.description}
         dataroomPriceUsd={data?.price_usd}
-        onSuccess={() => setCreateBlogOpen(false)}
+        onSuccess={(hyperblogId) => {
+          setCreateBlogOpen(false);
+          router.push(`/hyperblogs/${hyperblogId}`);
+        }}
       />
     </div>
   );

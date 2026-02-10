@@ -98,10 +98,11 @@ export function HTNTemplateCreator({
     field: keyof LengthConfig,
     value: string | boolean
   ) => {
-    setLengthConfigs((prev) => ({
-      ...prev,
-      [length]: { ...prev[length], [field]: value },
-    }));
+    setLengthConfigs((prev) => {
+      const current = prev[length];
+      const updated: LengthConfig = { ...current, [field]: value };
+      return { ...prev, [length]: updated };
+    });
   };
 
   const isFormValid =

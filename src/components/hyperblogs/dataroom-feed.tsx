@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { hyperblogsCopy } from "@/content/hyperblogs";
 import { useDataRoomsInfiniteQuery } from "@/hooks";
 
@@ -12,6 +13,9 @@ import DataroomCard from "./dataroom-card";
 const PAGE_SIZE = 4;
 
 export default function DataroomFeed() {
+  const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
+  const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
+
   const {
     data,
     isLoading,
@@ -20,7 +24,7 @@ export default function DataroomFeed() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE });
+  } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { dataroomTitle } = hyperblogsCopy;

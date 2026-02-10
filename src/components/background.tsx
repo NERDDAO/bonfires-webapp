@@ -1,8 +1,25 @@
 "use client";
 
-const orbBackground =
-  "radial-gradient(circle at center, #B2FF00 0%, #72A300 0%, #121212 50%)";
+import { useMemo } from "react";
+
+import { useSiteConfig } from "@/contexts";
+
+/**
+ * Build a radial gradient string from the brand-primary color.
+ * Derives a darker mid-tone by mixing toward black at ~55% brightness.
+ */
+function buildOrbGradient(brandPrimary: string, brandBlack: string): string {
+  return `radial-gradient(circle at center, ${brandPrimary} 0%, ${brandPrimary}88 0%, ${brandBlack} 50%)`;
+}
+
 export function Background({ children }: { children: React.ReactNode }) {
+  const { theme } = useSiteConfig();
+
+  const orbBackground = useMemo(
+    () => buildOrbGradient(theme.brandPrimary, theme.brandBlack),
+    [theme.brandPrimary, theme.brandBlack],
+  );
+
   return (
     <div className="relative bg-brand-black">
       {/* Orb layer — fixed to viewport so orbs stay in place regardless of scroll/content */}

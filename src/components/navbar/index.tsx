@@ -6,22 +6,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { navigationItems } from "@/content";
+import type { NavigationItem } from "@/config/sites";
+import { useSiteConfig } from "@/contexts";
 
 import ConnectWallet from "./connect-wallet";
 import Drawer from "./drawer";
 import { NavbarButton } from "./navbar-button";
 import Signin from "./signin";
 
-export interface NavigationItem {
-  label: string;
-  href?: string;
-  dropdownItems?: { label: string; href: string }[];
-}
+export type { NavigationItem };
 
 export function Navbar() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { navigation: navigationItems } = useSiteConfig();
+
   const activeSection = useMemo((): NavigationItem => {
     const segment = pathname.split("/")[1];
     if (!segment)
@@ -33,7 +32,7 @@ export function Navbar() {
     return (
       matched ?? navigationItems[0] ?? { label: "Home", dropdownItems: [] }
     );
-  }, [pathname]);
+  }, [pathname, navigationItems]);
 
   const closeDrawer = () => setDrawerOpen(false);
 

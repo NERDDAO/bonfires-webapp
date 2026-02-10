@@ -5,3 +5,4 @@ export {
   useSubdomainBonfire,
   type SubdomainConfig,
 } from "./SubdomainBonfireContext";
+export { SiteConfigProvider, useSiteConfig } from "./SiteConfigContext";

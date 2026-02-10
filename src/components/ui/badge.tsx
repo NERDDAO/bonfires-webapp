@@ -5,7 +5,7 @@ import * as React from "react";
 import { cn } from "@/lib/cn";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: "filled" | "outline";
+  variant?: "filled" | "outline" | "outline-p";
 }
 
 const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(

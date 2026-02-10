@@ -23,10 +23,10 @@ export function EpisodeContent({ episode }: EpisodeContentProps) {
       {/* Summary */}
       {episode.name && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Summary
           </h3>
-          <p className="text-sm text-base-content/80 leading-relaxed">
+          <p className="text-sm leading-relaxed">
             {episode.content}
           </p>
         </section>
@@ -35,7 +35,7 @@ export function EpisodeContent({ episode }: EpisodeContentProps) {
       {/* Timeline */}
       {episode.valid_at && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Timeline
           </h3>
           <div className="flex items-center gap-2 text-sm">
@@ -49,10 +49,10 @@ export function EpisodeContent({ episode }: EpisodeContentProps) {
       {/* Attributes */}
       {episode.updates && Object.keys(episode.updates).length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Updates
           </h3>
-          <div className="bg-base-200 rounded-lg divide-y divide-base-300">
+          <div className="bg-[#2D2E33] rounded-lg divide-y divide-[#37393F]">
             {episode.updates.map((update) => (
               <div
                 key={update.description}

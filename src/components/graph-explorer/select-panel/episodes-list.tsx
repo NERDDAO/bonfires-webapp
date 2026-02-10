@@ -78,9 +78,9 @@ export default function EpisodesList({
         <h2
           className={cn(
             labelClass,
-            "sticky top-0 z-10 -mx-4 lg:-mx-5 -mt-4 px-4 lg:px-5 pt-4 pb-2 bg-[#181818] backdrop-blur-md",
+            "top-0 z-10 -mx-4 lg:-mx-5 -mt-4 px-4 lg:px-5 pt-4 pb-2 bg-[#181818] backdrop-blur-md",
             variant === "hero"
-              ? "text-xl lg:text-2xl font-bold mb-2 lg:mb-6 pt-4 lg:pt-8 pb-2 -top-4"
+              ? "sticky text-xl lg:text-2xl font-bold mb-2 lg:mb-6 pt-4 lg:pt-8 pb-2 -top-4"
               : ""
           )}
         >

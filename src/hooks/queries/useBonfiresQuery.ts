@@ -31,6 +31,7 @@ export function useBonfiresQuery() {
     queryKey: bonfiresQueryKey,
     queryFn: () => apiClient.get<BonfireListResponse>("/api/bonfires"),
     staleTime: 10 * 60 * 1000, // 10 minutes - list changes infrequently
+    gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache after last subscriber unmounts
   });
 }
 

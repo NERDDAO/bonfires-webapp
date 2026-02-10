@@ -7,7 +7,6 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
 
 import { cn } from "@/lib/cn";
-import { config } from "@/lib/config";
 import {
   isE2EWalletEnabled,
   setE2EWalletState,
@@ -17,14 +16,16 @@ import {
 
 import Dropdown from "../ui/dropdown";
 
-const ALLOWED_CHAIN_ID = config.web3.chainId;
-
 export default function ConnectWallet() {
   const { address, isConnected, isConnecting } = useWalletAccount();
   // Use connection's chainId (actual wallet chain), not useChainId() which stays at
   // configured default when wallet is on an unconfigured chain (e.g. Phantom on Ethereum).
   const { chainId } = useAccount();
   const { switchChain, chains, isPending: isSwitchPending } = useSwitchChain();
+
+  // Use the chain from wagmi config so switchChain always targets a chain we actually have.
+  // config.web3.chainId can be out of sync (e.g. NEXT_PUBLIC_CHAIN_ID vs NEXT_PUBLIC_ENVIRONMENT).
+  const targetChainId = chains?.[0]?.id ?? null;
   const e2eBalance = useE2EBalance();
   const { data: balanceData } = useBalance({
     address: address as `0x${string}` | undefined,
@@ -43,11 +44,13 @@ export default function ConnectWallet() {
     ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol ?? "ETH"}`
     : "0.0000 ETH";
 
-  // Resolve current chain from wallet; allowed chain from app config
+  // Resolve current chain from wallet; target chain from wagmi config (same source as switchChain)
   const currentChain =
     chainId != null ? chains?.find((c) => c.id === chainId) : undefined;
   const isCorrectChain =
-    chainId != null && Number(chainId) === ALLOWED_CHAIN_ID;
+    chainId != null &&
+    targetChainId != null &&
+    Number(chainId) === targetChainId;
 
   const currentChainLabel =
     chainId == null
@@ -143,8 +146,11 @@ export default function ConnectWallet() {
             icon: "/icons/switch.svg",
             alt: "Switch Network",
             onClick: () => {
-              switchChain({ chainId: ALLOWED_CHAIN_ID });
+              if (targetChainId != null) {
+                switchChain({ chainId: targetChainId });
+              }
             },
+            disabled: targetChainId == null || isCorrectChain || isSwitchPending,
           },
           {
             icon: "/icons/log-out.svg",
@@ -160,10 +166,12 @@ export default function ConnectWallet() {
         ].map((item) => (
           <button
             key={item.alt}
+            type="button"
             onClick={item.onClick}
             onMouseDown={(e) => e.stopPropagation()}
+            disabled={"disabled" in item ? item.disabled : false}
             className={cn(
-              "rounded-lg text-sm p-2 text-dark-s-0 opacity-80 hover:opacity-100 cursor-pointer flex items-center justify-center"
+              "rounded-lg text-sm p-2 text-dark-s-0 opacity-80 hover:opacity-100 cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
             <Image

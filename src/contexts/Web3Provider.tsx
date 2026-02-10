@@ -2,7 +2,11 @@
 
 import { type ReactNode, useState } from "react";
 
-import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
+import {
+  type Chain,
+  RainbowKitProvider,
+  getDefaultConfig,
+} from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { defineChain } from "viem";
 import { WagmiProvider } from "wagmi";
@@ -30,11 +34,39 @@ const abstractTestnet = defineChain({
   testnet: true,
 });
 
+// Base chain configuration
+const base = defineChain({
+  id: 8453,
+  name: "Base",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ethereum",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://mainnet.base.org"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Basescan",
+      url: "https://basescan.org",
+    },
+  },
+});
+
+const testnetChains: readonly [Chain, ...Chain[]] = [abstractTestnet];
+const mainnetChains: readonly [Chain, ...Chain[]] = [base];
+
 // Wagmi configuration
 const wagmiConfig = getDefaultConfig({
-  appName: "Delve",
-  projectId: process.env["NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID"] ?? "demo",
-  chains: [abstractTestnet],
+  appName: "Bonfires.ai",
+  projectId: process.env["NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID"] ?? "bonfires-project-id",
+  chains:
+    process.env["NEXT_PUBLIC_ENVIRONMENT"] === "development"
+      ? testnetChains
+      : mainnetChains,
   ssr: true,
 });
 

@@ -466,6 +466,42 @@ export interface CreateDataRoomRequest {
   price_step_usd?: number;
   price_decay_rate?: number;
   image_model?: "schnell" | "dev" | "pro" | "realism";
+  htn_template_id?: string;
+}
+
+// ============================================================================
+// HTN Template Types
+// ============================================================================
+
+export interface HTNTemplateInfo {
+  id: string;
+  name: string;
+  template_type: string;
+  description: string | null;
+  system_prompt: string;
+  user_prompt_template: string;
+  node_count_config: Record<string, { node_count: string; word_count: string; description: string }>;
+  default_length: string;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface HTNTemplateListResponse {
+  templates: HTNTemplateInfo[];
+  count: number;
+}
+
+export interface CreateHTNTemplateRequest {
+  name: string;
+  template_type: string;
+  description?: string;
+  system_prompt: string;
+  user_prompt_template: string;
+  node_count_config: Record<string, { node_count: string; word_count: string; description: string }>;
+  default_length: string;
+  created_by?: string;
 }
 
 export interface DataRoomSubscribeRequest {

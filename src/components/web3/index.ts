@@ -6,5 +6,7 @@
 
 export { DataRoomWizard } from "./DataRoomWizard";
 export { DataRoomMarketplaceCard } from "./DataRoomMarketplaceCard";
+export { HTNTemplatePicker } from "./HTNTemplatePicker";
+export { HTNTemplateCreator } from "./HTNTemplateCreator";
 export { PaidChatInterface } from "./PaidChatInterface";
 export { PaidDelveInterface } from "./PaidDelveInterface";

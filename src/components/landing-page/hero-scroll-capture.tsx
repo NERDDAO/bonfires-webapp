@@ -18,7 +18,9 @@ interface HeroScrollCaptureProps {
  * wheel/scroll drives the recent activity list first; when the list reaches
  * the end, page scrolling continues (no nested scroll feel).
  */
-export function HeroScrollCapture({ staticGraph: staticGraphProp }: HeroScrollCaptureProps) {
+export function HeroScrollCapture({
+  staticGraph: staticGraphProp,
+}: HeroScrollCaptureProps) {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const staticGraph =

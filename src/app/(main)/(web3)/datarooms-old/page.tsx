@@ -85,6 +85,7 @@ export default function DataRoomsPage() {
     priceStepUsd?: number;
     priceDecayRate?: number;
     imageModel?: "schnell" | "dev" | "pro" | "realism";
+    htnTemplateId?: string;
   }) => {
     if (!address) return;
 
@@ -103,6 +104,7 @@ export default function DataRoomsPage() {
         price_step_usd: config.priceStepUsd,
         price_decay_rate: config.priceDecayRate,
         image_model: config.imageModel,
+        htn_template_id: config.htnTemplateId,
       };
 
       const response = await fetch("/api/datarooms", {

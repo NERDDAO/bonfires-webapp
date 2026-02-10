@@ -30,3 +30,6 @@ export {
 
 // Graph Expansion
 export { useExpandEntity, type ExpandEntityParams } from "./useExpandEntity";
+
+// HTN Templates
+export { useCreateHTNTemplate } from "./useCreateHTNTemplate";

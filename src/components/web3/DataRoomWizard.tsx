@@ -8,9 +8,12 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
-import type { BonfireInfo } from "@/types";
+import type { BonfireInfo, HTNTemplateInfo } from "@/types";
 
 import { useAgentSelection } from "@/hooks/web3";
+
+import { HTNTemplateCreator } from "./HTNTemplateCreator";
+import { HTNTemplatePicker } from "./HTNTemplatePicker";
 
 interface DataRoomConfig {
   bonfireId: string;
@@ -26,6 +29,7 @@ interface DataRoomConfig {
   priceStepUsd?: number;
   priceDecayRate?: number;
   imageModel?: "schnell" | "dev" | "pro" | "realism";
+  htnTemplateId?: string;
 }
 
 interface PreviewEntity {
@@ -72,6 +76,10 @@ export function DataRoomWizard({
   const [imageModel, setImageModel] = useState<
     "schnell" | "dev" | "pro" | "realism"
   >("dev");
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<HTNTemplateInfo | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isCreatorOpen, setIsCreatorOpen] = useState(false);
 
   const agentSelection = useAgentSelection({ initialBonfireId });
 
@@ -92,6 +100,7 @@ export function DataRoomWizard({
       setPriceStepUsd(0.0);
       setPriceDecayRate(0.0);
       setImageModel("dev");
+      setSelectedTemplate(null);
     }
   }, [isOpen]);
 
@@ -238,6 +247,7 @@ export function DataRoomWizard({
       priceStepUsd,
       priceDecayRate,
       imageModel,
+      htnTemplateId: selectedTemplate?.id,
     };
 
     onComplete(config);
@@ -254,6 +264,7 @@ export function DataRoomWizard({
     priceStepUsd,
     priceDecayRate,
     imageModel,
+    selectedTemplate,
     onComplete,
     onClose,
   ]);
@@ -557,6 +568,49 @@ export function DataRoomWizard({
               </select>
             </div>
 
+            <div className="divider">HTN Template (Optional)</div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold">
+                  Blog/Card Generation Template
+                </span>
+              </label>
+              <div className="flex items-center gap-2">
+                {selectedTemplate ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="badge badge-primary badge-sm">
+                      {selectedTemplate.template_type}
+                    </span>
+                    <span className="text-sm font-medium truncate">
+                      {selectedTemplate.name}
+                    </span>
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => setSelectedTemplate(null)}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-sm opacity-60 flex-1">
+                    Default (Auto)
+                  </span>
+                )}
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => setIsPickerOpen(true)}
+                >
+                  {selectedTemplate ? "Change" : "Select Template"}
+                </button>
+              </div>
+              <label className="label">
+                <span className="label-text-alt opacity-60">
+                  Controls how blog/card content is structured and generated.
+                </span>
+              </label>
+            </div>
+
             <div className="modal-action">
               <button className="btn" onClick={handleBack}>
                 Back
@@ -571,6 +625,26 @@ export function DataRoomWizard({
             </div>
           </div>
         )}
+
+        {/* HTN Template Picker Modal */}
+        <HTNTemplatePicker
+          isOpen={isPickerOpen}
+          onClose={() => setIsPickerOpen(false)}
+          onSelect={setSelectedTemplate}
+          onCreateCustom={() => setIsCreatorOpen(true)}
+          selectedTemplateId={selectedTemplate?.id}
+        />
+
+        {/* HTN Template Creator Modal */}
+        <HTNTemplateCreator
+          isOpen={isCreatorOpen}
+          onClose={() => setIsCreatorOpen(false)}
+          onCreated={() => {
+            // Re-open picker after creating so user can select the new template
+            setIsCreatorOpen(false);
+            setIsPickerOpen(true);
+          }}
+        />
 
         {/* Step 3: Center Node Selection */}
         {currentStep === 3 && (

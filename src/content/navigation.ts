@@ -1,4 +1,5 @@
 import { NavigationItem } from "@/components/navbar";
+
 import { siteCopy } from "./site";
 
 export const navigationItems: NavigationItem[] = [

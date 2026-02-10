@@ -122,9 +122,7 @@ export function CreateBlogModal({
         {dataroomTitle != null && dataroomTitle !== "" && (
           <Badge variant="filled">Topic: {dataroomTitle}</Badge>
         )}
-        <Badge variant="outline">
-          Cost: ${dataroomPriceUsd ?? 0}
-        </Badge>
+        <Badge variant="outline">Cost: ${dataroomPriceUsd ?? 0}</Badge>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col mt-3">
         <label

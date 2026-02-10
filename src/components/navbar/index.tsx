@@ -16,7 +16,7 @@ import Signin from "./signin";
 
 export type { NavigationItem };
 
-export function Navbar() {
+export function Navbar({ showSignin = false }: { showSignin?: boolean }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { navigation: navigationItems } = useSiteConfig();
@@ -79,11 +79,15 @@ export function Navbar() {
         </button>
       </div>
 
-      <Drawer drawerOpen={drawerOpen} closeDrawer={closeDrawer} />
+      <Drawer
+        drawerOpen={drawerOpen}
+        closeDrawer={closeDrawer}
+        showSignin={showSignin}
+      />
 
       {/* Auth and Wallet buttons */}
       <div className="navbar-end items-center gap-2 hidden lg:flex">
-        <Signin />
+        {showSignin && <Signin />}
         <ConnectWallet />
       </div>
     </nav>

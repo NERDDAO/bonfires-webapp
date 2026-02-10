@@ -16,6 +16,7 @@ import {
   WikiPanel,
   type WikiPanelProps,
 } from "./wiki-panel";
+import { border } from "../select-panel/select-panel-constants";
 
 /**
  * WikiPanelContainer
@@ -170,7 +171,7 @@ export function WikiPanelContainer({
     <div
       data-drag-handle
       className={cn(
-        "flex items-center justify-between gap-2 px-3 py-2 border-b border-base-300 bg-base-200 select-none",
+        "flex items-center justify-between gap-2 px-3 py-2 select-none",
         !isMobile && "cursor-grab active:cursor-grabbing"
       )}
     >
@@ -220,6 +221,7 @@ export function WikiPanelContainer({
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <WikiPanel
             {...wikiPanelProps}
+            isMobile={isMobile}
             onSearchAroundNode={handleSearchAroundNode}
           />
         </div>
@@ -238,7 +240,8 @@ export function WikiPanelContainer({
         <div
           ref={containerRef}
           className={cn(
-            "flex flex-col rounded-lg shadow-xl border border-base-300 bg-base-100 overflow-hidden w-full max-h-[85vh]",
+            "flex flex-col rounded-lg shadow-xl overflow-hidden w-full max-h-[85vh]",
+            border,
             className
           )}
           style={{
@@ -260,6 +263,7 @@ export function WikiPanelContainer({
       ref={containerRef}
       className={cn(
         "fixed z-100 flex flex-col rounded-lg shadow-xl border border-base-300 bg-base-100 overflow-hidden",
+        border,
         className
       )}
       style={{

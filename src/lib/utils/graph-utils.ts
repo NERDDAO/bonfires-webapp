@@ -4,6 +4,7 @@
  * Pure helpers for graph data transformation shared across components.
  */
 import type { GraphData } from "@/types/graph";
+
 import type { GraphElement } from "./sigma-adapter";
 
 /**

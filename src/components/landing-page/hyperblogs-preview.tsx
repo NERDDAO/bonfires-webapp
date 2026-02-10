@@ -16,6 +16,7 @@ export default function HyperBlogsPreview() {
     title,
     tooltipIcon,
     tooltipAlt,
+    tooltipContent,
     description,
     cta,
     ctaHref,
@@ -47,17 +48,22 @@ export default function HyperBlogsPreview() {
   return (
     <div className="flex flex-col px-6 lg:px-20 py-7 lg:py-20 min-h-svh lg:min-h-screen">
       <div className="flex flex-col">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 lg:gap-4">
           <div className="font-montserrat text-2xl lg:text-5xl font-black">
             {title}
           </div>
-          <Image
-            src={tooltipIcon}
-            alt={tooltipAlt}
-            width={34}
-            height={34}
-            className="hidden lg:block"
-          />
+          <div
+            className="tooltip tooltip-top flex"
+            data-tip={tooltipContent}
+          >
+            <Image
+              src={tooltipIcon}
+              alt={tooltipAlt}
+              width={34}
+              height={34}
+              className="cursor-help h-5 lg:h-8 w-5 lg:w-8"
+            />
+          </div>
           <Button
             variant="primary"
             className="ml-auto hidden lg:block"

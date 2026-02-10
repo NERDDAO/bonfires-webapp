@@ -27,3 +27,6 @@ export {
   useBatchIngestDocuments,
   useDeleteDocument,
 } from "./useIngestDocument";
+
+// HTN Templates
+export { useCreateHTNTemplate } from "./useCreateHTNTemplate";

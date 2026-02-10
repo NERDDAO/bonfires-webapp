@@ -9,6 +9,7 @@ import { useDataRoomsInfiniteQuery } from "@/hooks";
 import { DataRoomInfo } from "@/types/api";
 
 import DataroomCard from "./dataroom-card";
+import Image from "next/image";
 
 const PAGE_SIZE = 4;
 
@@ -27,7 +28,7 @@ export default function DataroomFeed() {
   } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const { dataroomTitle } = hyperblogsCopy;
+  const { dataroomTitle, dataroomTooltipContent } = hyperblogsCopy;
   const dataRooms =
     data?.pages.flatMap(
       (page: { datarooms: DataRoomInfo[] }) => page.datarooms
@@ -50,8 +51,21 @@ export default function DataroomFeed() {
 
   return (
     <>
-      <div className="mt-6 font-montserrat text-lg lg:text-[2rem] font-black lg:font-bold">
-        {dataroomTitle}
+      <div className="flex items-center gap-2 mt-6 font-montserrat text-lg lg:text-[2rem] font-black lg:font-bold">
+        <span>{dataroomTitle}</span>
+
+        <div
+          className="tooltip tooltip-right flex"
+          data-tip={dataroomTooltipContent}
+        >
+          <Image
+            src="/icons/tooltip.svg"
+            alt="Tooltip"
+            width={12}
+            height={12}
+            className="cursor-help h-4 w-4 lg:h-6 lg:w-6"
+          />
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">

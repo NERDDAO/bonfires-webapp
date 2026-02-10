@@ -96,3 +96,9 @@ export {
   useDashboardRequiresWallet,
   useRefreshDashboard,
 } from "./useDashboardData";
+
+// HTN Templates
+export {
+  useHTNTemplatesQuery,
+  htnTemplatesQueryKey,
+} from "./useHTNTemplatesQuery";

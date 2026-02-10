@@ -18,7 +18,8 @@ export function SearchHistoryBreadcrumbs({
       {breadcrumbs.map((crumb, idx) => (
         <span key={idx}>
           {idx > 0 && <span className="text-white/50 mx-2.5">&gt;</span>}
-          <span onClick={crumb.onClick}
+          <span
+            onClick={crumb.onClick}
             className={cn(
               "cursor-pointer",
               "text-left text-[#667085] hover:text-white",
@@ -30,5 +31,5 @@ export function SearchHistoryBreadcrumbs({
         </span>
       ))}
     </p>
-  )
+  );
 }

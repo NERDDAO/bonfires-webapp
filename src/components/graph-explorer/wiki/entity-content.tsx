@@ -27,10 +27,10 @@ export function EntityContent({
       {/* Description */}
       {(node.summary || node.content) && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Description
           </h3>
-          <p className="text-sm text-base-content/80 leading-relaxed">
+          <p className="text-sm leading-relaxed">
             {node.summary || node.content}
           </p>
         </section>
@@ -39,10 +39,10 @@ export function EntityContent({
       {/* Relationships */}
       {nodeRelationships.length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Relationships ({nodeRelationships.length})
           </h3>
-          <div className="">
+          <div className="bg-[#2D2E33] rounded-lg divide-y divide-[#37393F]">
             {nodeRelationships.slice(0, 12).map((rel, idx) => {
               const otherNodeId =
                 rel.source === `n:${node.uuid}` || rel.source === node.uuid
@@ -57,19 +57,19 @@ export function EntityContent({
                 <button
                   key={`${rel.id}-${idx}`}
                   onClick={() => onNodeSelect(cleanId)}
-                  className="flex items-center gap-2 text-sm w-full p-2 rounded hover:bg-base-200 transition-colors text-left"
+                  className="flex items-center gap-2 text-sm w-full px-3 py-2.5 first:pt-2.5 last:pb-2.5 text-left hover:bg-[#37393F]/50 transition-colors"
                 >
                   <span className="text-base-content/70 shrink-0 text-xs">
                     {relationLabel}
                   </span>
-                  <span className="font-bold text-base-content truncate min-w-0 capitalize">
+                  <span className="text-base-content/90 truncate min-w-0 capitalize leading-relaxed">
                     {title}
                   </span>
                 </button>
               );
             })}
             {nodeRelationships.length > 12 && (
-              <div className="text-xs text-base-content/50 p-2">
+              <div className="px-3 py-2.5 text-xs text-base-content/50">
                 + {nodeRelationships.length - 12} more
               </div>
             )}
@@ -80,7 +80,7 @@ export function EntityContent({
       {/* Attributes */}
       {node.attributes && Object.keys(node.attributes).length > 0 && (
         <section>
-          <h3 className="text-sm font-semibold text-base-content/70 mb-2">
+          <h3 className="font-medium mb-2">
             Attributes
           </h3>
           <Attributes attributes={node.attributes} />

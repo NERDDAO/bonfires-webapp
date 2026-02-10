@@ -146,22 +146,29 @@ export default function DataroomCard({
       </div>
 
       {centerNode && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#333333] bg-[#FFFFFF05] px-3 py-2">
-          <span className="text-xs font-semibold text-[#A9A9A9] uppercase tracking-wide">
-            Focus:
-          </span>
-          <span className="text-xs text-white font-medium truncate">
-            {centerNode.name}
-          </span>
-          {centerNode.labels.length > 0 && (
-            <Badge variant="outline">{centerNode.labels[0]}</Badge>
+        <div className="mt-3 rounded-lg border border-[#333333] bg-[#FFFFFF05] px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-[#A9A9A9] uppercase tracking-wide shrink-0">
+              Focus Node:
+            </span>
+            <span className="text-xs text-white font-medium truncate">
+              {centerNode.name}
+            </span>
+            {centerNode.labels.length > 0 && (
+              <Badge variant="outline">{centerNode.labels[0]}</Badge>
+            )}
+          </div>
+          {centerNode.summary && (
+            <p className="mt-1.5 text-xs text-[#A9A9A9] line-clamp-2">
+              {centerNode.summary}
+            </p>
           )}
         </div>
       )}
 
       <HyperblogFeed dataroomId={data?.id} />
 
-      <div className="mt-4 flex gap-4">
+      <div className="mt-auto flex gap-4">
         <Button showElevation={false} variant="outline" className="flex-1">
           Explore Graph
         </Button>

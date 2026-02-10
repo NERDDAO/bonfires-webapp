@@ -80,10 +80,50 @@ export default clerkMiddleware(async (auth, req) => {
           maxAge: 60 * 60 * 24, // 1 day
         });
       }
+      applyIsAdminOverride(req, response, requestHeaders);
       return response;
     }
+
+    // No subdomain override — still apply isAdmin override when present
+    const requestHeaders = new Headers(req.headers);
+    const response = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    applyIsAdminOverride(req, response, requestHeaders);
+    return response;
   }
 });
+
+/**
+ * Applies isAdmin override from ?isAdmin= param or cookie (same pattern as subdomain).
+ * Only mutates response and requestHeaders when on localhost/Vercel preview.
+ */
+function applyIsAdminOverride(
+  req: { nextUrl: { searchParams: URLSearchParams }; cookies: { get: (n: string) => { value: string } | undefined } },
+  response: NextResponse,
+  requestHeaders: Headers | null
+): void {
+  const isAdminParam =
+    req.nextUrl.searchParams.get("isAdmin") ??
+    req.nextUrl.searchParams.get("admin");
+  const isAdminCookie = req.cookies.get("x-is-admin-override")?.value;
+  if (isAdminParam !== null && isAdminParam === "") {
+    response.cookies.delete("x-is-admin-override");
+    return;
+  }
+  const isAdmin = isAdminParam ?? isAdminCookie;
+  if (isAdmin === "true" || isAdmin === "1") {
+    if (requestHeaders) requestHeaders.set("x-is-admin-override", "true");
+    if (isAdminParam) {
+      response.cookies.set("x-is-admin-override", "true", {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24, // 1 day
+      });
+    }
+  }
+}
 
 export const config = {
   matcher: [

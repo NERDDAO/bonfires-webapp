@@ -100,7 +100,12 @@ export function HTNTemplateCreator({
   ) => {
     setLengthConfigs((prev) => {
       const current = prev[length];
-      const updated: LengthConfig = { ...current, [field]: value };
+      const updated: LengthConfig = {
+        enabled: field === "enabled" ? (value as boolean) : current.enabled,
+        nodeCount: field === "nodeCount" ? (value as string) : current.nodeCount,
+        wordCount: field === "wordCount" ? (value as string) : current.wordCount,
+        description: field === "description" ? (value as string) : current.description,
+      };
       return { ...prev, [length]: updated };
     });
   };

@@ -107,7 +107,12 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
       >
         {(title != null || showCloseButton) && (
-          <div className={cn("flex items-center justify-between", !description && "border-b border-dark-s-700")}>
+          <div
+            className={cn(
+              "flex items-center justify-between",
+              !description && "border-b border-dark-s-700"
+            )}
+          >
             {title != null ? (
               <h2
                 id="modal-title"
@@ -137,10 +142,7 @@ export function Modal({
         )}
 
         {description && (
-          <p
-            id="modal-description"
-            className="text-sm text-[#A9A9A9]"
-          >
+          <p id="modal-description" className="text-sm text-[#A9A9A9]">
             {description}
           </p>
         )}

@@ -38,8 +38,7 @@ export interface UsePaymentHeaderReturn {
 }
 
 // Payment configuration from environment
-const PAYMENT_NETWORK =
-  process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "abstract-testnet";
+const PAYMENT_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "base";
 const SOURCE_NETWORK =
   process.env["NEXT_PUBLIC_PAYMENT_SOURCE_NETWORK"] ?? PAYMENT_NETWORK;
 const DESTINATION_NETWORK =
@@ -50,7 +49,7 @@ const INTERMEDIARY_OVERRIDE =
 const PAYMENT_CONFIG = {
   tokenAddress:
     process.env["NEXT_PUBLIC_PAYMENT_TOKEN_ADDRESS"] ??
-    "0x0000000000000000000000000000000000000000",
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   intermediaryAddress: resolveIntermediaryAddress({
     sourceNetwork: SOURCE_NETWORK,
     destinationNetwork: DESTINATION_NETWORK,

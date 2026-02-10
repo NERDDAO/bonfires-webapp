@@ -14,7 +14,12 @@ import { config } from "@/lib/config";
 
 /** Subdomains that are never bonfire slugs (infra, Clerk, etc.) */
 const RESERVED_SUBDOMAINS = new Set([
-  "www", "app", "api", "admin", "clerk", "accounts",
+  "www",
+  "app",
+  "api",
+  "admin",
+  "clerk",
+  "accounts",
 ]);
 
 /**

@@ -98,7 +98,7 @@ export function HTNTemplateCreator({
     value: string | boolean | number
   ) => {
     setLengthConfigs((prev) => {
-      const fallback: LengthConfig = { enabled: false, maxNodes: 7, maxWords: 2500, description: "" };
+      const fallback: LengthConfig = { enabled: false, maxNodes: 7, maxWords: 400, description: "" };
       const current: LengthConfig = prev[length] ?? fallback;
       const updated: LengthConfig = {
         enabled: field === "enabled" ? (value as boolean) : current.enabled,

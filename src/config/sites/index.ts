@@ -10,10 +10,11 @@
  * (see BonfireSiteConfigOverrides in types.ts), the resolver signature
  * becomes:
  *
- *   resolveSiteConfig(isSubdomainScoped, backendOverrides?)
+ *   resolveSiteConfig(isSubdomainScoped, slug, backendOverrides?)
  *
  * and merges: { ...defaultSiteConfig, ...backendOverrides }.
- * No consumer code changes.
+ * No consumer code changes. The hardcoded SLUG_OVERRIDES below should
+ * then be removed in favor of backend-driven config.
  */
 export type {
   BonfireSiteConfigOverrides,
@@ -26,31 +27,60 @@ export type {
 export { defaultSiteConfig } from "./default";
 export { rootSiteConfig } from "./root";
 
+import BonfireLanding from "@/components/landing-page/bonfire-landing";
+import { siteCopy } from "@/content/site";
+
 import { defaultSiteConfig } from "./default";
 import { rootSiteConfig } from "./root";
 import type { BonfireSiteConfigOverrides, SiteConfig } from "./types";
+
+// ─── Hardcoded per-slug overrides ────────────────────────────────────────────
+//
+// TODO: Replace with backend-driven config once BonfireInfo includes a
+// `site_config` field. These are stopgap overrides keyed by subdomain slug.
+// Only bonfires that differ from the default need an entry here.
+//
+const SLUG_OVERRIDES: Record<string, Partial<SiteConfig>> = {
+  boulder: {
+    navigation: [
+      { label: "Home", href: "/" },
+      ...defaultSiteConfig.navigation,
+    ],
+    landing: BonfireLanding,
+    features: {
+      ...defaultSiteConfig.features,
+      homePage: true,
+    },
+  },
+};
 
 /**
  * Resolve the site config for the current domain.
  *
  * @param isSubdomainScoped - true when on a bonfire subdomain
+ * @param slug - the subdomain slug (e.g. "boulder"), null for root
  * @param overrides - optional per-bonfire overrides from the backend (future)
  */
 export function resolveSiteConfig(
   isSubdomainScoped: boolean,
+  slug?: string | null,
   overrides?: BonfireSiteConfigOverrides | null,
 ): SiteConfig {
   const base = isSubdomainScoped ? defaultSiteConfig : rootSiteConfig;
 
-  if (!overrides) return base;
+  // Apply hardcoded slug overrides (TODO: replace with backend config)
+  const slugOverride = slug ? SLUG_OVERRIDES[slug] : undefined;
+  const withSlug = slugOverride ? { ...base, ...slugOverride } : base;
 
-  // Merge per-bonfire overrides into the base config
+  if (!overrides) return withSlug;
+
+  // Merge per-bonfire backend overrides on top
   return {
-    ...base,
-    theme: { ...base.theme, ...overrides.theme },
-    features: { ...base.features, ...overrides.features },
-    navigation: overrides.navigation ?? base.navigation,
+    ...withSlug,
+    theme: { ...withSlug.theme, ...overrides.theme },
+    features: { ...withSlug.features, ...overrides.features },
+    navigation: overrides.navigation ?? withSlug.navigation,
     // landingVariant mapping would go here once a component registry exists
-    landing: base.landing,
+    landing: withSlug.landing,
   };
 }

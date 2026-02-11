@@ -44,6 +44,8 @@ export interface FeatureFlags {
   graphExplorer: boolean;
   /** Show the "Explore Bonfires" page and nav link. */
   exploreBonfires: boolean;
+  /** Show a landing page at "/". When false, "/" redirects to /graph. */
+  homePage: boolean;
 }
 
 // ─── Site Config (uniform shape) ─────────────────────────────────────────────

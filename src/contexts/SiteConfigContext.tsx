@@ -48,11 +48,12 @@ interface SiteConfigProviderProps {
  *    (for dynamic updates if the config ever changes at runtime).
  */
 export function SiteConfigProvider({ children }: SiteConfigProviderProps) {
-  const { isSubdomainScoped } = useSubdomainBonfire();
+  const { isSubdomainScoped, subdomainConfig } = useSubdomainBonfire();
+  const slug = subdomainConfig?.slug ?? null;
 
   const siteConfig = useMemo(
-    () => resolveSiteConfig(isSubdomainScoped),
-    [isSubdomainScoped],
+    () => resolveSiteConfig(isSubdomainScoped, slug),
+    [isSubdomainScoped, slug],
   );
 
   const themeCSS = useMemo(() => themeToCSS(siteConfig.theme), [siteConfig]);

@@ -178,7 +178,11 @@ export function draw(
       hasNodeFocus &&
       !isHoveringNode &&
       (link.source.id === focusNodeId || link.target.id === focusNodeId);
-    const edgeFromFocusedNode = edgeFromHoveredNode || edgeFromFocusNode;
+    // When an edge is hovered, highlight only that edge and its nodes – don't show other "from focus node" edges
+    const edgeHoverTakesPrecedence =
+      hoveredEdgeId != null && activeEdgeId === hoveredEdgeId;
+    const edgeFromFocusedNode =
+      !edgeHoverTakesPrecedence && (edgeFromHoveredNode || edgeFromFocusNode);
     return { isActive, edgeDimmed, edgeFromHoveredNode: edgeFromFocusedNode };
   };
 

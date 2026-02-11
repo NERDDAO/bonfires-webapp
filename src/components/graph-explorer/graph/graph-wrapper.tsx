@@ -31,6 +31,8 @@ interface GraphVisualizationProps {
   onNodeClick?: (nodeId: string) => void;
   /** Callback when an edge is clicked */
   onEdgeClick?: (edgeId: string) => void;
+  /** Callback when the background is clicked (clear selection, keep e.g. wiki panel open) */
+  onBackgroundClick?: () => void;
   /** Currently selected node ID */
   selectedNodeId?: string | null;
   /** Currently selected edge ID (for wiki panel and highlight) */
@@ -57,6 +59,7 @@ export const GraphWrapper = memo(function GraphWrapper({
   error,
   onNodeClick,
   onEdgeClick,
+  onBackgroundClick,
   selectedNodeId,
   selectedEdgeId,
   highlightedNodeIds,
@@ -132,6 +135,7 @@ export const GraphWrapper = memo(function GraphWrapper({
         elements={elements}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
+        onBackgroundClick={onBackgroundClick}
         selectedNodeId={selectedNodeId}
         selectedEdgeId={selectedEdgeId}
         highlightedNodeIds={highlightedNodeIds}

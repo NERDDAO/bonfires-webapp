@@ -48,6 +48,7 @@ export default function ForceGraph({
   elements,
   onNodeClick,
   onEdgeClick,
+  onBackgroundClick,
   selectedNodeId,
   selectedEdgeId,
   highlightedNodeIds = [],
@@ -78,6 +79,7 @@ export default function ForceGraph({
     tx: number;
     ty: number;
   } | null>(null);
+  const didPanRef = useRef(false);
   const lastLogicalRef = useRef({ x: 0, y: 0 });
   const touchStartRef = useRef<{
     clientX: number;
@@ -108,8 +110,10 @@ export default function ForceGraph({
 
   const onNodeClickRef = useRef(onNodeClick);
   const onEdgeClickRef = useRef(onEdgeClick);
+  const onBackgroundClickRef = useRef(onBackgroundClick);
   onNodeClickRef.current = onNodeClick;
   onEdgeClickRef.current = onEdgeClick;
+  onBackgroundClickRef.current = onBackgroundClick;
 
   const redraw = useCallback(() => setTick((t) => t + 1), []);
 
@@ -265,6 +269,7 @@ export default function ForceGraph({
       }
 
       sizeRef.current = { width, height };
+      const selectedNode = selectedNodeId?.replace(/^n:/, "") ?? null;
       draw(
         ctx,
         nodes,
@@ -274,6 +279,7 @@ export default function ForceGraph({
         null,
         null,
         null,
+        selectedNode,
         highlightedSet.current,
         transformRef.current
       );
@@ -339,6 +345,7 @@ export default function ForceGraph({
           y: y - (node.y ?? 0),
         };
       } else {
+        didPanRef.current = false;
         panStartRef.current = {
           clientX: e.clientX,
           clientY: e.clientY,
@@ -351,6 +358,7 @@ export default function ForceGraph({
     const handleMouseMove = (e: MouseEvent) => {
       const panStart = panStartRef.current;
       if (panStart) {
+        didPanRef.current = true;
         transformRef.current.x = panStart.tx + (e.clientX - panStart.clientX);
         transformRef.current.y = panStart.ty + (e.clientY - panStart.clientY);
         redraw();
@@ -407,6 +415,9 @@ export default function ForceGraph({
 
     const handleMouseUp = () => {
       const node = draggedNodeRef.current;
+      const wasPanning = panStartRef.current != null;
+      const didPan = didPanRef.current;
+
       if (node && !didDragRef.current) {
         onNodeClickRef.current?.(node.id);
       } else if (!didDragRef.current && linksRef.current) {
@@ -414,6 +425,11 @@ export default function ForceGraph({
         const edgeUnder = edgeUnderPoint(linksRef.current, x, y);
         if (edgeUnder) {
           onEdgeClickRef.current?.(edgeUnder.id);
+        } else if (wasPanning && !didPan && nodesRef.current) {
+          const nodeUnder = nodeUnderPoint(nodesRef.current, x, y);
+          if (!nodeUnder) {
+            onBackgroundClickRef.current?.();
+          }
         }
       }
       if (node && didDragRef.current) {
@@ -423,6 +439,7 @@ export default function ForceGraph({
       draggedNodeRef.current = null;
       dragOffsetRef.current = null;
       panStartRef.current = null;
+      didPanRef.current = false;
       didDragRef.current = false;
       redraw();
     };
@@ -629,6 +646,7 @@ export default function ForceGraph({
       hoveredNodeRef.current ?? draggedNodeRef.current?.id ?? null;
     const hoveredEdge = hoveredEdgeRef.current;
     const selectedEdge = selectedEdgeId ?? null;
+    const selectedNode = selectedNodeId?.replace(/^n:/, "") ?? null;
     draw(
       ctx,
       nodes,
@@ -638,6 +656,7 @@ export default function ForceGraph({
       hoveredNode,
       hoveredEdge,
       selectedEdge,
+      selectedNode,
       highlightedSet.current,
       transformRef.current
     );

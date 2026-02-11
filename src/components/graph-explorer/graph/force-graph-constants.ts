@@ -30,15 +30,15 @@ export const MAX_FROM_HOVERED_EDGE_LABELS = 25;
 
 export const GRAPH_COLORS = {
   linkStroke: "rgba(95, 95, 95, 0.85)",
-  linkStrokeDimmed: "rgb(50, 50, 50)",
+  linkStrokeDimmed: "rgb(28, 28, 28)",
   linkStrokeActive: "rgba(255, 255, 255, 0.9)",
   linkLabelFill: "rgb(200, 200, 200)",
-  linkLabelFillDimmed: "rgb(90, 90, 90)",
+  linkLabelFillDimmed: "rgb(45, 45, 45)",
   linkLabelFillActive: "rgb(255, 255, 255)",
   nodeFill: "rgb(179, 179, 179)",
   nodeStroke: "rgb(179, 179, 179)",
   labelFill: "rgb(246, 246, 246)",
-  labelFillDimmed: "rgb(85, 85, 85)",
+  labelFillDimmed: "rgb(48, 48, 48)",
   nodeFillHover: "rgb(220, 220, 220)",
   nodeStrokeHover: "rgb(255, 255, 255)",
   labelFillHover: "rgb(255, 255, 255)",
@@ -50,8 +50,10 @@ export const GRAPH_COLORS = {
 
 export const EDGE_LABEL_MAX_WIDTH = 64;
 export const EDGE_HIT_THRESHOLD = 6;
+/** Perpendicular offset (px) from edge line for edge label placement */
+export const EDGE_LABEL_OFFSET = 10;
 /** Factor to darken node fill/stroke when dimmed (multiply RGB by this) */
-export const DIM_DARKEN_FACTOR = 0.4;
+export const DIM_DARKEN_FACTOR = 0.22;
 
 /** Entity-based node color (aligned with SigmaGraph / graph-theme) */
 export const NODE_TYPE_COLORS = {

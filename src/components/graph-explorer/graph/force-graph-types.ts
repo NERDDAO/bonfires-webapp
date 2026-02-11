@@ -33,6 +33,8 @@ export interface ForceGraphProps {
   onNodeClick?: (nodeId: string) => void;
   /** Called when an edge is clicked */
   onEdgeClick?: (edgeId: string) => void;
+  /** Called when the background is clicked (not a node, not an edge, not a drag). Use to clear selection while keeping e.g. wiki panel open. */
+  onBackgroundClick?: () => void;
   /** Currently selected node ID (displayed as highlighted) */
   selectedNodeId?: string | null;
   /** Currently selected edge ID (displayed as highlighted, opens wiki panel) */

@@ -4,6 +4,7 @@
 
 import {
   EDGE_HIT_THRESHOLD,
+  EDGE_LABEL_OFFSET,
   GRAPH_COLORS,
   MAX_FROM_HOVERED_EDGE_LABELS,
   MAX_LABEL_WIDTH,
@@ -105,7 +106,22 @@ export function drawEdgeLabel(
   ctx.textBaseline = "middle";
   const displayLabel =
     isActive || isFromHoveredNode ? getEdgeLabel(link.label) : "";
-  ctx.fillText(displayLabel, mx, my);
+  // Align label with edge direction: rotate and place at midpoint with perpendicular offset
+  const dx = tx - sx;
+  const dy = ty - sy;
+  const len = Math.hypot(dx, dy) || 1;
+  let angle = Math.atan2(dy, dx);
+  if (angle > Math.PI / 2) angle -= Math.PI;
+  else if (angle < -Math.PI / 2) angle += Math.PI;
+  const perpX = (-dy / len) * EDGE_LABEL_OFFSET;
+  const perpY = (dx / len) * EDGE_LABEL_OFFSET;
+  const labelX = mx + perpX;
+  const labelY = my + perpY;
+  ctx.save();
+  ctx.translate(labelX, labelY);
+  ctx.rotate(angle);
+  ctx.fillText(displayLabel, 0, 0);
+  ctx.restore();
 }
 
 export function draw(
@@ -117,6 +133,7 @@ export function draw(
   hoveredNodeId: string | null,
   hoveredEdgeId: string | null,
   selectedEdgeId: string | null,
+  selectedNodeId: string | null,
   highlightedNodeIds: Set<string>,
   transform: { x: number; y: number; k: number }
 ): void {
@@ -125,25 +142,47 @@ export function draw(
   ctx.translate(transform.x, transform.y);
   ctx.scale(transform.k, transform.k);
 
-  const connectedNodeIds = getConnectedNodeIds(hoveredNodeId, links);
   const isHoveringNode = hoveredNodeId != null;
+  // Focus node for dimming: hover (immediate) or selection (persists when mouse moves)
+  const focusNodeId = hoveredNodeId ?? selectedNodeId;
+  const hasNodeFocus = focusNodeId != null;
+  const activeEdgeId =
+    selectedEdgeId ?? (isHoveringNode ? null : hoveredEdgeId);
+  const hasEdgeFocus = activeEdgeId != null;
+  const activeLink = hasEdgeFocus
+    ? links.find((l) => l.id === activeEdgeId) ?? null
+    : null;
+
+  // When a node has focus (hover or selected): connected = that node + neighbors. When an edge is active: connected = its two endpoints.
+  const connectedNodeIds = hasEdgeFocus && activeLink
+    ? new Set<string>([activeLink.source.id, activeLink.target.id])
+    : hasNodeFocus
+      ? getConnectedNodeIds(focusNodeId, links)
+      : new Set<string>();
+  const hasFocus = hasNodeFocus || hasEdgeFocus;
 
   const getLinkState = (link: ViewLink) => {
     const isActive =
       link.id === selectedEdgeId ||
       (link.id === hoveredEdgeId && !isHoveringNode);
     const linkConnected =
-      isHoveringNode &&
+      hasFocus &&
       (connectedNodeIds.has(link.source.id) ||
         connectedNodeIds.has(link.target.id));
-    const edgeDimmed = isHoveringNode && !linkConnected;
+    const edgeDimmed = hasFocus && !linkConnected;
     const edgeFromHoveredNode =
       isHoveringNode &&
       (link.source.id === hoveredNodeId || link.target.id === hoveredNodeId);
-    return { isActive, edgeDimmed, edgeFromHoveredNode };
+    // Treat edges from selected node like "from hovered" when node has focus (so style/labels persist)
+    const edgeFromFocusNode =
+      hasNodeFocus &&
+      !isHoveringNode &&
+      (link.source.id === focusNodeId || link.target.id === focusNodeId);
+    const edgeFromFocusedNode = edgeFromHoveredNode || edgeFromFocusNode;
+    return { isActive, edgeDimmed, edgeFromHoveredNode: edgeFromFocusedNode };
   };
 
-  // —— Layer 1: dimmed edges (below everything)
+  // —— 1. Dimmed edges
   for (const link of links) {
     const { isActive, edgeDimmed } = getLinkState(link);
     if (!edgeDimmed || isActive) continue;
@@ -158,38 +197,49 @@ export function draw(
     ctx.lineTo(tx, ty);
     ctx.stroke();
   }
-  // —— Layer 2: dimmed edge labels
+  // —— 2. Dimmed nodes (circles + node labels)
+  for (const node of nodes) {
+    const isDimmed = hasFocus && !connectedNodeIds.has(node.id);
+    if (!isDimmed) continue;
+    drawNode(ctx, node, GRAPH_COLORS, false, false, true);
+  }
+  // —— 3. Dimmed edge labels
   for (const link of links) {
     const { isActive, edgeDimmed } = getLinkState(link);
     if (!edgeDimmed || isActive) continue;
     drawEdgeLabel(ctx, link, false, false, true, GRAPH_COLORS);
   }
-  // —— Layer 3: dimmed nodes
-  for (const node of nodes) {
-    const isDimmed = isHoveringNode && !connectedNodeIds.has(node.id);
-    if (!isDimmed) continue;
-    drawNode(ctx, node, GRAPH_COLORS, false, false, true);
+
+  // —— 4. Edges (normal, then from-hovered, then active)
+  const normalLinks = links.filter((link) => {
+    const { isActive, edgeDimmed, edgeFromHoveredNode } = getLinkState(link);
+    return !edgeDimmed && !edgeFromHoveredNode && !isActive;
+  });
+  const activeLinks = links.filter((link) => {
+    const { isActive } = getLinkState(link);
+    return isActive;
+  });
+  const activeHoveredLinks = links.filter((link) => {
+    const { isActive, edgeFromHoveredNode } = getLinkState(link);
+    return isActive || edgeFromHoveredNode;
+  });
+
+  if (!activeHoveredLinks.length) {
+    normalLinks.forEach((link) => {
+      const sx = link.source.x ?? 0;
+      const sy = link.source.y ?? 0;
+      const tx = link.target.x ?? 0;
+      const ty = link.target.y ?? 0;
+      ctx.strokeStyle = GRAPH_COLORS.linkStroke;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+    });
   }
 
-  // —— Layer 4: normal (connected, not from-hovered) edges
-  for (const link of links) {
-    const { isActive, edgeDimmed, edgeFromHoveredNode } = getLinkState(link);
-    if (edgeDimmed || edgeFromHoveredNode || isActive) continue;
-    const sx = link.source.x ?? 0;
-    const sy = link.source.y ?? 0;
-    const tx = link.target.x ?? 0;
-    const ty = link.target.y ?? 0;
-    ctx.strokeStyle = GRAPH_COLORS.linkStroke;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(tx, ty);
-    ctx.stroke();
-  }
-  // —— Layer 5: edges from hovered node (highlighted)
-  for (const link of links) {
-    const { isActive, edgeFromHoveredNode } = getLinkState(link);
-    if (!edgeFromHoveredNode || isActive) continue;
+  activeHoveredLinks.forEach((link) => {
     const sx = link.source.x ?? 0;
     const sy = link.source.y ?? 0;
     const tx = link.target.x ?? 0;
@@ -200,55 +250,24 @@ export function draw(
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
     ctx.stroke();
-  }
-  // —— Layer 6: active edge (hovered/selected)
-  for (const link of links) {
-    const { isActive } = getLinkState(link);
-    if (!isActive) continue;
+  });
+
+  activeLinks.forEach((link) => {
     const sx = link.source.x ?? 0;
     const sy = link.source.y ?? 0;
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStrokeActive;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
     ctx.stroke();
-  }
-
-  // —— Layer 7: normal edge labels
-  links
-    .filter((link) => {
-      const { isActive, edgeDimmed, edgeFromHoveredNode } =
-        getLinkState(link);
-      return !edgeDimmed && !edgeFromHoveredNode && !isActive;
-    })
-    .forEach((link) =>
-      drawEdgeLabel(ctx, link, false, false, false, GRAPH_COLORS)
-    );
-
-  // —— Layer 8: from-hovered edge labels (only if ≤ MAX_FROM_HOVERED_EDGE_LABELS)
-  const fromHoveredLinks = links.filter((link) => {
-    const { isActive, edgeFromHoveredNode } = getLinkState(link);
-    return edgeFromHoveredNode && !isActive;
   });
-  if (fromHoveredLinks.length <= MAX_FROM_HOVERED_EDGE_LABELS) {
-    fromHoveredLinks.forEach((link) =>
-      drawEdgeLabel(ctx, link, false, true, false, GRAPH_COLORS)
-    );
-  }
 
-  // —— Layer 9: active edge label
-  links
-    .filter((link) => getLinkState(link).isActive)
-    .forEach((link) =>
-      drawEdgeLabel(ctx, link, true, false, false, GRAPH_COLORS)
-    );
-
-  // —— Layer 10: non-dimmed nodes (on top)
+  // —— 5. Nodes (non-dimmed)
   for (const node of nodes) {
-    const isDimmed = isHoveringNode && !connectedNodeIds.has(node.id);
+    const isDimmed = hasFocus && !connectedNodeIds.has(node.id);
     if (isDimmed) continue;
     const isHighlighted = highlightedNodeIds.has(node.id);
     drawNode(
@@ -260,6 +279,31 @@ export function draw(
       false
     );
   }
+
+  // —— 6. Edge labels (normal, from-hovered, active)
+  links
+    .filter((link) => {
+      const { isActive, edgeDimmed, edgeFromHoveredNode } =
+        getLinkState(link);
+      return !edgeDimmed && !edgeFromHoveredNode && !isActive;
+    })
+    .forEach((link) =>
+      drawEdgeLabel(ctx, link, false, false, false, GRAPH_COLORS)
+    );
+  const fromHoveredLinks = links.filter((link) => {
+    const { isActive, edgeFromHoveredNode } = getLinkState(link);
+    return edgeFromHoveredNode && !isActive;
+  });
+  if (fromHoveredLinks.length <= MAX_FROM_HOVERED_EDGE_LABELS) {
+    fromHoveredLinks.forEach((link) =>
+      drawEdgeLabel(ctx, link, false, true, false, GRAPH_COLORS)
+    );
+  }
+  links
+    .filter((link) => getLinkState(link).isActive)
+    .forEach((link) =>
+      drawEdgeLabel(ctx, link, true, false, false, GRAPH_COLORS)
+    );
   ctx.restore();
 }
 

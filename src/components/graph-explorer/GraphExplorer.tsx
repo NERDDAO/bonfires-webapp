@@ -1037,6 +1037,10 @@ export function GraphExplorer({
     [dispatchSelection, dispatchPanel, panel.wikiEnabled, panel.rightPanelMode]
   );
 
+  const handleBackgroundClick = useCallback(() => {
+    dispatchSelection({ type: SelectionActionType.CLEAR_SELECTION });
+  }, [dispatchSelection]);
+
   const handleEpisodeSelect = useCallback(
     (episodeUuid: string) => {
       setSelectedEpisodeId(episodeUuid);
@@ -1253,6 +1257,7 @@ export function GraphExplorer({
                     onPanToNodeComplete={() => setPanToNodeId(null)}
                     onNodeClick={handleNodeClick}
                     onEdgeClick={handleEdgeClick}
+                    onBackgroundClick={handleBackgroundClick}
                   />
                 </div>
 

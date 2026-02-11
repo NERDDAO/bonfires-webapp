@@ -4,9 +4,10 @@
  */
 "use client";
 
-import { useCallback, useReducer } from "react";
+import { useReducer } from "react";
 
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
+import { MOBILE_BREAKPOINT_PX } from "./useMediaQuery";
 
 /**
  * useGraphExplorer Hook
@@ -191,13 +192,20 @@ const initialSelectionState: SelectionState = {
   autoSelected: false,
 };
 
-const initialPanelState: PanelState = {
-  rightPanelMode: "none",
-  chatOpen: false,
-  wikiEnabled: true,
-  wikiMode: "sidebar",
-  wikiMinimized: false,
-};
+function getInitialPanelState(): PanelState {
+  // Open chat by default on desktop (viewport >= 768px)
+  const isDesktop =
+    typeof window !== "undefined" &&
+    window.innerWidth >= MOBILE_BREAKPOINT_PX;
+
+  return {
+    rightPanelMode: "none",
+    chatOpen: isDesktop,
+    wikiEnabled: true,
+    wikiMode: "sidebar",
+    wikiMinimized: false,
+  };
+}
 
 const initialTimelineState: TimelineState = {
   expanded: true,
@@ -212,7 +220,10 @@ export function useGraphExplorerState() {
     selectionReducer,
     initialSelectionState
   );
-  const [panel, dispatchPanel] = useReducer(panelReducer, initialPanelState);
+  const [panel, dispatchPanel] = useReducer(
+    panelReducer,
+    getInitialPanelState()
+  );
   const [timeline, dispatchTimeline] = useReducer(
     timelineReducer,
     initialTimelineState

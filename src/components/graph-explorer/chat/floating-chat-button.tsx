@@ -39,6 +39,7 @@ export function FloatingChatButton({
       aria-label="Open chat"
     >
       <MessageSquare className="w-6 h-6" />
+      <span className="text-xs">Chat with the graph</span>
     </Button>
   );
 }

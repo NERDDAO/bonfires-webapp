@@ -16,28 +16,33 @@ import type { GraphElement } from "@/lib/utils/sigma-adapter";
 
 import { IconButton } from "../ui/icon-button";
 
+// Obsidian-style: smaller, denser nodes
 const RADIUS_BY_SIZE: Record<number, number> = {
-  1: 8,
-  2: 10,
-  3: 12,
-  4: 24,
-  5: 28,
+  1: 4,
+  2: 5,
+  3: 6,
+  4: 10,
+  5: 14,
 };
 
-const LAYOUT_ALPHA_MIN = 0.001;
-const LINK_DISTANCE = 80;
-const LINK_STRENGTH = 0.75;
-const CHARGE_STRENGTH = -280;
-const COLLISION_PADDING = 10;
-const CENTER_STRENGTH = 0.08;
+const LAYOUT_ALPHA_MIN = 0.0005;
+const LINK_DISTANCE = 100;
+const LINK_STRENGTH = 0.5;
+const CHARGE_STRENGTH = -240;
+const COLLISION_PADDING = 18;
+const CENTER_STRENGTH = 0.12;
+const ALPHA_DECAY = 0.018;
+const VELOCITY_DECAY = 0.65;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 1.5;
 const GRAPH_WIDTH = 3200;
 const GRAPH_HEIGHT = 2400;
-const MAX_LABEL_WIDTH = 72;
+const MAX_LABEL_WIDTH = 80;
+
+const MAX_FROM_HOVERED_EDGE_LABELS = 15;
 
 const GRAPH_COLORS = {
-  linkStroke: "rgba(95, 95, 95, 1)",
+  linkStroke: "rgba(95, 95, 95, 0.85)",
   linkStrokeDimmed: "rgb(50, 50, 50)",
   linkStrokeActive: "rgba(255, 255, 255, 0.9)",
   linkLabelFill: "rgb(200, 200, 200)",
@@ -56,8 +61,8 @@ const GRAPH_COLORS = {
   nodeStrokeSelected: "rgb(255, 255, 255)",
 } as const;
 
-const EDGE_LABEL_MAX_WIDTH = 80;
-const EDGE_HIT_THRESHOLD = 8;
+const EDGE_LABEL_MAX_WIDTH = 64;
+const EDGE_HIT_THRESHOLD = 6;
 /** Factor to darken node fill/stroke when dimmed (multiply RGB by this) */
 const DIM_DARKEN_FACTOR = 0.4;
 
@@ -141,6 +146,9 @@ interface ViewNode {
   y?: number;
   x0?: number;
   y0?: number;
+  /** Fixed position while dragging (d3 force) */
+  fx?: number;
+  fy?: number;
 }
 interface ViewLink {
   source: ViewNode;
@@ -214,7 +222,7 @@ function clampNodesToBounds(
   height: number
 ): void {
   for (const node of nodes) {
-    const r = RADIUS_BY_SIZE[node.size] ?? 20;
+    const r = RADIUS_BY_SIZE[node.size] ?? 12;
     const x = node.x ?? 0;
     const y = node.y ?? 0;
     node.x = Math.max(r, Math.min(width - r, x));
@@ -250,7 +258,7 @@ function drawNode(
 ): void {
   const x = node.x ?? 0;
   const y = node.y ?? 0;
-  const r = RADIUS_BY_SIZE[node.size] ?? 20;
+  const r = RADIUS_BY_SIZE[node.size] ?? 12;
   const active = isHovered || isSelectedOrHighlighted;
 
   ctx.beginPath();
@@ -274,10 +282,10 @@ function drawNode(
   ctx.fillStyle = fillColor;
   ctx.fill();
   ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = active ? 2.5 : 1.5;
+  ctx.lineWidth = active ? 2 : 1.2;
   ctx.stroke();
 
-  const baseFontSize = node.size >= 4 ? 11 : node.size >= 2 ? 10 : 9;
+  const baseFontSize = node.size >= 4 ? 10 : node.size >= 2 ? 9 : 8;
   const fontSize = active
     ? baseFontSize + GRAPH_COLORS.labelFontSizeHoverOffset
     : baseFontSize;
@@ -293,7 +301,7 @@ function drawNode(
   const displayLabel = active
     ? node.label
     : truncateLabel(ctx, node.label, MAX_LABEL_WIDTH);
-  ctx.fillText(displayLabel, x, y + r + 4);
+  ctx.fillText(displayLabel, x, y + r + 5);
 }
 
 function drawEdgeLabel(
@@ -311,17 +319,20 @@ function drawEdgeLabel(
   const mx = (sx + tx) / 2;
   const my = (sy + ty) / 2;
   if (!link.label) return;
-  const fontSize = isActive ? 10 : 9;
-  const fontWeight = isActive ? "600" : "500";
+  const showLabel = isActive || isFromHoveredNode;
+  const fontSize = showLabel ? 9 : 8;
+  const fontWeight = showLabel ? "600" : "500";
   ctx.font = `italic ${fontWeight} ${fontSize}px system-ui, sans-serif`;
   ctx.fillStyle = isDimmed
     ? colors.linkLabelFillDimmed
-    : isActive
+    : isActive || isFromHoveredNode
       ? colors.linkLabelFillActive
       : colors.linkLabelFill;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const displayLabel = isActive ? getEdgeLabel(link.label) : "";
+  // Show label for active edge or for any edge connected to hovered node
+  const displayLabel =
+    isActive || isFromHoveredNode ? getEdgeLabel(link.label) : "";
   ctx.fillText(displayLabel, mx, my);
 }
 
@@ -346,7 +357,10 @@ function draw(
   const isHoveringNode = hoveredNodeId != null;
 
   const getLinkState = (link: ViewLink) => {
-    const isActive = link.id === hoveredEdgeId || link.id === selectedEdgeId;
+    // When a node is hovered, do not highlight a single edge under cursor — only selected edge
+    const isActive =
+      link.id === selectedEdgeId ||
+      (link.id === hoveredEdgeId && !isHoveringNode);
     const linkConnected =
       isHoveringNode &&
       (connectedNodeIds.has(link.source.id) || connectedNodeIds.has(link.target.id));
@@ -366,7 +380,7 @@ function draw(
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStrokeDimmed;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
@@ -394,7 +408,7 @@ function draw(
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStroke;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
@@ -409,7 +423,7 @@ function draw(
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStrokeActive;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
@@ -424,7 +438,7 @@ function draw(
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStrokeActive;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
@@ -432,23 +446,32 @@ function draw(
   }
 
   // —— Layer 7: normal edge labels
-  for (const link of links) {
-    const { isActive, edgeDimmed, edgeFromHoveredNode } = getLinkState(link);
-    if (edgeDimmed || edgeFromHoveredNode || isActive) continue;
-    drawEdgeLabel(ctx, link, false, false, false, GRAPH_COLORS);
-  }
-  // —— Layer 8: from-hovered edge labels
-  for (const link of links) {
+  links
+    .filter((link) => {
+      const { isActive, edgeDimmed, edgeFromHoveredNode } = getLinkState(link);
+      return !edgeDimmed && !edgeFromHoveredNode && !isActive;
+    })
+    .forEach((link) =>
+      drawEdgeLabel(ctx, link, false, false, false, GRAPH_COLORS)
+    );
+
+  // —— Layer 8: from-hovered edge labels (only if ≤ MAX_FROM_HOVERED_EDGE_LABELS)
+  const fromHoveredLinks = links.filter((link) => {
     const { isActive, edgeFromHoveredNode } = getLinkState(link);
-    if (!edgeFromHoveredNode || isActive) continue;
-    drawEdgeLabel(ctx, link, false, true, false, GRAPH_COLORS);
+    return edgeFromHoveredNode && !isActive;
+  });
+  if (fromHoveredLinks.length <= MAX_FROM_HOVERED_EDGE_LABELS) {
+    fromHoveredLinks.forEach((link) =>
+      drawEdgeLabel(ctx, link, false, true, false, GRAPH_COLORS)
+    );
   }
+
   // —— Layer 9: active edge label
-  for (const link of links) {
-    const { isActive } = getLinkState(link);
-    if (!isActive) continue;
-    drawEdgeLabel(ctx, link, true, false, false, GRAPH_COLORS);
-  }
+  links
+    .filter((link) => getLinkState(link).isActive)
+    .forEach((link) =>
+      drawEdgeLabel(ctx, link, true, false, false, GRAPH_COLORS)
+    );
 
   // —— Layer 10: non-dimmed nodes (on top)
   for (const node of nodes) {
@@ -519,7 +542,7 @@ function nodeUnderPoint(
     if (node === undefined) continue;
     const nx = node.x ?? 0;
     const ny = node.y ?? 0;
-    const r = RADIUS_BY_SIZE[node.size] ?? 20;
+    const r = RADIUS_BY_SIZE[node.size] ?? 12;
     const dx = x - nx;
     const dy = y - ny;
     if (dx * dx + dy * dy <= r * r) return node;
@@ -593,6 +616,7 @@ export default function ForceGraph({
   const draggedNodeRef = useRef<ViewNode | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
+  const simulationRef = useRef<d3.Simulation<ViewNode, ViewLink> | null>(null);
   const sizeRef = useRef({ width: 0, height: 0 });
   const graphSizeRef = useRef({
     graphWidth: GRAPH_WIDTH,
@@ -691,8 +715,16 @@ export default function ForceGraph({
     if (!container || !canvas || !elements.length) {
       nodesRef.current = null;
       linksRef.current = null;
+      simulationRef.current?.stop();
+      simulationRef.current?.on("tick", null);
+      simulationRef.current = null;
       return;
     }
+
+    // Stop any previous simulation so we can create a new one
+    simulationRef.current?.stop();
+    simulationRef.current?.on("tick", null);
+    simulationRef.current = null;
 
     const { nodes: viewNodes, links: viewLinks } = elementsToView(elements);
     const nodes: ViewNode[] = viewNodes.map((n) => ({ ...n }));
@@ -729,7 +761,9 @@ export default function ForceGraph({
       graphSizeRef.current = { graphWidth, graphHeight };
 
       if (isInitialLayout) {
-        const simulation = d3.forceSimulation(nodes);
+        const simulation = d3.forceSimulation(nodes)
+          .alphaDecay(ALPHA_DECAY)
+          .velocityDecay(VELOCITY_DECAY);
         simulation
           .force(
             "link",
@@ -747,13 +781,14 @@ export default function ForceGraph({
             "collision",
             d3
               .forceCollide<ViewNode>()
-              .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 20) + COLLISION_PADDING)
+              .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING)
           );
 
         while (simulation.alpha() > LAYOUT_ALPHA_MIN) {
           simulation.tick();
         }
         simulation.stop();
+        simulationRef.current = simulation;
 
         clampNodesToBounds(nodes, graphWidth, graphHeight);
         for (const node of nodes) {
@@ -827,6 +862,23 @@ export default function ForceGraph({
       };
     };
 
+    const onSimulationTick = () => {
+      const n = nodesRef.current;
+      const { graphWidth, graphHeight } = graphSizeRef.current;
+      if (n?.length) {
+        clampNodesToBounds(n, graphWidth, graphHeight);
+      }
+      redraw();
+      const sim = simulationRef.current;
+      if (!sim) return;
+      if (draggedNodeRef.current) {
+        sim.alpha(0.25);
+      } else if (sim.alpha() < LAYOUT_ALPHA_MIN) {
+        sim.stop();
+        sim.on("tick", null);
+      }
+    };
+
     const handleMouseDown = (e: MouseEvent) => {
       if (draggedNodeRef.current || panStartRef.current) return;
       const { x, y } = toLogical(e);
@@ -839,6 +891,7 @@ export default function ForceGraph({
           x: x - (node.x ?? 0),
           y: y - (node.y ?? 0),
         };
+        // Do not fix node or restart simulation here — only when user actually drags (see handleMouseMove)
       } else {
         panStartRef.current = {
           clientX: e.clientX,
@@ -862,15 +915,35 @@ export default function ForceGraph({
       const offset = dragOffsetRef.current;
       const { graphWidth, graphHeight } = graphSizeRef.current;
       if (node && offset) {
-        didDragRef.current = true;
-        const r = RADIUS_BY_SIZE[node.size] ?? 20;
-        const nx = Math.max(r, Math.min(graphWidth - r, x - offset.x));
-        const ny = Math.max(r, Math.min(graphHeight - r, y - offset.y));
-        node.x = nx;
-        node.y = ny;
-        node.x0 = nx;
-        node.y0 = ny;
-        redraw();
+        // Start drag only after pointer moves past a small threshold so click-without-drag doesn't run simulation
+        if (!didDragRef.current) {
+          const dx = x - lastLogicalRef.current.x;
+          const dy = y - lastLogicalRef.current.y;
+          if (dx * dx + dy * dy > 16) {
+            didDragRef.current = true;
+            const nx = node.x ?? 0;
+            const ny = node.y ?? 0;
+            node.fx = nx;
+            node.fy = ny;
+            const sim = simulationRef.current;
+            if (sim) {
+              sim.on("tick", onSimulationTick);
+              sim.alpha(0.4).restart();
+            }
+          }
+        }
+        if (didDragRef.current) {
+          const r = RADIUS_BY_SIZE[node.size] ?? 12;
+          const nx = Math.max(r, Math.min(graphWidth - r, x - offset.x));
+          const ny = Math.max(r, Math.min(graphHeight - r, y - offset.y));
+          node.x = nx;
+          node.y = ny;
+          node.x0 = nx;
+          node.y0 = ny;
+          node.fx = nx;
+          node.fy = ny;
+          redraw();
+        }
       } else {
         lastLogicalRef.current = { x, y };
         const edgeUnder = edgeUnderPoint(links, x, y);
@@ -897,6 +970,12 @@ export default function ForceGraph({
         if (edgeUnder) {
           onEdgeClickRef.current?.(edgeUnder.id);
         }
+      }
+      if (node && didDragRef.current) {
+        // Pin node at dropped position so it stays there (no spring-back)
+        node.fx = node.x;
+        node.fy = node.y;
+        // Don't restart simulation — layout stays as is
       }
       draggedNodeRef.current = null;
       dragOffsetRef.current = null;
@@ -1083,6 +1162,9 @@ export default function ForceGraph({
 
     return () => {
       ro.disconnect();
+      simulationRef.current?.stop();
+      simulationRef.current?.on("tick", null);
+      simulationRef.current = null;
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseleave", handleMouseLeave);

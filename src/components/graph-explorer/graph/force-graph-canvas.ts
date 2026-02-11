@@ -5,6 +5,9 @@
 import {
   EDGE_HIT_THRESHOLD,
   EDGE_LABEL_OFFSET,
+  EDGE_WIDTH_ACTIVE,
+  EDGE_WIDTH_DIMMED,
+  EDGE_WIDTH_NORMAL,
   GRAPH_COLORS,
   MAX_FROM_HOVERED_EDGE_LABELS,
   MAX_LABEL_WIDTH,
@@ -209,7 +212,7 @@ export function draw(
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStrokeDimmed;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = EDGE_WIDTH_DIMMED;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
@@ -249,7 +252,7 @@ export function draw(
       const tx = link.target.x ?? 0;
       const ty = link.target.y ?? 0;
       ctx.strokeStyle = GRAPH_COLORS.linkStroke;
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = EDGE_WIDTH_NORMAL;
       ctx.beginPath();
       ctx.moveTo(sx, sy);
       ctx.lineTo(tx, ty);
@@ -263,7 +266,7 @@ export function draw(
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStrokeActive;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = EDGE_WIDTH_ACTIVE;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);
@@ -276,7 +279,7 @@ export function draw(
     const tx = link.target.x ?? 0;
     const ty = link.target.y ?? 0;
     ctx.strokeStyle = GRAPH_COLORS.linkStrokeActive;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = EDGE_WIDTH_ACTIVE;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(tx, ty);

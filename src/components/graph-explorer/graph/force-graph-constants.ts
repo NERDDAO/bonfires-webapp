@@ -22,17 +22,17 @@ export const COLLISION_PADDING = 18;
 export const CENTER_STRENGTH = 0.06;
 export const ALPHA_DECAY = 0.018;
 export const VELOCITY_DECAY = 0.65;
-export const ZOOM_MIN = 0.5;
-export const ZOOM_MAX = 1.5;
+export const ZOOM_MIN = 0.65;
+export const ZOOM_MAX = 2;
 export const GRAPH_WIDTH = 3200;
 export const GRAPH_HEIGHT = 2400;
 export const MAX_LABEL_WIDTH = 80;
 export const MAX_FROM_HOVERED_EDGE_LABELS = 1;
 
 export const GRAPH_COLORS = {
-  linkStroke: "rgba(95, 95, 95, 0.85)",
+  linkStroke: "rgba(95, 95, 95, 0.5)",
   linkStrokeDimmed: "rgb(28, 28, 28)",
-  linkStrokeActive: "rgba(255, 255, 255, 0.9)",
+  linkStrokeActive: "rgba(255, 255, 255, 0.5)",
   linkLabelFill: "rgb(200, 200, 200)",
   linkLabelFillDimmed: "rgb(45, 45, 45)",
   linkLabelFillActive: "rgb(255, 255, 255)",
@@ -51,6 +51,11 @@ export const GRAPH_COLORS = {
 
 export const EDGE_LABEL_MAX_WIDTH = 64;
 export const EDGE_HIT_THRESHOLD = 6;
+
+/** Edge line widths (px) */
+export const EDGE_WIDTH_NORMAL = 0.8;
+export const EDGE_WIDTH_DIMMED = 1;
+export const EDGE_WIDTH_ACTIVE = 0.8;
 /** Perpendicular offset (px) from edge line for edge label placement */
 export const EDGE_LABEL_OFFSET = 10;
 /** Factor to darken node fill/stroke when dimmed (multiply RGB by this) */

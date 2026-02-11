@@ -48,12 +48,15 @@ export const knowledgeGraphSectionCopy = {
 export const hyperblogsPreviewSectionCopy = {
   title: "Hyperblogs",
   tooltipIcon: "/icons/tooltip.svg",
-  tooltipContent: "Hyperblog tooltip content to be added here.",
   tooltipAlt: "Hyperblogs Info",
   cta: "Create your own",
   ctaHref: "/hyperblogs",
-  description:
-    "Hyperblogs are a long forms information format, which is generated from the context of the information already stored in the knowledge graph. It’s a way for users to potentially monetize their contributed pieces of knowledge.",
+  tooltipContent: [
+    "Hyperblogs are a novel product ecosystem from Bonfires. They provide users an avenue to generate static content from the dynamically updating graph.",
+    "When creating Hyperblogs, users may choose a Topic (a focus node on the graph, through which the Hyperblog context is retrieved) and a Prompt. The Prompt tells the system the narrative of the Hyperblog, informing which data is retrieved from the graph to populate the blog content.",
+    "Hyperblogs at ETHBoulder cost $0.25 and are payable in USDC on Base using x402 payments."
+  ],
+  description: "Hyperblogs are longer-form content generated from the Bonfire. Users provide custom prompts which are used to retrieve data from the graph, within specific topic areas. Hyperblogs provide a static viewpoint of the dynamic graph, allowing you to share your own interests with the world.",
   featuredBlogTitle: "Featured Hyperblog",
   latestBlogsTitle: "Latest Hyperblogs",
   viewMoreCtaTitle: "View More",
@@ -63,31 +66,31 @@ export const hyperblogsPreviewSectionCopy = {
 export const howItWorksSectionCopy = {
   title: "How It Works",
   description:
-    "From knowledge exploration to monetization, Delve provides a complete platform for working with AI-powered knowledge graphs.",
+    "From discussions to structured insights, the Bonfires system provides a complete platform for exploring and sharing human knowledge with AI.",
   steps: [
     {
       icon: "icons/search.svg",
-      title: "Explore Knowledge Graphs",
+      title: "Data Ingestion",
       description:
-        "Navigate interconnected knowledge through interactive graph visualizations. Discover entities, relationships, and episodes with AI-assisted exploration.",
+        "Messages, documents, web scrapes and transcripts provide raw text data to the Bonfire, assisted by our agent framework.",
     },
     {
       icon: "icons/upload-file.svg",
-      title: "Upload & Process Documents",
+      title: "Graph Creation",
       description:
-        "Feed documents into the system to automatically extract knowledge. Our AI processes content, creates chunks, and generates taxonomies.",
+        "Ingested text is processed into Episodes, 20-minute summaries of activity, to be formed into a knowledge graph. Entites, relationships and metadata are generated to inform the graph's reader.",
     },
     {
       icon: "icons/cottage.svg",
-      title: "Create Data Rooms",
+      title: "Delve the Bonfire",
       description:
-        "Package your knowledge into monetizable data rooms. Set pricing, access controls, and let others subscribe to your curated knowledge.",
+        "The graph provides a powerful vector to deeply understand and coordinate around the various knowledge inputs. Both humans and AI can deeply delve into the data through the graphs.",
     },
     {
       icon: "icons/auto-awesome.svg",
-      title: "Generate HyperBlogs",
+      title: "Share and Monetise",
       description:
-        "Transform knowledge graphs into comprehensive AI-generated blog posts. Publish content with blockchain-verified payments.",
+        "Bonfire graphs are a knowledge asset. Expose these graph to agents, to other people or to content generators such as Hyperblogs to create your own Knowledge Economy.",
     },
   ],
 };

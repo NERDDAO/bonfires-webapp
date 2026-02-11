@@ -21,6 +21,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 import { formatErrorMessage } from "@/lib/utils";
+import { hyperblogsCopy } from "@/content/hyperblogs";
 
 type TxStep = "idle" | "signing" | "processing" | "redirecting";
 
@@ -60,6 +61,7 @@ export function CreateBlogModal({
   dataroomPriceUsd,
   onSuccess,
 }: CreateBlogModalProps) {
+  const { createTooltipContent, createTitle, createDescription, createDescriptionPlaceholder } = hyperblogsCopy;
   const [description, setDescription] = useState("");
   const [blogLength, setBlogLength] = useState<"short" | "medium" | "long">(
     "medium"
@@ -158,11 +160,11 @@ export function CreateBlogModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Blog"
-      description="Generate an AI-powered blog post from this dataroom's knowledge graph"
+      title={createTitle}
+      description={createDescription}
       size="lg"
       showCloseButton={!isSubmitting}
-      tooltipContent="Create a blog post from the knowledge graph of this dataroom"
+      tooltipContent={createTooltipContent}
     >
       {/* Transaction status overlay */}
       {showOverlay && (
@@ -202,7 +204,7 @@ export function CreateBlogModal({
           id="create-blog-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe what you want the blog to cover (Max 600 characters)"
+          placeholder={createDescriptionPlaceholder}
           maxLength={600}
           rows={6}
           className={cn(
@@ -229,9 +231,9 @@ export function CreateBlogModal({
         >
           {(
             [
-              { value: "short" as const, label: "Short (2 min)" },
-              { value: "medium" as const, label: "Medium (5 min)" },
-              { value: "long" as const, label: "Long (10 min)" },
+              { value: "short" as const, label: ["Short", "(2 min)"] },
+              { value: "medium" as const, label: ["Medium", "(5 min)"] },
+              { value: "long" as const, label: ["Long", "(10 min)"] },
             ] as const
           ).map(({ value, label }) => (
             <button
@@ -247,7 +249,10 @@ export function CreateBlogModal({
               aria-pressed={blogLength === value}
               disabled={isSubmitting}
             >
-              {label}
+              {label[0]} 
+              <span className="hidden lg:inline">&nbsp;</span>
+              <br className="block lg:hidden" />
+              {label[1]}
             </button>
           ))}
         </div>

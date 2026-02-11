@@ -8,6 +8,7 @@ import { HyperBlogInfo } from "@/types";
 
 import HyperBlogCard from "../hyperblogs/hyperblog-card";
 import { Button } from "../ui/button";
+import { InfoTooltip } from "../ui/tooltip";
 
 export default function HyperBlogsPreview() {
   const {
@@ -49,24 +50,13 @@ export default function HyperBlogsPreview() {
           <div className="font-montserrat text-2xl lg:text-5xl font-black">
             {title}
           </div>
-          <div
-            className="tooltip tooltip-top flex text-brand-primary"
-            data-tip={tooltipContent}
-          >
-            <svg
-              width="35"
-              height="35"
-              viewBox="0 0 35 35"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="cursor-help h-5 lg:h-8 w-5 lg:w-8"
-              aria-label={tooltipAlt}
-            >
-              <circle cx="17.2651" cy="17.2651" r="15.937" stroke="currentColor" strokeWidth="2.65617"/>
-              <path d="M17.1324 23.8745H17.1458" stroke="currentColor" strokeWidth="2.65617" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M13.2809 13.25C13.5996 12.3717 14.2169 11.6333 15.0248 11.1639C15.8328 10.6945 16.78 10.5241 17.7009 10.6823C18.6218 10.8405 19.4578 11.3174 20.0627 12.0295C20.6676 12.7417 21.0031 13.6437 21.0103 14.5781C21.0103 17.2343 17.0261 18.5624 17.0261 18.5624" stroke="currentColor" strokeWidth="2.65617" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+          <InfoTooltip
+            content={tooltipContent}
+            side="bottom"
+            sideAtLg="right"
+            iconSize="md"
+            tooltipClassName="max-w-60"
+          />
           <Button
             variant="primary"
             className="ml-auto hidden lg:block"

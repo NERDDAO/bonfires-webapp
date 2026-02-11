@@ -25,7 +25,7 @@ export default function HowItWorks() {
             <h3 className="text-xl font-bold mt-6 lg:mt-8 mb-4">
               {step.title}
             </h3>
-            <p className="text-[#94A3B8] text-sm mt-auto">{step.description}</p>
+            <p className="text-[#94A3B8] text-sm">{step.description}</p>
             {index < steps.length - 1 && (
               <div className="-z-10 hidden lg:block absolute top-12 left-1/2 w-full h-1.5 bg-[#1A2129]" />
             )}

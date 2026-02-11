@@ -38,6 +38,7 @@ export function FloatingChatButton({
       onClick={onToggle}
       className="fixed bottom-4 right-4 z-30 hidden lg:flex"
       aria-label="Open chat"
+      leftIcon="/icons/chat.svg"
     >
       Chat with the graph
     </Button>

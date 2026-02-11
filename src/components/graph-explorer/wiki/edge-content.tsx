@@ -2,9 +2,9 @@
 
 import React from "react";
 
-import Attributes from "./attributes";
 import type { WikiEdgeData, WikiNodeData } from "./wiki-panel-utils";
-import { formatAttributeValue } from "./wiki-panel-utils";
+import { formatAttributeValue, formatLabel } from "./wiki-panel-utils";
+import Attributes from "./attributes";
 
 export interface EdgeContentProps {
   edge: WikiEdgeData;

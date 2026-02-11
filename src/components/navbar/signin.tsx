@@ -176,20 +176,21 @@ export default function Signin() {
     );
   }
 
-  return (
-    <SignInButton mode="modal">
-      <Button
-        type="button"
-        variant="ghost"
-        className={cn(
-          "flex items-center gap-3 font-normal text-sm py-2 px-5 border border-[#3B1517] rounded-lg bg-brand-black text-dark-s-0 hover:bg-dark-s-900 transition-colors duration-200"
-        )}
-        disabled={!isLoaded}
-      >
-        Sign In
-      </Button>
-    </SignInButton>
-  );
+  return null;
+  // return (
+  //   <SignInButton mode="modal">
+  //     <Button
+  //       type="button"
+  //       variant="ghost"
+  //       className={cn(
+  //         "flex items-center gap-3 font-normal text-sm py-2 px-5 border border-[#3B1517] rounded-lg bg-brand-black text-dark-s-0 hover:bg-dark-s-900 transition-colors duration-200"
+  //       )}
+  //       disabled={!isLoaded}
+  //     >
+  //       Sign In
+  //     </Button>
+  //   </SignInButton>
+  // );
 }
 
 /* Replaced with Custom Components */

@@ -9,13 +9,13 @@ export default function HomePage() {
   const { landing: Landing, features } = useSiteConfig();
   const router = useRouter();
 
-  // useEffect(() => {
-  //   if (!features.homePage) {
-  //     router.replace("/graph");
-  //   }
-  // }, [features.homePage, router]);
+  useEffect(() => {
+    if (!features.homePage) {
+      router.replace("/graph");
+    }
+  }, [features.homePage, router]);
 
-  // if (!features.homePage) return null;
+  if (!features.homePage) return null;
 
   return <Landing />;
 }

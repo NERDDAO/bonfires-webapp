@@ -16,7 +16,7 @@ export default async function MainLayout({
       <Providers>
         <SiteConfigProvider>
           <Background>
-            <Navbar showSignin />
+            <Navbar />
             <OrgSwitchGuard>{children}</OrgSwitchGuard>
           </Background>
         </SiteConfigProvider>

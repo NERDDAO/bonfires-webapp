@@ -171,8 +171,8 @@ export function HTNTemplatePicker({
                               key={length}
                               className="badge badge-outline badge-xs"
                             >
-                              {length}: {config.node_count} nodes,{" "}
-                              {config.word_count} words
+                              {length}: max {config.max_nodes} nodes, max{" "}
+                              {config.max_words} words
                             </span>
                           )
                         )}

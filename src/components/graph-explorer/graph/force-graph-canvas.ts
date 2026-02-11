@@ -155,11 +155,21 @@ export function draw(
 
   // When a node has focus (hover or selected): connected = that node + neighbors. When only an edge is active: connected = its two endpoints.
   // Give node focus precedence so hovering a node still highlights it even when an edge is selected.
-  const connectedNodeIds = hasNodeFocus
+  let connectedNodeIds = hasNodeFocus
     ? getConnectedNodeIds(focusNodeId, links)
     : hasEdgeFocus && activeLink
       ? new Set<string>([activeLink.source.id, activeLink.target.id])
       : new Set<string>();
+  const hasSelection = selectedNodeId != null || selectedEdgeId != null;
+  // When there is a selection and an edge is hovered, include the hovered edge's endpoints so they are not dimmed.
+  if (hasSelection && hoveredEdgeId) {
+    const hoveredLink = links.find((l) => l.id === hoveredEdgeId);
+    if (hoveredLink) {
+      connectedNodeIds = new Set(connectedNodeIds);
+      connectedNodeIds.add(hoveredLink.source.id);
+      connectedNodeIds.add(hoveredLink.target.id);
+    }
+  }
   const hasFocus = hasNodeFocus || hasEdgeFocus;
 
   const getLinkState = (link: ViewLink) => {
@@ -169,7 +179,8 @@ export function draw(
     const linkConnected =
       hasFocus &&
       (connectedNodeIds.has(link.source.id) ||
-        connectedNodeIds.has(link.target.id));
+        connectedNodeIds.has(link.target.id) ||
+        (hasSelection && link.id === hoveredEdgeId));
     const edgeDimmed = hasFocus && !linkConnected;
     const edgeFromHoveredNode =
       isHoveringNode &&
@@ -179,9 +190,11 @@ export function draw(
       hasNodeFocus &&
       !isHoveringNode &&
       (link.source.id === focusNodeId || link.target.id === focusNodeId);
-    // When an edge is hovered, highlight only that edge and its nodes – don't show other "from focus node" edges
+    // When an edge is hovered (and no selection), highlight only that edge. When there is a selection, keep showing selection's connections and also highlight the hovered edge.
     const edgeHoverTakesPrecedence =
-      hoveredEdgeId != null && activeEdgeId === hoveredEdgeId;
+      hoveredEdgeId != null &&
+      activeEdgeId === hoveredEdgeId &&
+      !hasSelection;
     const edgeFromFocusedNode =
       !edgeHoverTakesPrecedence && (edgeFromHoveredNode || edgeFromFocusNode);
     return { isActive, edgeDimmed, edgeFromHoveredNode: edgeFromFocusedNode };

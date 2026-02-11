@@ -496,24 +496,8 @@ export function GraphExplorer({
 
       setEpisodes(episodeItems);
 
-      const preferredCenter =
-        effectiveCenterNode ??
-        latestEpisodeUuids[latestEpisodeUuids.length - 1] ??
-        episodeItems[episodeItems.length - 1]?.uuid ??
-        null;
-
-      const hasCenterNode = preferredCenter
-        ? nodes.some((node) => node.uuid === preferredCenter)
-        : false;
-
-      if (preferredCenter && hasCenterNode) {
-        setSelectedEpisodeId(preferredCenter);
-        dispatchSelection({
-          type: SelectionActionType.SELECT_NODE,
-          nodeId: preferredCenter,
-          userTriggered: false,
-        });
-      }
+      // Do not auto-select a node on first load so the graph starts with no active state.
+      // preferredCenter is still used elsewhere (e.g. panning) when set from URL.
     } catch (error) {
       const message =
         error instanceof Error
@@ -527,8 +511,6 @@ export function GraphExplorer({
     agentSelection.selectedAgentId,
     agentSelection.selectedBonfireId,
     latestEpisodeUuids,
-    effectiveCenterNode,
-    dispatchSelection,
   ]);
 
   // Sync effective search/center from URL (e.g. after search bar submit or initial load)
@@ -1032,13 +1014,14 @@ export function GraphExplorer({
     [elements]
   );
 
+  // Only highlight nodes when there is an explicit selection; do not highlight center node on initial load.
   const highlightedNodeIds = useMemo(() => {
     const ids = new Set<string>();
     if (selection.selectedNodeId) {
       ids.add(selection.selectedNodeId.replace(/^n:/, ""));
-    }
-    if (effectiveCenterNode) {
-      ids.add(effectiveCenterNode.replace(/^n:/, ""));
+      if (effectiveCenterNode) {
+        ids.add(effectiveCenterNode.replace(/^n:/, ""));
+      }
     }
     return Array.from(ids);
   }, [selection.selectedNodeId, effectiveCenterNode]);

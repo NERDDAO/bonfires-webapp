@@ -352,6 +352,12 @@ export function GraphExplorer({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLimit, setSearchLimit] = useState(30);
 
+  // Last node/edge shown in wiki panel; kept when selection is cleared (e.g. background click) so panel content persists
+  const [lastWikiDisplay, setLastWikiDisplay] = useState<{
+    nodeId: string | null;
+    edgeId: string | null;
+  }>({ nodeId: null, edgeId: null });
+
   // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
   // Use "relationships" only as API fallback when center node is set and search is empty (do not put in search bar)
   const queryForApi =
@@ -907,7 +913,62 @@ export function GraphExplorer({
     };
   }, [selection.selectedEdgeId, elements]);
 
-  // Get node relationships
+  // IDs to show in wiki panel: current selection, or last selected when selection is cleared (e.g. background click)
+  const displayedNodeId =
+    selection.selectedNodeId ?? lastWikiDisplay.nodeId;
+  const displayedEdgeId =
+    selection.selectedEdgeId ?? lastWikiDisplay.edgeId;
+
+  // Displayed node/edge data for wiki panel (persists when selection is cleared)
+  const displayedNode = useMemo((): WikiNodeData | null => {
+    if (!displayedNodeId) return null;
+    const element = elements.find(
+      (el) =>
+        el.data?.id === displayedNodeId ||
+        el.data?.id === `n:${displayedNodeId}`
+    );
+    if (!element?.data) return null;
+    return {
+      uuid: (element.data["id"] as string).replace(/^n:/, ""),
+      name:
+        (element.data["label"] as string) || (element.data["name"] as string),
+      label: element.data["label"] as string | undefined,
+      type: element.data["node_type"] as "episode" | "entity" | undefined,
+      node_type: element.data["node_type"] as "episode" | "entity" | undefined,
+      summary: element.data["summary"] as string | undefined,
+      content: element.data["content"] as string | undefined,
+      valid_at: element.data["valid_at"] as string | undefined,
+      attributes: element.data["attributes"] as
+        | Record<string, unknown>
+        | undefined,
+      labels: element.data["labels"] as string[] | undefined,
+    };
+  }, [displayedNodeId, elements]);
+
+  const displayedEdge = useMemo((): WikiEdgeData | null => {
+    if (!displayedEdgeId) return null;
+    const element = elements.find(
+      (el) => el.data?.id === displayedEdgeId
+    );
+    if (!element?.data || !element.data["source"] || !element.data["target"])
+      return null;
+    return {
+      id: element.data["id"] as string,
+      label: element.data["name"] as string | undefined,
+      relation_type:
+        (element.data["relationship"] as string | undefined) ??
+        (element.data["label"] as string | undefined),
+      source: element.data["source"] as string,
+      target: element.data["target"] as string,
+      strength: element.data["rel_strength"] as number | undefined,
+      fact: element.data["fact"] as string | undefined,
+      attributes: element.data["attributes"] as
+        | Record<string, unknown>
+        | undefined,
+    };
+  }, [displayedEdgeId, elements]);
+
+  // Get node relationships (for selected node, used by wiki panel)
   const nodeRelationships = useMemo((): WikiEdgeData[] => {
     if (!selection.selectedNodeId) return [];
     const nodeId = selection.selectedNodeId.replace(/^n:/, "");
@@ -929,6 +990,29 @@ export function GraphExplorer({
         fact: el.data!["fact"] as string | undefined,
       }));
   }, [selection.selectedNodeId, elements]);
+
+  // Node relationships for displayed node (so wiki panel keeps showing them when selection is cleared)
+  const displayedNodeRelationships = useMemo((): WikiEdgeData[] => {
+    if (!displayedNodeId) return [];
+    const nodeId = displayedNodeId.replace(/^n:/, "");
+    return elements
+      .filter(
+        (el) =>
+          el.data?.source &&
+          el.data?.target &&
+          (el.data.source.includes(nodeId) || el.data.target.includes(nodeId))
+      )
+      .map((el) => ({
+        id: el.data!.id,
+        label: el.data!.name as string | undefined,
+        relation_type:
+          (el.data!.relationship as string | undefined) ??
+          (el.data!.label as string | undefined),
+        source: el.data!.source!,
+        target: el.data!.target!,
+        fact: el.data!["fact"] as string | undefined,
+      }));
+  }, [displayedNodeId, elements]);
 
   // Map node id -> display title (name/label) for relationship targets
   const getRelatedNodeTitle = useCallback(
@@ -975,6 +1059,7 @@ export function GraphExplorer({
         nodeId,
         userTriggered: true,
       });
+      setLastWikiDisplay({ nodeId, edgeId: null });
 
       // Update wiki navigation
       const element = elements.find(
@@ -1021,6 +1106,7 @@ export function GraphExplorer({
         edgeId,
         userTriggered: true,
       });
+      setLastWikiDisplay({ nodeId: null, edgeId });
 
       // Open wiki panel when closed so edge content is visible (same as node click)
       if (panel.wikiEnabled) {
@@ -1264,11 +1350,11 @@ export function GraphExplorer({
                 {/* Wiki Panel (draggable container) */}
                 {panel.rightPanelMode === "wiki" && (
                   <WikiPanelContainer
-                    node={selectedNode}
-                    edge={selectedEdge}
+                    node={displayedNode}
+                    edge={displayedEdge}
                     edgeSourceNode={null} // TODO: Implement
                     edgeTargetNode={null} // TODO: Implement
-                    nodeRelationships={nodeRelationships}
+                    nodeRelationships={displayedNodeRelationships}
                     enabled={panel.wikiEnabled}
                     mode={panel.wikiMode}
                     minimized={panel.wikiMinimized}
@@ -1282,6 +1368,7 @@ export function GraphExplorer({
                     canGoBack={wikiNav.canGoBack}
                     canGoForward={wikiNav.canGoForward}
                     onClose={() => {
+                      setLastWikiDisplay({ nodeId: null, edgeId: null });
                       dispatchSelection({
                         type: SelectionActionType.CLEAR_SELECTION,
                       });

@@ -153,11 +153,12 @@ export function draw(
     ? links.find((l) => l.id === activeEdgeId) ?? null
     : null;
 
-  // When a node has focus (hover or selected): connected = that node + neighbors. When an edge is active: connected = its two endpoints.
-  const connectedNodeIds = hasEdgeFocus && activeLink
-    ? new Set<string>([activeLink.source.id, activeLink.target.id])
-    : hasNodeFocus
-      ? getConnectedNodeIds(focusNodeId, links)
+  // When a node has focus (hover or selected): connected = that node + neighbors. When only an edge is active: connected = its two endpoints.
+  // Give node focus precedence so hovering a node still highlights it even when an edge is selected.
+  const connectedNodeIds = hasNodeFocus
+    ? getConnectedNodeIds(focusNodeId, links)
+    : hasEdgeFocus && activeLink
+      ? new Set<string>([activeLink.source.id, activeLink.target.id])
       : new Set<string>();
   const hasFocus = hasNodeFocus || hasEdgeFocus;
 

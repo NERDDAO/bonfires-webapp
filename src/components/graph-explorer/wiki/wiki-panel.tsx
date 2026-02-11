@@ -222,8 +222,11 @@ export function WikiPanel({
           <Button
             variant="outline"
             showElevation
-            onClick={() => onSearchAroundNode?.(node.uuid)}
-            className="w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSearchAroundNode?.(node.uuid);
+            }}
+            className="w-full z-10"
             aria-label="Search around this node"
             title="Re-query the graph using this node as the center"
             type="button"

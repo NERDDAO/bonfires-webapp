@@ -22,28 +22,28 @@ interface HTNTemplateCreatorProps {
 
 interface LengthConfig {
   enabled: boolean;
-  nodeCount: string;
-  wordCount: string;
+  maxNodes: number;
+  maxWords: number;
   description: string;
 }
 
 const INITIAL_LENGTH_CONFIGS: Record<string, LengthConfig> = {
   short: {
     enabled: true,
-    nodeCount: "3-4",
-    wordCount: "800-1200",
+    maxNodes: 4,
+    maxWords: 300,
     description: "Concise content with fewer sections",
   },
   medium: {
     enabled: true,
-    nodeCount: "5-7",
-    wordCount: "1500-2500",
+    maxNodes: 7,
+    maxWords: 400,
     description: "Standard content with balanced sections",
   },
   long: {
     enabled: false,
-    nodeCount: "8-12",
-    wordCount: "3000-5000",
+    maxNodes: 12,
+    maxWords: 500,
     description: "Comprehensive content with many sections",
   },
 };
@@ -52,10 +52,9 @@ const PLACEHOLDER_HINTS = [
   "{user_query}",
   "{dataroom_description}",
   "{formatted_context}",
-  "{node_count_range}",
-  "{length_guide}",
-  "{min_nodes}",
   "{max_nodes}",
+  "{max_words}",
+  "{length_guide}",
   "{dataroom_system_prompt}",
 ];
 
@@ -96,15 +95,15 @@ export function HTNTemplateCreator({
   const updateLengthConfig = (
     length: string,
     field: keyof LengthConfig,
-    value: string | boolean
+    value: string | boolean | number
   ) => {
     setLengthConfigs((prev) => {
-      const fallback: LengthConfig = { enabled: false, nodeCount: "5-7", wordCount: "1500-2500", description: "" };
+      const fallback: LengthConfig = { enabled: false, maxNodes: 7, maxWords: 400, description: "" };
       const current: LengthConfig = prev[length] ?? fallback;
       const updated: LengthConfig = {
         enabled: field === "enabled" ? (value as boolean) : current.enabled,
-        nodeCount: field === "nodeCount" ? (value as string) : current.nodeCount,
-        wordCount: field === "wordCount" ? (value as string) : current.wordCount,
+        maxNodes: field === "maxNodes" ? (value as number) : current.maxNodes,
+        maxWords: field === "maxWords" ? (value as number) : current.maxWords,
         description: field === "description" ? (value as string) : current.description,
       };
       return { ...prev, [length]: updated };
@@ -123,13 +122,13 @@ export function HTNTemplateCreator({
     // Build node_count_config from enabled lengths
     const nodeCountConfig: Record<
       string,
-      { node_count: string; word_count: string; description: string }
+      { max_nodes: number; max_words: number; description: string }
     > = {};
     for (const [length, config] of Object.entries(lengthConfigs)) {
       if (config.enabled) {
         nodeCountConfig[length] = {
-          node_count: config.nodeCount,
-          word_count: config.wordCount,
+          max_nodes: config.maxNodes,
+          max_words: config.maxWords,
           description: config.description,
         };
       }
@@ -299,29 +298,34 @@ export function HTNTemplateCreator({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="form-control">
                     <label className="label py-0">
-                      <span className="label-text text-xs">Node Count</span>
+                      <span className="label-text text-xs">Max Nodes</span>
                     </label>
                     <input
-                      type="text"
+                      type="number"
+                      min={1}
+                      max={20}
                       className="input input-bordered input-sm"
-                      placeholder="3-4"
-                      value={config.nodeCount}
+                      placeholder="4"
+                      value={config.maxNodes}
                       onChange={(e) =>
-                        updateLengthConfig(length, "nodeCount", e.target.value)
+                        updateLengthConfig(length, "maxNodes", Number(e.target.value) || 1)
                       }
                     />
                   </div>
                   <div className="form-control">
                     <label className="label py-0">
-                      <span className="label-text text-xs">Word Count</span>
+                      <span className="label-text text-xs">Max Words / Section</span>
                     </label>
                     <input
-                      type="text"
+                      type="number"
+                      min={50}
+                      max={2000}
+                      step={50}
                       className="input input-bordered input-sm"
-                      placeholder="800-1200"
-                      value={config.wordCount}
+                      placeholder="1200"
+                      value={config.maxWords}
                       onChange={(e) =>
-                        updateLengthConfig(length, "wordCount", e.target.value)
+                        updateLengthConfig(length, "maxWords", Number(e.target.value) || 100)
                       }
                     />
                   </div>

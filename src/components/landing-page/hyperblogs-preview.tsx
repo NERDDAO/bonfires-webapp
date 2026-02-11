@@ -2,19 +2,17 @@
 
 import { useEffect, useState } from "react";
 
-import Image from "next/image";
-
 import { hyperblogsPreviewSectionCopy } from "@/content/landing-page";
 import { usePublicHyperBlogsFeed } from "@/hooks";
 import { HyperBlogInfo } from "@/types";
 
 import HyperBlogCard from "../hyperblogs/hyperblog-card";
 import { Button } from "../ui/button";
+import { InfoTooltip } from "../ui/tooltip";
 
 export default function HyperBlogsPreview() {
   const {
     title,
-    tooltipIcon,
     tooltipAlt,
     tooltipContent,
     description,
@@ -52,18 +50,13 @@ export default function HyperBlogsPreview() {
           <div className="font-montserrat text-2xl lg:text-5xl font-black">
             {title}
           </div>
-          <div
-            className="tooltip tooltip-top flex"
-            data-tip={tooltipContent}
-          >
-            <Image
-              src={tooltipIcon}
-              alt={tooltipAlt}
-              width={34}
-              height={34}
-              className="cursor-help h-5 lg:h-8 w-5 lg:w-8"
-            />
-          </div>
+          <InfoTooltip
+            content={tooltipContent}
+            side="bottom"
+            sideAtLg="right"
+            iconSize="md"
+            tooltipClassName="max-w-60"
+          />
           <Button
             variant="primary"
             className="ml-auto hidden lg:block"

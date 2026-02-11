@@ -484,7 +484,7 @@ export interface HTNTemplateInfo {
   description: string | null;
   system_prompt: string;
   user_prompt_template: string;
-  node_count_config: Record<string, { node_count: string; word_count: string; description: string }>;
+  node_count_config: Record<string, { max_nodes: number; max_words: number; description: string }>;
   default_length: string;
   is_active: boolean;
   created_by: string | null;
@@ -503,7 +503,7 @@ export interface CreateHTNTemplateRequest {
   description?: string;
   system_prompt: string;
   user_prompt_template: string;
-  node_count_config: Record<string, { node_count: string; word_count: string; description: string }>;
+  node_count_config: Record<string, { max_nodes: number; max_words: number; description: string }>;
   default_length: string;
   created_by?: string;
 }

@@ -103,6 +103,7 @@ export async function SubdomainResolver({ children }: SubdomainResolverProps) {
           bonfireId: data.bonfire_id,
           agentId: data.agent_id ?? null,
           isPublic: data.is_public,
+          slug: subdomainLabel,
         };
         setCached(subdomainLabel, {
           found: true,

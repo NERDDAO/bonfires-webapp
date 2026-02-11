@@ -10,6 +10,7 @@ import type { PanelMode } from "@/hooks";
 import { MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 /**
  * Floating chat button for collapsed state (when chat is closed).
@@ -37,8 +38,9 @@ export function FloatingChatButton({
       onClick={onToggle}
       className="fixed bottom-4 right-4 z-30 hidden lg:flex"
       aria-label="Open chat"
+      leftIcon="/icons/chat.svg"
     >
-      <MessageSquare className="w-6 h-6" />
+      Chat with the graph
     </Button>
   );
 }

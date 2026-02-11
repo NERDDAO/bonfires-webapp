@@ -41,10 +41,14 @@ export function ChatInput({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (autoFocus) {
-      inputRef.current?.focus();
+    if (autoFocus && !disabled) {
+      // Small delay to ensure the component is fully mounted and visible
+      const timeoutId = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timeoutId);
     }
-  }, [autoFocus]);
+  }, [autoFocus, disabled]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

@@ -1,18 +1,21 @@
 /**
- * Chat messages list with empty states and typing indicator
+ * Chat messages list with empty states and typing indicator.
+ *
+ * Scroll behaviour:
+ *  - When the user sends a message → scroll to the bottom so they
+ *    see their message + the typing indicator.
+ *  - When the assistant reply arrives → scroll just enough to show
+ *    the **top** of the reply. The user then scrolls down manually.
+ *  - If the user has scrolled up (reading history) → no auto-scroll.
  */
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 import { Loader2 } from "lucide-react";
 
 import { ChatMessageBubble } from "./chat-message-bubble";
 import type { ChatMessage } from "./types";
-
-/**
- * Chat messages list with empty states and typing indicator
- */
 
 export interface ChatMessageListProps {
   agentId?: string;
@@ -20,19 +23,69 @@ export interface ChatMessageListProps {
   isSending: boolean;
 }
 
+/** Pixel threshold: user is considered "near bottom" when within this distance. */
+const NEAR_BOTTOM_PX = 100;
+
 export function ChatMessageList({
   agentId,
   messages,
   isSending,
 }: ChatMessageListProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const prevMessageCountRef = useRef(messages.length);
 
+  // Track whether the user is near the bottom of the scroll container.
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    isNearBottomRef.current =
+      scrollHeight - scrollTop - clientHeight < NEAR_BOTTOM_PX;
+  }, []);
+
+  // Smart scroll when new messages arrive.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const prevCount = prevMessageCountRef.current;
+    const currentCount = messages.length;
+    prevMessageCountRef.current = currentCount;
+
+    // No new messages added → nothing to scroll for.
+    if (currentCount <= prevCount || currentCount === 0) return;
+
+    const lastMessage = messages[currentCount - 1];
+    if (!lastMessage) return;
+
+    if (lastMessage.role === "user") {
+      // The user just sent a message – scroll to the very bottom so they see
+      // their own message together with the upcoming typing indicator.
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    } else if (isNearBottomRef.current) {
+      // An assistant reply arrived while the user was near the bottom –
+      // scroll so the TOP of the reply is visible, not the absolute end.
+      lastMessageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+    // If the user has scrolled up, we intentionally do nothing.
   }, [messages]);
 
+  // When the typing indicator appears, scroll to show it (user just sent).
+  useEffect(() => {
+    if (isSending && isNearBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isSending]);
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 bg-[#0f0f0f]">
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 bg-[#0f0f0f]"
+    >
       {!agentId && (
         <div className="flex items-center justify-center h-full text-center text-white/60">
           <p className="text-sm">Select an agent to start chatting</p>
@@ -41,12 +94,17 @@ export function ChatMessageList({
 
       {agentId && messages.length === 0 && (
         <div className="flex items-center justify-center h-full text-center text-white/60">
-          <p className="text-sm">Send a message to start the conversation</p>
+          <p className="text-sm">Talk to this bonfire...</p>
         </div>
       )}
 
-      {messages.map((message) => (
-        <ChatMessageBubble key={message.id} message={message} />
+      {messages.map((message, index) => (
+        <div
+          key={message.id}
+          ref={index === messages.length - 1 ? lastMessageRef : undefined}
+        >
+          <ChatMessageBubble message={message} />
+        </div>
       ))}
 
       {isSending && (

@@ -1,9 +1,29 @@
+"use client";
+
 import { hyperblogsCopy } from "@/content/hyperblogs";
+import { useSubdomainBonfire } from "@/contexts";
+import { useBonfireById } from "@/hooks/queries/useBonfiresQuery";
 
 import { Button } from "../ui/button";
 
+function useHyperblogsDescription(): string {
+  const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
+  const { data: bonfire } = useBonfireById(
+    isSubdomainScoped ? (subdomainConfig?.bonfireId ?? null) : null,
+  );
+
+  const graphLabel = bonfire?.name
+    ? `the ${bonfire.name} graph`
+    : isSubdomainScoped
+      ? "the graph"
+      : "all the graphs";
+
+  return hyperblogsCopy.description.replace("{graphLabel}", graphLabel);
+}
+
 export default function HyperBlogsHeader() {
-  const { title, description } = hyperblogsCopy;
+  const { title } = hyperblogsCopy;
+  const description = useHyperblogsDescription();
 
   return (
     <div className="flex flex-col">

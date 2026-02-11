@@ -11,427 +11,44 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import * as d3 from "d3";
 
-import { NODE_COLOR_DEFAULTS } from "@/lib/utils/graph-theme";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 
 import { IconButton } from "../ui/icon-button";
+import {
+  ALPHA_DECAY,
+  CENTER_STRENGTH,
+  CHARGE_STRENGTH,
+  COLLISION_PADDING,
+  GRAPH_HEIGHT,
+  GRAPH_WIDTH,
+  LAYOUT_ALPHA_MIN,
+  LINK_DISTANCE,
+  LINK_STRENGTH,
+  RADIUS_BY_SIZE,
+  VELOCITY_DECAY,
+  ZOOM_MAX,
+  ZOOM_MIN,
+} from "./force-graph-constants";
+import {
+  clampNodesToBounds,
+  elementsToView,
+} from "./force-graph-data";
+import {
+  draw,
+  edgeUnderPoint,
+  getTouchCenter,
+  getTouchDistance,
+  nodeUnderPoint,
+} from "./force-graph-canvas";
+import type { ForceGraphProps, ViewLink, ViewNode } from "./force-graph-types";
 
-const RADIUS_BY_SIZE: Record<number, number> = {
-  1: 8,
-  2: 10,
-  3: 12,
-  4: 24,
-  5: 28,
-};
-
-const LAYOUT_ALPHA_MIN = 0.001;
-const LINK_DISTANCE = 80;
-const LINK_STRENGTH = 0.75;
-const CHARGE_STRENGTH = -280;
-const COLLISION_PADDING = 10;
-const CENTER_STRENGTH = 0.08;
-const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 1.5;
-const GRAPH_WIDTH = 3200;
-const GRAPH_HEIGHT = 2400;
-const MAX_LABEL_WIDTH = 72;
-
-const GRAPH_COLORS = {
-  linkStroke: "rgba(95, 95, 95, 1)",
-  linkStrokeActive: "rgba(255, 255, 255, 0.9)",
-  linkLabelFill: "rgb(200, 200, 200)",
-  linkLabelFillActive: "rgb(255, 255, 255)",
-  nodeFill: "rgb(179, 179, 179)",
-  nodeStroke: "rgb(179, 179, 179)",
-  labelFill: "rgb(246, 246, 246)",
-  nodeFillHover: "rgb(220, 220, 220)",
-  nodeStrokeHover: "rgb(255, 255, 255)",
-  labelFillHover: "rgb(255, 255, 255)",
-  labelFontSizeHoverOffset: 1,
-  labelFontWeightHover: "600",
-  nodeFillSelected: "rgb(220, 220, 220)",
-  nodeStrokeSelected: "rgb(255, 255, 255)",
-} as const;
-
-const EDGE_LABEL_MAX_WIDTH = 80;
-const EDGE_HIT_THRESHOLD = 8;
-
-function truncateLabel(
-  ctx: CanvasRenderingContext2D,
-  label: string,
-  maxWidth: number
-): string {
-  if (ctx.measureText(label).width <= maxWidth) return label;
-  const ellipsis = "…";
-  let s = label;
-  while (s.length > 0 && ctx.measureText(s + ellipsis).width > maxWidth) {
-    s = s.slice(0, -1);
-  }
-  return s + ellipsis;
-}
-
-// Convert snake case to title case
-function getEdgeLabel(edgeLabel: string): string {
-  const lowerCaseLabel = edgeLabel.toLowerCase();
-  const sentenceCaseLabel = lowerCaseLabel.replace(/_/g, " ");
-  return sentenceCaseLabel;
-}
-
-/** Entity-based node color (aligned with SigmaGraph / graph-theme) */
-const NODE_TYPE_COLORS = {
-  episode: NODE_COLOR_DEFAULTS.episodeColor,
-  entity: NODE_COLOR_DEFAULTS.entityColor,
-  user: NODE_COLOR_DEFAULTS.userColor,
-  unknown: NODE_COLOR_DEFAULTS.unknownColor,
-} as const;
-
-function getNodeColor(
-  nodeType: string | undefined,
-  labels: string[] | undefined
-): string {
-  const hasUserLabel =
-    labels?.some(
-      (lbl) => typeof lbl === "string" && lbl.toLowerCase() === "user"
-    ) ?? false;
-  if (hasUserLabel) return NODE_TYPE_COLORS.user;
-  const type = (nodeType ?? "entity").toLowerCase();
-  if (type === "episode") return NODE_TYPE_COLORS.episode;
-  if (type === "entity") return NODE_TYPE_COLORS.entity;
-  return NODE_TYPE_COLORS.unknown;
-}
-
-interface ViewNode {
-  id: string;
-  label: string;
-  size: number;
-  /** Fill color by entity type (episode / entity / user / unknown) */
-  color: string;
-  x?: number;
-  y?: number;
-  x0?: number;
-  y0?: number;
-}
-interface ViewLink {
-  source: ViewNode;
-  target: ViewNode;
-  id: string;
-  label: string;
-}
-
-function elementsToView(elements: GraphElement[]): {
-  nodes: ViewNode[];
-  links: { source: string; target: string; id: string; label: string }[];
-} {
-  const nodeById = new Map<string, ViewNode>();
-
-  const nodeElements: GraphElement[] = [];
-  const edgeElements: GraphElement[] = [];
-  for (const el of elements) {
-    const data = el?.data ?? {};
-    if (
-      data &&
-      "source" in data &&
-      "target" in data &&
-      data.source != null &&
-      data.target != null
-    ) {
-      edgeElements.push(el);
-    } else {
-      nodeElements.push(el);
-    }
-  }
-
-  for (const el of nodeElements) {
-    const data = el?.data ?? {};
-    const rawId = String(data.id ?? "").replace(/^n:/, "");
-    if (!rawId) continue;
-    const label = String(
-      data.labelFull ?? data.label ?? data.labelShort ?? data.name ?? rawId
-    );
-    const type = (data.node_type ?? "entity") as string;
-    const size = String(type).toLowerCase().includes("episode") ? 4 : 3;
-    const color = getNodeColor(
-      data.node_type,
-      data.labels as string[] | undefined
-    );
-    nodeById.set(rawId, { id: rawId, label, size, color });
-  }
-
-  const usedEdgeIds = new Map<string, number>();
-  const links: { source: string; target: string; id: string; label: string }[] =
-    [];
-  for (const el of edgeElements) {
-    const data = el?.data ?? {};
-    const source = String(data.source ?? "").replace(/^n:/, "");
-    const target = String(data.target ?? "").replace(/^n:/, "");
-    if (!source || !target || !nodeById.has(source) || !nodeById.has(target))
-      continue;
-    const baseId = String(data.id ?? `${data.source}->${data.target}`);
-    const seen = usedEdgeIds.get(baseId) ?? 0;
-    const id = seen === 0 ? baseId : `${baseId}__dup_${seen + 1}`;
-    usedEdgeIds.set(baseId, seen + 1);
-    const label = String(data.label ?? data.relationship ?? "");
-    links.push({ source, target, id, label });
-  }
-
-  return { nodes: Array.from(nodeById.values()), links };
-}
-
-function clampNodesToBounds(
-  nodes: ViewNode[],
-  width: number,
-  height: number
-): void {
-  for (const node of nodes) {
-    const r = RADIUS_BY_SIZE[node.size] ?? 20;
-    const x = node.x ?? 0;
-    const y = node.y ?? 0;
-    node.x = Math.max(r, Math.min(width - r, x));
-    node.y = Math.max(r, Math.min(height - r, y));
-  }
-}
-
-function drawNode(
-  ctx: CanvasRenderingContext2D,
-  node: ViewNode,
-  colors: typeof GRAPH_COLORS,
-  isHovered: boolean,
-  isSelectedOrHighlighted: boolean
-): void {
-  const x = node.x ?? 0;
-  const y = node.y ?? 0;
-  const r = RADIUS_BY_SIZE[node.size] ?? 20;
-  const active = isHovered || isSelectedOrHighlighted;
-
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, 2 * Math.PI);
-  const baseFill = node.color ?? colors.nodeFill;
-  const baseStroke = node.color ?? colors.nodeStroke;
-  ctx.fillStyle = active
-    ? isSelectedOrHighlighted
-      ? colors.nodeFillSelected
-      : colors.nodeFillHover
-    : baseFill;
-  ctx.fill();
-  ctx.strokeStyle = active
-    ? isSelectedOrHighlighted
-      ? colors.nodeStrokeSelected
-      : colors.nodeStrokeHover
-    : baseStroke;
-  ctx.lineWidth = active ? 2.5 : 1.5;
-  ctx.stroke();
-
-  const baseFontSize = node.size >= 4 ? 11 : node.size >= 2 ? 10 : 9;
-  const fontSize = active
-    ? baseFontSize + GRAPH_COLORS.labelFontSizeHoverOffset
-    : baseFontSize;
-  const fontWeight = active
-    ? GRAPH_COLORS.labelFontWeightHover
-    : node.size >= 4
-      ? "600"
-      : "500";
-  ctx.font = `${fontWeight} ${fontSize}px system-ui, sans-serif`;
-  ctx.fillStyle = active ? colors.labelFillHover : colors.labelFill;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  const displayLabel = active
-    ? node.label
-    : truncateLabel(ctx, node.label, MAX_LABEL_WIDTH);
-  ctx.fillText(displayLabel, x, y + r + 4);
-}
-
-function drawEdgeLabel(
-  ctx: CanvasRenderingContext2D,
-  link: ViewLink,
-  isActive: boolean,
-  colors: typeof GRAPH_COLORS
-): void {
-  const sx = link.source.x ?? 0;
-  const sy = link.source.y ?? 0;
-  const tx = link.target.x ?? 0;
-  const ty = link.target.y ?? 0;
-  const mx = (sx + tx) / 2;
-  const my = (sy + ty) / 2;
-  if (!link.label) return;
-  const fontSize = isActive ? 10 : 9;
-  const fontWeight = isActive ? "600" : "500";
-  ctx.font = `italic ${fontWeight} ${fontSize}px system-ui, sans-serif`;
-  ctx.fillStyle = isActive ? colors.linkLabelFillActive : colors.linkLabelFill;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  const displayLabel = isActive ? getEdgeLabel(link.label) : "";
-  ctx.fillText(displayLabel, mx, my);
-}
-
-function draw(
-  ctx: CanvasRenderingContext2D,
-  nodes: ViewNode[],
-  links: ViewLink[],
-  width: number,
-  height: number,
-  hoveredNodeId: string | null,
-  hoveredEdgeId: string | null,
-  selectedEdgeId: string | null,
-  highlightedNodeIds: Set<string>,
-  transform: { x: number; y: number; k: number }
-): void {
-  ctx.clearRect(0, 0, width, height);
-  ctx.save();
-  ctx.translate(transform.x, transform.y);
-  ctx.scale(transform.k, transform.k);
-
-  // Draw edges (inactive first, then active on top for visibility)
-  for (const link of links) {
-    const isActive = link.id === hoveredEdgeId || link.id === selectedEdgeId;
-    if (isActive) continue;
-    const sx = link.source.x ?? 0;
-    const sy = link.source.y ?? 0;
-    const tx = link.target.x ?? 0;
-    const ty = link.target.y ?? 0;
-    ctx.strokeStyle = GRAPH_COLORS.linkStroke;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(tx, ty);
-    ctx.stroke();
-  }
-  for (const link of links) {
-    const isActive = link.id === hoveredEdgeId || link.id === selectedEdgeId;
-    if (!isActive) continue;
-    const sx = link.source.x ?? 0;
-    const sy = link.source.y ?? 0;
-    const tx = link.target.x ?? 0;
-    const ty = link.target.y ?? 0;
-    ctx.strokeStyle = GRAPH_COLORS.linkStrokeActive;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(tx, ty);
-    ctx.stroke();
-  }
-
-  // Edge labels (draw after edges so they're on top)
-  for (const link of links) {
-    const isActive = link.id === hoveredEdgeId || link.id === selectedEdgeId;
-    drawEdgeLabel(ctx, link, isActive, GRAPH_COLORS);
-  }
-
-  for (const node of nodes) {
-    const isHighlighted = highlightedNodeIds.has(node.id);
-    drawNode(ctx, node, GRAPH_COLORS, node.id === hoveredNodeId, isHighlighted);
-  }
-  ctx.restore();
-}
-
-/** Distance from point (px, py) to line segment (ax,ay)-(bx,by) in graph coords */
-function distanceToSegment(
-  px: number,
-  py: number,
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number
-): number {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const apx = px - ax;
-  const apy = py - ay;
-  const ab2 = abx * abx + aby * aby;
-  let t = ab2 <= 0 ? 0 : (apx * abx + apy * aby) / ab2;
-  t = Math.max(0, Math.min(1, t));
-  const qx = ax + t * abx;
-  const qy = ay + t * aby;
-  const dx = px - qx;
-  const dy = py - qy;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function edgeUnderPoint(
-  links: ViewLink[],
-  x: number,
-  y: number
-): ViewLink | null {
-  let best: { link: ViewLink; d: number } | null = null;
-  for (const link of links) {
-    const sx = link.source.x ?? 0;
-    const sy = link.source.y ?? 0;
-    const tx = link.target.x ?? 0;
-    const ty = link.target.y ?? 0;
-    const d = distanceToSegment(x, y, sx, sy, tx, ty);
-    if (d <= EDGE_HIT_THRESHOLD && (!best || d < best.d)) {
-      best = { link, d };
-    }
-  }
-  return best?.link ?? null;
-}
-
-function nodeUnderPoint(
-  nodes: ViewNode[],
-  x: number,
-  y: number
-): ViewNode | null {
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const node = nodes[i];
-    if (node === undefined) continue;
-    const nx = node.x ?? 0;
-    const ny = node.y ?? 0;
-    const r = RADIUS_BY_SIZE[node.size] ?? 20;
-    const dx = x - nx;
-    const dy = y - ny;
-    if (dx * dx + dy * dy <= r * r) return node;
-  }
-  return null;
-}
-
-function getTouchDistance(touches: TouchList): number {
-  if (touches.length < 2) return 0;
-  const a = touches[0];
-  const b = touches[1];
-  if (!a || !b) return 0;
-  return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
-}
-
-function getTouchCenter(touches: TouchList): {
-  clientX: number;
-  clientY: number;
-} {
-  if (touches.length < 2) return { clientX: 0, clientY: 0 };
-  const a = touches[0];
-  const b = touches[1];
-  if (!a || !b) return { clientX: 0, clientY: 0 };
-  return {
-    clientX: (a.clientX + b.clientX) / 2,
-    clientY: (a.clientY + b.clientY) / 2,
-  };
-}
-
-export interface ForceGraphProps {
-  /** Graph elements (nodes + edges) from GraphExplorer */
-  elements: GraphElement[];
-  /** Called when a node is clicked (no drag) */
-  onNodeClick?: (nodeId: string) => void;
-  /** Called when an edge is clicked */
-  onEdgeClick?: (edgeId: string) => void;
-  /** Currently selected node ID (displayed as highlighted) */
-  selectedNodeId?: string | null;
-  /** Currently selected edge ID (displayed as highlighted, opens wiki panel) */
-  selectedEdgeId?: string | null;
-  /** Node IDs to highlight */
-  highlightedNodeIds?: string[];
-  /** Center node ID: when set, the view is panned so this node is at the viewport center on load */
-  centerNodeId?: string | null;
-  /** One-shot: when set, pan the view so this node is at center (no graph update). Cleared via onPanToNodeComplete */
-  panToNodeId?: string | null;
-  /** Called after panning to panToNodeId so the parent can clear it */
-  onPanToNodeComplete?: () => void;
-  /** Additional CSS class */
-  className?: string;
-}
+export type { ForceGraphProps };
 
 export default function ForceGraph({
   elements,
   onNodeClick,
   onEdgeClick,
+  onBackgroundClick,
   selectedNodeId,
   selectedEdgeId,
   highlightedNodeIds = [],
@@ -449,6 +66,7 @@ export default function ForceGraph({
   const draggedNodeRef = useRef<ViewNode | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
+  const simulationRef = useRef<d3.Simulation<ViewNode, ViewLink> | null>(null);
   const sizeRef = useRef({ width: 0, height: 0 });
   const graphSizeRef = useRef({
     graphWidth: GRAPH_WIDTH,
@@ -461,7 +79,10 @@ export default function ForceGraph({
     tx: number;
     ty: number;
   } | null>(null);
+  const didPanRef = useRef(false);
   const lastLogicalRef = useRef({ x: 0, y: 0 });
+  /** True only after mousedown on the canvas; used so mouseup on window (e.g. button in wiki panel) doesn't trigger graph click. */
+  const pointerDownOnCanvasRef = useRef(false);
   const touchStartRef = useRef<{
     clientX: number;
     clientY: number;
@@ -491,8 +112,10 @@ export default function ForceGraph({
 
   const onNodeClickRef = useRef(onNodeClick);
   const onEdgeClickRef = useRef(onEdgeClick);
+  const onBackgroundClickRef = useRef(onBackgroundClick);
   onNodeClickRef.current = onNodeClick;
   onEdgeClickRef.current = onEdgeClick;
+  onBackgroundClickRef.current = onBackgroundClick;
 
   const redraw = useCallback(() => setTick((t) => t + 1), []);
 
@@ -547,8 +170,15 @@ export default function ForceGraph({
     if (!container || !canvas || !elements.length) {
       nodesRef.current = null;
       linksRef.current = null;
+      simulationRef.current?.stop();
+      simulationRef.current?.on("tick", null);
+      simulationRef.current = null;
       return;
     }
+
+    simulationRef.current?.stop();
+    simulationRef.current?.on("tick", null);
+    simulationRef.current = null;
 
     const { nodes: viewNodes, links: viewLinks } = elementsToView(elements);
     const nodes: ViewNode[] = viewNodes.map((n) => ({ ...n }));
@@ -585,7 +215,10 @@ export default function ForceGraph({
       graphSizeRef.current = { graphWidth, graphHeight };
 
       if (isInitialLayout) {
-        const simulation = d3.forceSimulation(nodes);
+        const simulation = d3
+          .forceSimulation(nodes)
+          .alphaDecay(ALPHA_DECAY)
+          .velocityDecay(VELOCITY_DECAY);
         simulation
           .force(
             "link",
@@ -603,13 +236,14 @@ export default function ForceGraph({
             "collision",
             d3
               .forceCollide<ViewNode>()
-              .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 20) + COLLISION_PADDING)
+              .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING)
           );
 
         while (simulation.alpha() > LAYOUT_ALPHA_MIN) {
           simulation.tick();
         }
         simulation.stop();
+        simulationRef.current = simulation;
 
         clampNodesToBounds(nodes, graphWidth, graphHeight);
         for (const node of nodes) {
@@ -637,6 +271,7 @@ export default function ForceGraph({
       }
 
       sizeRef.current = { width, height };
+      const selectedNode = selectedNodeId?.replace(/^n:/, "") ?? null;
       draw(
         ctx,
         nodes,
@@ -646,6 +281,7 @@ export default function ForceGraph({
         null,
         null,
         null,
+        selectedNode,
         highlightedSet.current,
         transformRef.current
       );
@@ -655,8 +291,6 @@ export default function ForceGraph({
     const ro = new ResizeObserver(() => resize(false));
     ro.observe(container);
 
-    // Normalize client coords to layout viewport (fixes tap offset on mobile when
-    // touch events are in visual viewport but getBoundingClientRect is layout).
     const toLayoutClient = (clientX: number, clientY: number) => {
       const vv = typeof window !== "undefined" ? window.visualViewport : null;
       if (vv) {
@@ -683,8 +317,26 @@ export default function ForceGraph({
       };
     };
 
+    const onSimulationTick = () => {
+      const n = nodesRef.current;
+      const { graphWidth, graphHeight } = graphSizeRef.current;
+      if (n?.length) {
+        clampNodesToBounds(n, graphWidth, graphHeight);
+      }
+      redraw();
+      const sim = simulationRef.current;
+      if (!sim) return;
+      if (draggedNodeRef.current) {
+        sim.alpha(0.25);
+      } else if (sim.alpha() < LAYOUT_ALPHA_MIN) {
+        sim.stop();
+        sim.on("tick", null);
+      }
+    };
+
     const handleMouseDown = (e: MouseEvent) => {
       if (draggedNodeRef.current || panStartRef.current) return;
+      pointerDownOnCanvasRef.current = true;
       const { x, y } = toLogical(e);
       lastLogicalRef.current = { x, y };
       const node = nodeUnderPoint(nodes, x, y);
@@ -696,6 +348,7 @@ export default function ForceGraph({
           y: y - (node.y ?? 0),
         };
       } else {
+        didPanRef.current = false;
         panStartRef.current = {
           clientX: e.clientX,
           clientY: e.clientY,
@@ -708,6 +361,7 @@ export default function ForceGraph({
     const handleMouseMove = (e: MouseEvent) => {
       const panStart = panStartRef.current;
       if (panStart) {
+        didPanRef.current = true;
         transformRef.current.x = panStart.tx + (e.clientX - panStart.clientX);
         transformRef.current.y = panStart.ty + (e.clientY - panStart.clientY);
         redraw();
@@ -718,15 +372,34 @@ export default function ForceGraph({
       const offset = dragOffsetRef.current;
       const { graphWidth, graphHeight } = graphSizeRef.current;
       if (node && offset) {
-        didDragRef.current = true;
-        const r = RADIUS_BY_SIZE[node.size] ?? 20;
-        const nx = Math.max(r, Math.min(graphWidth - r, x - offset.x));
-        const ny = Math.max(r, Math.min(graphHeight - r, y - offset.y));
-        node.x = nx;
-        node.y = ny;
-        node.x0 = nx;
-        node.y0 = ny;
-        redraw();
+        if (!didDragRef.current) {
+          const dx = x - lastLogicalRef.current.x;
+          const dy = y - lastLogicalRef.current.y;
+          if (dx * dx + dy * dy > 16) {
+            didDragRef.current = true;
+            const nx = node.x ?? 0;
+            const ny = node.y ?? 0;
+            node.fx = nx;
+            node.fy = ny;
+            const sim = simulationRef.current;
+            if (sim) {
+              sim.on("tick", onSimulationTick);
+              sim.alpha(0.4).restart();
+            }
+          }
+        }
+        if (didDragRef.current) {
+          const r = RADIUS_BY_SIZE[node.size] ?? 12;
+          const nx = Math.max(r, Math.min(graphWidth - r, x - offset.x));
+          const ny = Math.max(r, Math.min(graphHeight - r, y - offset.y));
+          node.x = nx;
+          node.y = ny;
+          node.x0 = nx;
+          node.y0 = ny;
+          node.fx = nx;
+          node.fy = ny;
+          redraw();
+        }
       } else {
         lastLogicalRef.current = { x, y };
         const edgeUnder = edgeUnderPoint(links, x, y);
@@ -744,19 +417,37 @@ export default function ForceGraph({
     };
 
     const handleMouseUp = () => {
+      const startedOnCanvas = pointerDownOnCanvasRef.current;
+      pointerDownOnCanvasRef.current = false;
+
       const node = draggedNodeRef.current;
-      if (node && !didDragRef.current) {
-        onNodeClickRef.current?.(node.id);
-      } else if (!didDragRef.current && linksRef.current) {
-        const { x, y } = lastLogicalRef.current;
-        const edgeUnder = edgeUnderPoint(linksRef.current, x, y);
-        if (edgeUnder) {
-          onEdgeClickRef.current?.(edgeUnder.id);
+      const wasPanning = panStartRef.current != null;
+      const didPan = didPanRef.current;
+
+      if (startedOnCanvas) {
+        if (node && !didDragRef.current) {
+          onNodeClickRef.current?.(node.id);
+        } else if (!didDragRef.current && linksRef.current) {
+          const { x, y } = lastLogicalRef.current;
+          const edgeUnder = edgeUnderPoint(linksRef.current, x, y);
+          if (edgeUnder) {
+            onEdgeClickRef.current?.(edgeUnder.id);
+          } else if (wasPanning && !didPan && nodesRef.current) {
+            const nodeUnder = nodeUnderPoint(nodesRef.current, x, y);
+            if (!nodeUnder) {
+              onBackgroundClickRef.current?.();
+            }
+          }
+        }
+        if (node && didDragRef.current) {
+          node.fx = node.x;
+          node.fy = node.y;
         }
       }
       draggedNodeRef.current = null;
       dragOffsetRef.current = null;
       panStartRef.current = null;
+      didPanRef.current = false;
       didDragRef.current = false;
       redraw();
     };
@@ -790,7 +481,6 @@ export default function ForceGraph({
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        // Start pinch zoom
         touchStartRef.current = null;
         const distance = getTouchDistance(e.touches);
         const center = getTouchCenter(e.touches);
@@ -812,7 +502,7 @@ export default function ForceGraph({
         touchStartRef.current
       )
         return;
-      e.preventDefault(); // claim touch so browser doesn't scroll/zoom; enables reliable pan + tap
+      e.preventDefault();
       const coords = getTouchCoords(e);
       if (!coords) return;
       const { x, y } = toLogical(coords);
@@ -829,7 +519,6 @@ export default function ForceGraph({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      // Two-finger pinch zoom
       if (e.touches.length === 2 && pinchStartRef.current) {
         e.preventDefault();
         const pinch = pinchStartRef.current;
@@ -878,7 +567,7 @@ export default function ForceGraph({
             tx: start.tx,
             ty: start.ty,
           };
-          touchStartRef.current = null; // only clear when we commit to pan, so tap still fires if no pan
+          touchStartRef.current = null;
         }
       }
       const panStart = panStartRef.current;
@@ -893,11 +582,9 @@ export default function ForceGraph({
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      // Two fingers -> one or zero: clear pinch so next gesture is pan/tap
       if (e.touches.length < 2) {
         pinchStartRef.current = null;
       }
-      // When going from 2 to 1 finger, treat remaining touch as pan start so user can pan without re-touching
       if (e.touches.length === 1) {
         const t = e.touches[0];
         if (t) {
@@ -939,6 +626,9 @@ export default function ForceGraph({
 
     return () => {
       ro.disconnect();
+      simulationRef.current?.stop();
+      simulationRef.current?.on("tick", null);
+      simulationRef.current = null;
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseleave", handleMouseLeave);
@@ -951,7 +641,6 @@ export default function ForceGraph({
     };
   }, [elements, centerNodeId, redraw]);
 
-  // Redraw when tick or highlighted set changes
   useEffect(() => {
     const canvas = canvasRef.current;
     const nodes = nodesRef.current;
@@ -965,6 +654,7 @@ export default function ForceGraph({
       hoveredNodeRef.current ?? draggedNodeRef.current?.id ?? null;
     const hoveredEdge = hoveredEdgeRef.current;
     const selectedEdge = selectedEdgeId ?? null;
+    const selectedNode = selectedNodeId?.replace(/^n:/, "") ?? null;
     draw(
       ctx,
       nodes,
@@ -974,6 +664,7 @@ export default function ForceGraph({
       hoveredNode,
       hoveredEdge,
       selectedEdge,
+      selectedNode,
       highlightedSet.current,
       transformRef.current
     );

@@ -9,6 +9,7 @@ import {
 import { ClerkProvider } from "@clerk/nextjs";
 import "@rainbow-me/rainbowkit/styles.css";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 import "./(styles)/globals.css";
@@ -34,7 +35,7 @@ export default function RootLayout({
             "font-dm-sans antialiased min-h-dvh"
           )}
         >
-          {children}
+          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         </body>
       </html>
     </ClerkProvider>

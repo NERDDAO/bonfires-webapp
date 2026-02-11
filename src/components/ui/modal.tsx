@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 import Image from "next/image";
 
+import { InfoTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
@@ -28,7 +29,7 @@ export interface ModalProps {
   showCloseButton?: boolean;
   /** Extra class for the modal content box */
   className?: string;
-  /** Optional tooltip content; when set, used for data-tip */
+  /** Optional tooltip content; when set, shows an info icon with Radix tooltip */
   tooltipContent?: string;
 }
 
@@ -89,7 +90,7 @@ export function Modal({
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 p-4"
     >
       {/* Backdrop with blur */}
       <div
@@ -101,7 +102,7 @@ export function Modal({
       {/* Modal content */}
       <div
         className={cn(
-          "p-7.5 relative z-10 w-full overflow-hidden rounded-2xl",
+          "p-5 lg:p-7.5 relative z-10 w-full overflow-hidden rounded-2xl",
           "bg-brand-black border border-dark-s-700 shadow-2xl",
           "animate-in fade-in zoom-in-95 duration-200",
           sizeClasses[size],
@@ -125,18 +126,12 @@ export function Modal({
                   {title}
                 </h2>
                 {tooltipContent && (
-                  <div
-                    className="tooltip tooltip-right flex"
-                    data-tip={tooltipContent}
-                  >
-                    <Image
-                      src="/icons/tooltip.svg"
-                      alt="Tooltip"
-                      width={12}
-                      height={12}
-                      className="cursor-help h-3 w-3 lg:h-4 lg:w-4"
-                    />
-                  </div>
+                  <InfoTooltip
+                    content={tooltipContent}
+                    side="bottom"
+                    sideAtLg="right"
+                    iconSize="sm"
+                  />
                 )}
               </div>
             ) : (

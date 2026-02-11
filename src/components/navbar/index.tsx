@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -16,7 +16,7 @@ import Signin from "./signin";
 
 export type { NavigationItem };
 
-export function Navbar({ showSignin = false }: { showSignin?: boolean }) {
+export function Navbar() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { navigation: navigationItems } = useSiteConfig();
@@ -82,12 +82,11 @@ export function Navbar({ showSignin = false }: { showSignin?: boolean }) {
       <Drawer
         drawerOpen={drawerOpen}
         closeDrawer={closeDrawer}
-        showSignin={showSignin}
       />
 
       {/* Auth and Wallet buttons */}
       <div className="navbar-end items-center gap-2 hidden lg:flex">
-        {showSignin && <Signin />}
+        <Signin />
         <ConnectWallet />
       </div>
     </nav>

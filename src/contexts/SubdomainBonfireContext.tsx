@@ -18,6 +18,8 @@ export interface SubdomainConfig {
   bonfireId: string;
   agentId: string | null;
   isPublic: boolean;
+  /** The subdomain slug (e.g. "boulder"). Available after resolution. */
+  slug: string | null;
 }
 
 interface SubdomainBonfireContextValue {
@@ -89,6 +91,7 @@ export function SubdomainBonfireProvider({
           bonfireId: data.bonfire_id,
           agentId: data.agent_id ?? null,
           isPublic: data.is_public,
+          slug: label,
         });
       } catch (e) {
         const msg =

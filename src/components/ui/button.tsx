@@ -11,6 +11,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   href?: string;
   /** When true (default), the button shows a raised/elevated front panel. */
   showElevation?: boolean;
+  /** Image src for an icon shown to the left of the label. */
+  leftIcon?: string;
 }
 
 type ButtonVariant = "primary" | "outline" | "outline-white";
@@ -28,6 +30,7 @@ const Button = React.forwardRef<
       variant = "primary",
       href,
       showElevation = true,
+      leftIcon,
       onPointerDown,
       onPointerUp,
       onPointerLeave,
@@ -83,12 +86,22 @@ const Button = React.forwardRef<
       className
     );
 
+    const iconEl = leftIcon ? (
+      <img
+        src={leftIcon}
+        alt=""
+        className="size-5 shrink-0 mr-1.5"
+        aria-hidden
+      />
+    ) : null;
+
     const inner = (
       <>
         <span
-          className="pointer-events-none invisible block py-3 px-3.5 font-bold whitespace-nowrap"
+          className="pointer-events-none invisible flex items-center py-3 px-3.5 font-bold whitespace-nowrap"
           aria-hidden
         >
+          {iconEl}
           {children}
         </span>
         <div
@@ -113,6 +126,7 @@ const Button = React.forwardRef<
           style={{ transform: frontTransform }}
           aria-hidden
         >
+          {iconEl}
           {children}
         </div>
       </>

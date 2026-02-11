@@ -352,6 +352,12 @@ export function GraphExplorer({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLimit, setSearchLimit] = useState(30);
 
+  // Last node/edge shown in wiki panel; kept when selection is cleared (e.g. background click) so panel content persists
+  const [lastWikiDisplay, setLastWikiDisplay] = useState<{
+    nodeId: string | null;
+    edgeId: string | null;
+  }>({ nodeId: null, edgeId: null });
+
   // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
   // Use "relationships" only as API fallback when center node is set and search is empty (do not put in search bar)
   const queryForApi =
@@ -490,24 +496,8 @@ export function GraphExplorer({
 
       setEpisodes(episodeItems);
 
-      const preferredCenter =
-        effectiveCenterNode ??
-        latestEpisodeUuids[latestEpisodeUuids.length - 1] ??
-        episodeItems[episodeItems.length - 1]?.uuid ??
-        null;
-
-      const hasCenterNode = preferredCenter
-        ? nodes.some((node) => node.uuid === preferredCenter)
-        : false;
-
-      if (preferredCenter && hasCenterNode) {
-        setSelectedEpisodeId(preferredCenter);
-        dispatchSelection({
-          type: SelectionActionType.SELECT_NODE,
-          nodeId: preferredCenter,
-          userTriggered: false,
-        });
-      }
+      // Do not auto-select a node on first load so the graph starts with no active state.
+      // preferredCenter is still used elsewhere (e.g. panning) when set from URL.
     } catch (error) {
       const message =
         error instanceof Error
@@ -521,8 +511,6 @@ export function GraphExplorer({
     agentSelection.selectedAgentId,
     agentSelection.selectedBonfireId,
     latestEpisodeUuids,
-    effectiveCenterNode,
-    dispatchSelection,
   ]);
 
   // Sync effective search/center from URL (e.g. after search bar submit or initial load)
@@ -907,7 +895,62 @@ export function GraphExplorer({
     };
   }, [selection.selectedEdgeId, elements]);
 
-  // Get node relationships
+  // IDs to show in wiki panel: current selection, or last selected when selection is cleared (e.g. background click)
+  const displayedNodeId =
+    selection.selectedNodeId ?? lastWikiDisplay.nodeId;
+  const displayedEdgeId =
+    selection.selectedEdgeId ?? lastWikiDisplay.edgeId;
+
+  // Displayed node/edge data for wiki panel (persists when selection is cleared)
+  const displayedNode = useMemo((): WikiNodeData | null => {
+    if (!displayedNodeId) return null;
+    const element = elements.find(
+      (el) =>
+        el.data?.id === displayedNodeId ||
+        el.data?.id === `n:${displayedNodeId}`
+    );
+    if (!element?.data) return null;
+    return {
+      uuid: (element.data["id"] as string).replace(/^n:/, ""),
+      name:
+        (element.data["label"] as string) || (element.data["name"] as string),
+      label: element.data["label"] as string | undefined,
+      type: element.data["node_type"] as "episode" | "entity" | undefined,
+      node_type: element.data["node_type"] as "episode" | "entity" | undefined,
+      summary: element.data["summary"] as string | undefined,
+      content: element.data["content"] as string | undefined,
+      valid_at: element.data["valid_at"] as string | undefined,
+      attributes: element.data["attributes"] as
+        | Record<string, unknown>
+        | undefined,
+      labels: element.data["labels"] as string[] | undefined,
+    };
+  }, [displayedNodeId, elements]);
+
+  const displayedEdge = useMemo((): WikiEdgeData | null => {
+    if (!displayedEdgeId) return null;
+    const element = elements.find(
+      (el) => el.data?.id === displayedEdgeId
+    );
+    if (!element?.data || !element.data["source"] || !element.data["target"])
+      return null;
+    return {
+      id: element.data["id"] as string,
+      label: element.data["name"] as string | undefined,
+      relation_type:
+        (element.data["relationship"] as string | undefined) ??
+        (element.data["label"] as string | undefined),
+      source: element.data["source"] as string,
+      target: element.data["target"] as string,
+      strength: element.data["rel_strength"] as number | undefined,
+      fact: element.data["fact"] as string | undefined,
+      attributes: element.data["attributes"] as
+        | Record<string, unknown>
+        | undefined,
+    };
+  }, [displayedEdgeId, elements]);
+
+  // Get node relationships (for selected node, used by wiki panel)
   const nodeRelationships = useMemo((): WikiEdgeData[] => {
     if (!selection.selectedNodeId) return [];
     const nodeId = selection.selectedNodeId.replace(/^n:/, "");
@@ -930,6 +973,29 @@ export function GraphExplorer({
       }));
   }, [selection.selectedNodeId, elements]);
 
+  // Node relationships for displayed node (so wiki panel keeps showing them when selection is cleared)
+  const displayedNodeRelationships = useMemo((): WikiEdgeData[] => {
+    if (!displayedNodeId) return [];
+    const nodeId = displayedNodeId.replace(/^n:/, "");
+    return elements
+      .filter(
+        (el) =>
+          el.data?.source &&
+          el.data?.target &&
+          (el.data.source.includes(nodeId) || el.data.target.includes(nodeId))
+      )
+      .map((el) => ({
+        id: el.data!.id,
+        label: el.data!.name as string | undefined,
+        relation_type:
+          (el.data!.relationship as string | undefined) ??
+          (el.data!.label as string | undefined),
+        source: el.data!.source!,
+        target: el.data!.target!,
+        fact: el.data!["fact"] as string | undefined,
+      }));
+  }, [displayedNodeId, elements]);
+
   // Map node id -> display title (name/label) for relationship targets
   const getRelatedNodeTitle = useCallback(
     (nodeId: string): string | undefined => {
@@ -948,13 +1014,14 @@ export function GraphExplorer({
     [elements]
   );
 
+  // Only highlight nodes when there is an explicit selection; do not highlight center node on initial load.
   const highlightedNodeIds = useMemo(() => {
     const ids = new Set<string>();
     if (selection.selectedNodeId) {
       ids.add(selection.selectedNodeId.replace(/^n:/, ""));
-    }
-    if (effectiveCenterNode) {
-      ids.add(effectiveCenterNode.replace(/^n:/, ""));
+      if (effectiveCenterNode) {
+        ids.add(effectiveCenterNode.replace(/^n:/, ""));
+      }
     }
     return Array.from(ids);
   }, [selection.selectedNodeId, effectiveCenterNode]);
@@ -975,6 +1042,7 @@ export function GraphExplorer({
         nodeId,
         userTriggered: true,
       });
+      setLastWikiDisplay({ nodeId, edgeId: null });
 
       // Update wiki navigation
       const element = elements.find(
@@ -1021,9 +1089,26 @@ export function GraphExplorer({
         edgeId,
         userTriggered: true,
       });
+      setLastWikiDisplay({ nodeId: null, edgeId });
+
+      // Open wiki panel when closed so edge content is visible (same as node click)
+      if (panel.wikiEnabled) {
+        if (panel.rightPanelMode === "none") {
+          dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
+        }
+        dispatchPanel({ type: PanelActionType.SET_WIKI_MODE, mode: "full" });
+        dispatchPanel({
+          type: PanelActionType.SET_WIKI_MINIMIZED,
+          minimized: false,
+        });
+      }
     },
-    [dispatchSelection]
+    [dispatchSelection, dispatchPanel, panel.wikiEnabled, panel.rightPanelMode]
   );
+
+  const handleBackgroundClick = useCallback(() => {
+    dispatchSelection({ type: SelectionActionType.CLEAR_SELECTION });
+  }, [dispatchSelection]);
 
   const handleEpisodeSelect = useCallback(
     (episodeUuid: string) => {
@@ -1241,17 +1326,18 @@ export function GraphExplorer({
                     onPanToNodeComplete={() => setPanToNodeId(null)}
                     onNodeClick={handleNodeClick}
                     onEdgeClick={handleEdgeClick}
+                    onBackgroundClick={handleBackgroundClick}
                   />
                 </div>
 
                 {/* Wiki Panel (draggable container) */}
                 {panel.rightPanelMode === "wiki" && (
                   <WikiPanelContainer
-                    node={selectedNode}
-                    edge={selectedEdge}
+                    node={displayedNode}
+                    edge={displayedEdge}
                     edgeSourceNode={null} // TODO: Implement
                     edgeTargetNode={null} // TODO: Implement
-                    nodeRelationships={nodeRelationships}
+                    nodeRelationships={displayedNodeRelationships}
                     enabled={panel.wikiEnabled}
                     mode={panel.wikiMode}
                     minimized={panel.wikiMinimized}
@@ -1265,6 +1351,7 @@ export function GraphExplorer({
                     canGoBack={wikiNav.canGoBack}
                     canGoForward={wikiNav.canGoForward}
                     onClose={() => {
+                      setLastWikiDisplay({ nodeId: null, edgeId: null });
                       dispatchSelection({
                         type: SelectionActionType.CLEAR_SELECTION,
                       });

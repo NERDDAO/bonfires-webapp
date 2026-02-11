@@ -187,7 +187,7 @@ export function ChatPanel({
             {agentId && messages.length === 0 && (
               <div className="flex items-center justify-center h-full text-center text-base-content/50">
                 <p className="text-sm">
-                  Send a message to start the conversation
+                  Talk to this bonfire...
                 </p>
               </div>
             )}

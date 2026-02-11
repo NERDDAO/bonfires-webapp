@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import Image from "next/image";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 
 import type { DataRoomInfo } from "@/types";
@@ -20,6 +21,16 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 import { formatErrorMessage } from "@/lib/utils";
+import { hyperblogsCopy } from "@/content/hyperblogs";
+
+type TxStep = "idle" | "signing" | "processing" | "redirecting";
+
+const STEP_LABELS: Record<TxStep, string> = {
+  idle: "",
+  signing: "Signing transaction...",
+  processing: "Processing payment...",
+  redirecting: "Redirecting to your blog...",
+};
 
 interface PurchaseResponse {
   hyperblog: { id: string };
@@ -50,11 +61,13 @@ export function CreateBlogModal({
   dataroomPriceUsd,
   onSuccess,
 }: CreateBlogModalProps) {
+  const { createTooltipContent, createTitle, createDescription, createDescriptionPlaceholder } = hyperblogsCopy;
   const [description, setDescription] = useState("");
   const [blogLength, setBlogLength] = useState<"short" | "medium" | "long">(
     "medium"
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [txStep, setTxStep] = useState<TxStep>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const { isConnected } = useWalletAccount();
@@ -75,6 +88,7 @@ export function CreateBlogModal({
 
     setIsSubmitting(true);
     setError(null);
+    setTxStep("signing");
 
     try {
       // 1. Fetch current price for this DataRoom (current_hyperblog_price_usd or price_usd)
@@ -91,17 +105,17 @@ export function CreateBlogModal({
 
       const expectedAmount = priceUsd.toFixed(2);
 
-      console.log("expectedAmount", expectedAmount);
-
       // 2. Build and sign payment header for that amount
       const paymentHeader = await buildAndSignPaymentHeader(expectedAmount);
       if (!paymentHeader) {
         setError("Could not build payment. Please connect your wallet.");
         setIsSubmitting(false);
+        setTxStep("idle");
         return;
       }
 
       // 3. POST /api/hyperblogs/purchase
+      setTxStep("processing");
       const response = await apiClient.post<PurchaseResponse>(
         "/api/hyperblogs/purchase",
         {
@@ -116,34 +130,63 @@ export function CreateBlogModal({
       );
 
       const hyperblogId = response.hyperblog.id;
+
+      // 4. Brief redirect state so user sees confirmation
+      setTxStep("redirecting");
       setDescription("");
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       onSuccess?.(hyperblogId);
       onClose();
     } catch (err) {
-      console.log("error", err);
+      console.error("Purchase error:", err);
       setError(formatErrorMessage(err));
     } finally {
       setIsSubmitting(false);
+      setTxStep("idle");
     }
   }
 
   function handleClose() {
     if (!isSubmitting) {
       setError(null);
+      setTxStep("idle");
       onClose();
     }
   }
+
+  const showOverlay = isSubmitting && txStep !== "idle";
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Blog"
-      description="Generate an AI-powered blog post from this dataroom’s knowledge graph"
+      title={createTitle}
+      description={createDescription}
       size="lg"
-      showCloseButton={true}
-      tooltipContent="Create a blog post from the knowledge graph of this dataroom"
+      showCloseButton={!isSubmitting}
+      tooltipContent={createTooltipContent}
     >
+      {/* Transaction status overlay */}
+      {showOverlay && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-brand-black/90 backdrop-blur-sm">
+          <Image
+            src="/icons/loader-circle.svg"
+            height={32}
+            width={32}
+            alt=""
+            className="animate-spin"
+          />
+          <p className="text-sm font-medium text-dark-s-100">
+            {STEP_LABELS[txStep]}
+          </p>
+          {txStep === "signing" && (
+            <p className="text-xs text-dark-s-500 max-w-60 text-center">
+              Please confirm in your wallet
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="flex gap-2 flex-wrap mt-2">
         {dataroomTitle != null && dataroomTitle !== "" && (
           <Badge variant="filled">Topic: {dataroomTitle}</Badge>
@@ -161,7 +204,7 @@ export function CreateBlogModal({
           id="create-blog-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe what you want the blog to cover (Max 600 characters)"
+          placeholder={createDescriptionPlaceholder}
           maxLength={600}
           rows={6}
           className={cn(
@@ -188,9 +231,9 @@ export function CreateBlogModal({
         >
           {(
             [
-              { value: "short" as const, label: "Short (2 min)" },
-              { value: "medium" as const, label: "Medium (5 min)" },
-              { value: "long" as const, label: "Long (10 min)" },
+              { value: "short" as const, label: ["Short", "(2 min)"] },
+              { value: "medium" as const, label: ["Medium", "(5 min)"] },
+              { value: "long" as const, label: ["Long", "(10 min)"] },
             ] as const
           ).map(({ value, label }) => (
             <button
@@ -204,14 +247,18 @@ export function CreateBlogModal({
                   : "text-[#667085] hover:text-white/90"
               )}
               aria-pressed={blogLength === value}
+              disabled={isSubmitting}
             >
-              {label}
+              {label[0]} 
+              <span className="hidden lg:inline">&nbsp;</span>
+              <br className="block lg:hidden" />
+              {label[1]}
             </button>
           ))}
         </div>
 
         {error && (
-          <p className="text-sm text-red-500" role="alert">
+          <p className="text-sm text-red-500 mt-2" role="alert">
             {error}
           </p>
         )}
@@ -244,7 +291,7 @@ export function CreateBlogModal({
               disabled={isSubmitting || !description.trim()}
               className="flex-1"
             >
-              {isSubmitting ? "Creating…" : "Create Blog"}
+              {isSubmitting ? "Creating..." : "Create Blog"}
             </Button>
           )}
         </div>

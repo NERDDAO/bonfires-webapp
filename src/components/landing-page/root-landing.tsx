@@ -4,7 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { siteCopy } from "@/content";
-
+import KnowledgeGraph from "./knowledge-graph";
+import HyperBlogsPreview from "./hyperblogs-preview";
+import HowItWorks from "./how-it-works";
+import Footer from "./footer";
 /**
  * Landing page for the root domain (app.bonfires.ai).
  *
@@ -99,50 +102,10 @@ export default function RootLanding() {
         </div>
       </section>
 
-      {/* Footer CTA */}
-      <section className="px-6 lg:px-20 py-16 lg:py-24 text-center">
-        <h2 className="text-3xl font-bold text-dark-s-0 mb-4">
-          Ready to dive in?
-        </h2>
-        <p className="text-dark-s-60 max-w-xl mx-auto mb-8">
-          Discover publicly available bonfires or browse hyperblogs from across
-          the community.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/explore"
-            className="btn btn-lg bg-brand-primary hover:bg-brand-primary/85 text-brand-black font-semibold border-none"
-          >
-            Explore Bonfires
-          </Link>
-          <Link
-            href={siteCopy.docsUrl}
-            target="_blank"
-            className="btn btn-lg bg-transparent border border-dark-s-400 text-dark-s-0 hover:bg-dark-s-800"
-          >
-            Read the Docs
-          </Link>
-        </div>
-
-        {/* Social links */}
-        <div className="flex justify-center gap-6 mt-12">
-          {[
-            { icon: "/icons/twitter.svg", href: siteCopy.twitterUrl },
-            { icon: "/icons/discord.svg", href: siteCopy.discordUrl },
-            { icon: "/icons/telegram.svg", href: siteCopy.telegramGroupUrl },
-          ].map((social) => (
-            <a
-              key={social.href}
-              href={social.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="opacity-60 hover:opacity-100 transition-opacity"
-            >
-              <Image src={social.icon} alt="" width={24} height={24} />
-            </a>
-          ))}
-        </div>
-      </section>
+      <KnowledgeGraph />
+      <HyperBlogsPreview />
+      <HowItWorks />
+      <Footer />
     </main>
   );
 }

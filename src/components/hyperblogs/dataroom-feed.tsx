@@ -9,7 +9,6 @@ import { useDataRoomsInfiniteQuery } from "@/hooks";
 import { DataRoomInfo } from "@/types/api";
 
 import DataroomCard from "./dataroom-card";
-import Image from "next/image";
 
 const PAGE_SIZE = 4;
 
@@ -55,16 +54,22 @@ export default function DataroomFeed() {
         <span>{dataroomTitle}</span>
 
         <div
-          className="tooltip tooltip-right flex"
+          className="tooltip tooltip-right flex text-brand-primary"
           data-tip={dataroomTooltipContent}
         >
-          <Image
-            src="/icons/tooltip.svg"
-            alt="Tooltip"
-            width={12}
-            height={12}
+          <svg
+            width="35"
+            height="35"
+            viewBox="0 0 35 35"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
             className="cursor-help h-4 w-4 lg:h-6 lg:w-6"
-          />
+            aria-label="Tooltip"
+          >
+            <circle cx="17.2651" cy="17.2651" r="15.937" stroke="currentColor" strokeWidth="2.65617"/>
+            <path d="M17.1324 23.8745H17.1458" stroke="currentColor" strokeWidth="2.65617" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M13.2809 13.25C13.5996 12.3717 14.2169 11.6333 15.0248 11.1639C15.8328 10.6945 16.78 10.5241 17.7009 10.6823C18.6218 10.8405 19.4578 11.3174 20.0627 12.0295C20.6676 12.7417 21.0031 13.6437 21.0103 14.5781C21.0103 17.2343 17.0261 18.5624 17.0261 18.5624" stroke="currentColor" strokeWidth="2.65617" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
       </div>
 

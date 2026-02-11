@@ -14,11 +14,12 @@ export const RADIUS_BY_SIZE: Record<number, number> = {
 };
 
 export const LAYOUT_ALPHA_MIN = 0.0005;
-export const LINK_DISTANCE = 100;
+/** Ideal link length; higher = more space between connected nodes (avoids increasing charge which causes bouncy drag) */
+export const LINK_DISTANCE = 140;
 export const LINK_STRENGTH = 0.5;
-export const CHARGE_STRENGTH = -240;
+export const CHARGE_STRENGTH = -280;
 export const COLLISION_PADDING = 18;
-export const CENTER_STRENGTH = 0.12;
+export const CENTER_STRENGTH = 0.06;
 export const ALPHA_DECAY = 0.018;
 export const VELOCITY_DECAY = 0.65;
 export const ZOOM_MIN = 0.5;

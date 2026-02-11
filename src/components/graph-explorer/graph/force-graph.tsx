@@ -81,6 +81,8 @@ export default function ForceGraph({
   } | null>(null);
   const didPanRef = useRef(false);
   const lastLogicalRef = useRef({ x: 0, y: 0 });
+  /** True only after mousedown on the canvas; used so mouseup on window (e.g. button in wiki panel) doesn't trigger graph click. */
+  const pointerDownOnCanvasRef = useRef(false);
   const touchStartRef = useRef<{
     clientX: number;
     clientY: number;
@@ -334,6 +336,7 @@ export default function ForceGraph({
 
     const handleMouseDown = (e: MouseEvent) => {
       if (draggedNodeRef.current || panStartRef.current) return;
+      pointerDownOnCanvasRef.current = true;
       const { x, y } = toLogical(e);
       lastLogicalRef.current = { x, y };
       const node = nodeUnderPoint(nodes, x, y);
@@ -414,27 +417,32 @@ export default function ForceGraph({
     };
 
     const handleMouseUp = () => {
+      const startedOnCanvas = pointerDownOnCanvasRef.current;
+      pointerDownOnCanvasRef.current = false;
+
       const node = draggedNodeRef.current;
       const wasPanning = panStartRef.current != null;
       const didPan = didPanRef.current;
 
-      if (node && !didDragRef.current) {
-        onNodeClickRef.current?.(node.id);
-      } else if (!didDragRef.current && linksRef.current) {
-        const { x, y } = lastLogicalRef.current;
-        const edgeUnder = edgeUnderPoint(linksRef.current, x, y);
-        if (edgeUnder) {
-          onEdgeClickRef.current?.(edgeUnder.id);
-        } else if (wasPanning && !didPan && nodesRef.current) {
-          const nodeUnder = nodeUnderPoint(nodesRef.current, x, y);
-          if (!nodeUnder) {
-            onBackgroundClickRef.current?.();
+      if (startedOnCanvas) {
+        if (node && !didDragRef.current) {
+          onNodeClickRef.current?.(node.id);
+        } else if (!didDragRef.current && linksRef.current) {
+          const { x, y } = lastLogicalRef.current;
+          const edgeUnder = edgeUnderPoint(linksRef.current, x, y);
+          if (edgeUnder) {
+            onEdgeClickRef.current?.(edgeUnder.id);
+          } else if (wasPanning && !didPan && nodesRef.current) {
+            const nodeUnder = nodeUnderPoint(nodesRef.current, x, y);
+            if (!nodeUnder) {
+              onBackgroundClickRef.current?.();
+            }
           }
         }
-      }
-      if (node && didDragRef.current) {
-        node.fx = node.x;
-        node.fy = node.y;
+        if (node && didDragRef.current) {
+          node.fx = node.x;
+          node.fy = node.y;
+        }
       }
       draggedNodeRef.current = null;
       dragOffsetRef.current = null;

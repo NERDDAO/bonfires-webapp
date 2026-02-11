@@ -26,7 +26,7 @@ export const ZOOM_MAX = 1.5;
 export const GRAPH_WIDTH = 3200;
 export const GRAPH_HEIGHT = 2400;
 export const MAX_LABEL_WIDTH = 80;
-export const MAX_FROM_HOVERED_EDGE_LABELS = 25;
+export const MAX_FROM_HOVERED_EDGE_LABELS = 1;
 
 export const GRAPH_COLORS = {
   linkStroke: "rgba(95, 95, 95, 0.85)",

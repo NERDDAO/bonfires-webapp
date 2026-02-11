@@ -29,5 +29,6 @@ export const rootSiteConfig: SiteConfig = {
   features: {
     graphExplorer: false,
     exploreBonfires: true,
+    homePage: true,
   },
 };

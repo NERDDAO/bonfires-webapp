@@ -1,0 +1,62 @@
+/**
+ * Force graph layout and styling constants.
+ */
+
+import { NODE_COLOR_DEFAULTS } from "@/lib/utils/graph-theme";
+
+/** Node radius by size tier (1–5). Obsidian-style: smaller, denser nodes */
+export const RADIUS_BY_SIZE: Record<number, number> = {
+  1: 4,
+  2: 5,
+  3: 6,
+  4: 10,
+  5: 14,
+};
+
+export const LAYOUT_ALPHA_MIN = 0.0005;
+export const LINK_DISTANCE = 100;
+export const LINK_STRENGTH = 0.5;
+export const CHARGE_STRENGTH = -240;
+export const COLLISION_PADDING = 18;
+export const CENTER_STRENGTH = 0.12;
+export const ALPHA_DECAY = 0.018;
+export const VELOCITY_DECAY = 0.65;
+export const ZOOM_MIN = 0.5;
+export const ZOOM_MAX = 1.5;
+export const GRAPH_WIDTH = 3200;
+export const GRAPH_HEIGHT = 2400;
+export const MAX_LABEL_WIDTH = 80;
+export const MAX_FROM_HOVERED_EDGE_LABELS = 25;
+
+export const GRAPH_COLORS = {
+  linkStroke: "rgba(95, 95, 95, 0.85)",
+  linkStrokeDimmed: "rgb(50, 50, 50)",
+  linkStrokeActive: "rgba(255, 255, 255, 0.9)",
+  linkLabelFill: "rgb(200, 200, 200)",
+  linkLabelFillDimmed: "rgb(90, 90, 90)",
+  linkLabelFillActive: "rgb(255, 255, 255)",
+  nodeFill: "rgb(179, 179, 179)",
+  nodeStroke: "rgb(179, 179, 179)",
+  labelFill: "rgb(246, 246, 246)",
+  labelFillDimmed: "rgb(85, 85, 85)",
+  nodeFillHover: "rgb(220, 220, 220)",
+  nodeStrokeHover: "rgb(255, 255, 255)",
+  labelFillHover: "rgb(255, 255, 255)",
+  labelFontSizeHoverOffset: 1,
+  labelFontWeightHover: "600",
+  nodeFillSelected: "rgb(220, 220, 220)",
+  nodeStrokeSelected: "rgb(255, 255, 255)",
+} as const;
+
+export const EDGE_LABEL_MAX_WIDTH = 64;
+export const EDGE_HIT_THRESHOLD = 6;
+/** Factor to darken node fill/stroke when dimmed (multiply RGB by this) */
+export const DIM_DARKEN_FACTOR = 0.4;
+
+/** Entity-based node color (aligned with SigmaGraph / graph-theme) */
+export const NODE_TYPE_COLORS = {
+  episode: NODE_COLOR_DEFAULTS.episodeColor,
+  entity: NODE_COLOR_DEFAULTS.entityColor,
+  user: NODE_COLOR_DEFAULTS.userColor,
+  unknown: NODE_COLOR_DEFAULTS.unknownColor,
+} as const;

@@ -31,19 +31,19 @@ const INITIAL_LENGTH_CONFIGS: Record<string, LengthConfig> = {
   short: {
     enabled: true,
     maxNodes: 4,
-    maxWords: 1200,
+    maxWords: 300,
     description: "Concise content with fewer sections",
   },
   medium: {
     enabled: true,
     maxNodes: 7,
-    maxWords: 2500,
+    maxWords: 400,
     description: "Standard content with balanced sections",
   },
   long: {
     enabled: false,
     maxNodes: 12,
-    maxWords: 5000,
+    maxWords: 500,
     description: "Comprehensive content with many sections",
   },
 };
@@ -314,13 +314,13 @@ export function HTNTemplateCreator({
                   </div>
                   <div className="form-control">
                     <label className="label py-0">
-                      <span className="label-text text-xs">Max Words</span>
+                      <span className="label-text text-xs">Max Words / Section</span>
                     </label>
                     <input
                       type="number"
-                      min={100}
-                      max={50000}
-                      step={100}
+                      min={50}
+                      max={2000}
+                      step={50}
                       className="input input-bordered input-sm"
                       placeholder="1200"
                       value={config.maxWords}

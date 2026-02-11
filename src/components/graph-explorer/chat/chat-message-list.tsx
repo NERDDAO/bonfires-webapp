@@ -41,7 +41,7 @@ export function ChatMessageList({
 
       {agentId && messages.length === 0 && (
         <div className="flex items-center justify-center h-full text-center text-white/60">
-          <p className="text-sm">Send a message to start the conversation</p>
+          <p className="text-sm">Talk to this bonfire...</p>
         </div>
       )}
 

@@ -10,7 +10,11 @@ import HyperBlogCard from "../hyperblogs/hyperblog-card";
 import { Button } from "../ui/button";
 import { InfoTooltip } from "../ui/tooltip";
 
-export default function HyperBlogsPreview() {
+interface HyperBlogsPreviewProps {
+  bonfireId?: string | null;
+}
+
+export default function HyperBlogsPreview({ bonfireId }: HyperBlogsPreviewProps) {
   const {
     title,
     tooltipAlt,
@@ -23,7 +27,7 @@ export default function HyperBlogsPreview() {
     viewMoreCtaTitle,
     viewMoreCtaHref,
   } = hyperblogsPreviewSectionCopy;
-  const { data, isLoading, error } = usePublicHyperBlogsFeed({ limit: 5 });
+  const { data, isLoading, error } = usePublicHyperBlogsFeed({ bonfireId, limit: 5 });
 
   const [featuredBlogData, setFeaturedBlogData] = useState<
     HyperBlogInfo | undefined

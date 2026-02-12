@@ -53,15 +53,6 @@ export function Footer({ className = "" }: FooterProps) {
         >
           <TwitterIcon className="w-6 h-6" />
         </a>
-        <a
-          href="https://discord.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link link-hover"
-          aria-label="Discord"
-        >
-          <DiscordIcon className="w-6 h-6" />
-        </a>
       </nav>
 
       <aside>

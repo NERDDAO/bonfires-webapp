@@ -16,17 +16,42 @@ import type { HyperBlogInfo } from "@/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import {
+  getStoredVote,
+  setStoredVote,
+  type UserVote,
+} from "@/lib/storage/hyperblog-actions";
+import { useWalletAccount } from "@/lib/wallet/e2e";
 import { cn } from "@/lib/cn";
 import { formatNumber, formatReadingTime, truncateAddress } from "@/lib/utils";
+
+const SESSION_STORAGE_KEY = "hyperblog_session_id";
+
+function getOrCreateSessionId(): string {
+  if (typeof window === "undefined") return "";
+  let id = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+  if (!id) {
+    id =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `sess_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, id);
+  }
+  return id;
+}
 
 export default function HyperBlogDetailPage() {
   const params = useParams();
   const hyperblogId = params["hyperblogId"] as string;
+  const { address: userWallet } = useWalletAccount();
 
   const [blog, setBlog] = useState<HyperBlogInfo | null>(null);
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [userVote, setUserVote] = useState<UserVote>(null);
+  const [voting, setVoting] = useState(false);
+  const viewRecordedRef = useRef(false);
 
   /** Strip HTML tags so markdown renders only markdown; ignores raw HTML. */
   const stripHtml = useCallback(
@@ -62,12 +87,9 @@ export default function HyperBlogDetailPage() {
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
       const data: HyperBlogInfo = await response.json();
-      console.log("data", data);
       setBlog(data);
 
       if (data.generation_status === "completed") {
-        // @TODO: record a view
-        // await fetch(`/api/hyperblogs/${hyperblogId}/view`, );
         if (data.blog_content?.formatted_content) {
           setFullContent(stripHtml(data.blog_content.formatted_content));
         }
@@ -86,6 +108,105 @@ export default function HyperBlogDetailPage() {
       fetchBlog();
     }
   }, [hyperblogId, fetchBlog]);
+
+  // Reset view-recorded flag when navigating to a different hyperblog
+  useEffect(() => {
+    viewRecordedRef.current = false;
+  }, [hyperblogId]);
+
+  // Sync user vote from localStorage when hyperblog changes
+  useEffect(() => {
+    if (hyperblogId && typeof window !== "undefined") {
+      setUserVote(getStoredVote(hyperblogId));
+    }
+  }, [hyperblogId]);
+
+  // Record a page view when blog is loaded and completed (once per page/session)
+  useEffect(() => {
+    if (
+      !hyperblogId ||
+      !blog ||
+      blog.generation_status !== "completed" ||
+      viewRecordedRef.current
+    ) {
+      return;
+    }
+
+    const recordView = async () => {
+      const sessionId = getOrCreateSessionId();
+      const body: { user_wallet?: string; session_id?: string } = {};
+      if (userWallet) body.user_wallet = userWallet;
+      if (sessionId) body.session_id = sessionId;
+      if (Object.keys(body).length === 0) return;
+
+      viewRecordedRef.current = true;
+      try {
+        const res = await fetch(`/api/hyperblogs/${hyperblogId}/view`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          success?: boolean;
+          view_count?: number;
+        };
+        if (typeof data.view_count === "number") {
+          setBlog((prev) =>
+            prev
+              ? { ...prev, view_count: data.view_count ?? prev.view_count }
+              : null
+          );
+        }
+      } catch {
+        viewRecordedRef.current = false;
+      }
+    };
+
+    void recordView();
+  }, [hyperblogId, blog?.id, blog?.generation_status, userWallet]);
+
+  const handleVote = useCallback(
+    async (voteType: "upvote" | "downvote") => {
+      if (!userWallet || !hyperblogId || !blog || voting) return;
+      setVoting(true);
+      try {
+        const res = await fetch(`/api/hyperblogs/${hyperblogId}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vote_type: voteType,
+            user_wallet: userWallet,
+          }),
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          success?: boolean;
+          upvotes?: number;
+          downvotes?: number;
+          user_vote?: "upvote" | "downvote" | null;
+        };
+        const newVote: UserVote =
+          data.user_vote === "upvote" || data.user_vote === "downvote"
+            ? data.user_vote
+            : null;
+        setUserVote(newVote);
+        setStoredVote(hyperblogId, newVote);
+        setBlog((prev) =>
+          prev
+            ? {
+              ...prev,
+              upvotes: data.upvotes ?? prev.upvotes,
+              downvotes: data.downvotes ?? prev.downvotes,
+            }
+            : null
+        );
+      } finally {
+        setVoting(false);
+      }
+    },
+    [hyperblogId, blog, userWallet, voting]
+  );
 
   // Poll for completion when blog is still generating
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -415,29 +536,79 @@ export default function HyperBlogDetailPage() {
             )}
           </article>
 
-          {/* Footer - same as hyperblog-card (like, dislike, view icons) */}
+          {/* Footer - like/dislike buttons + view count */}
           <div className="mt-6 pt-4 border-t border-[#333333] flex gap-4 items-center flex-wrap">
-            {[
-              { icon: "/icons/like.svg", label: "likes", count: likes },
-              {
-                icon: "/icons/dislike.svg",
-                label: "dislikes",
-                count: dislikes,
-              },
-              { icon: "/icons/view.svg", label: "views", count: views },
-            ].map((item) => (
-              <div key={item.icon} className="flex items-center gap-2">
+            <div
+              title={
+                userWallet
+                  ? userVote === "upvote"
+                    ? "Remove like"
+                    : "Like"
+                  : "Connect wallet to like"
+              }
+              className={cn(
+                "flex items-center gap-2",
+              )}
+            >
+              <button
+                onClick={() => handleVote("upvote")}
+                type="button"
+                disabled={!userWallet || voting}
+                className="flex items-center gap-2 rounded-lg transition-colors hover:opacity-60 disabled:cursor-progress!"
+              >
                 <Image
-                  src={item.icon}
-                  alt={item.label}
+                  src={userVote === "upvote" ? "/icons/like-filled.svg" : "/icons/like.svg"}
+                  alt="like"
                   width={18}
                   height={18}
+                  className=""
                 />
-                <span className="text-xs text-[#828282]">
-                  {formatNumber(item.count)} {item.label}
-                </span>
-              </div>
-            ))}
+              </button>
+              <span className="text-xs text-[#828282]">
+                {formatNumber(likes)} like{likes !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <div
+              title={
+                userWallet
+                  ? userVote === "downvote"
+                    ? "Remove dislike"
+                    : "Dislike"
+                  : "Connect wallet to dislike"
+              }
+              className={cn(
+                "flex items-center gap-2",
+              )}
+            >
+              <button
+                onClick={() => handleVote("downvote")}
+                type="button"
+                disabled={!userWallet || voting}
+                className="flex items-center gap-2 rounded-lg transition-colors hover:opacity-60 disabled:cursor-progress!"
+              >
+                <Image
+                  src={userVote === "downvote" ? "/icons/dislike-filled.svg" : "/icons/dislike.svg"}
+                  alt="dislike"
+                  width={18}
+                  height={18}
+                  className=""
+                />
+              </button>
+              <span className="text-xs text-[#828282]">
+                {formatNumber(dislikes)} dislike{dislikes !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/icons/view.svg"
+                alt="views"
+                width={18}
+                height={18}
+              />
+              <span className="text-xs text-[#828282]">
+                {formatNumber(views)} view{views !== 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
         </div>
       </div>

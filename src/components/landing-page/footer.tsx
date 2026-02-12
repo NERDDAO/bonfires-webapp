@@ -57,7 +57,7 @@ export default function Footer() {
         <Image src={logo} alt={logoAlt} width={170} height={22} />
         <div className="flex gap-9 ml-auto">
           {socialLinks.map((item) => (
-            <Link href={item.href} key={item.href}>
+            <Link target="_blank" href={item.href} key={item.href}>
               <Image src={item.icon} alt={item.href} width={24} height={24} />
             </Link>
           ))}

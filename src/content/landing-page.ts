@@ -114,10 +114,6 @@ export const footerCopy = {
       href: siteCopy.twitterUrl,
     },
     {
-      icon: "/icons/discord.svg",
-      href: siteCopy.discordUrl,
-    },
-    {
       icon: "/icons/telegram.svg",
       href: siteCopy.telegramGroupUrl,
     },

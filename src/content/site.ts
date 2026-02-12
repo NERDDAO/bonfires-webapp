@@ -4,8 +4,8 @@
  */
 export const siteCopy = {
   siteName: "bonfires.ai",
-  title: "EthBoulder - Collective Sensemaking Experience",
-  template: "%s | Bonfires.ai",
+  title: "Bonfires",
+  template: "%s | Bonfires",
   description: {
     default:
       "Explore, visualize, and interact with knowledge graphs. Create data rooms, generate hyperblogs, and leverage AI agents for intelligent discovery.",

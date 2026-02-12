@@ -21,6 +21,8 @@ import { apiClient } from "@/lib/api/client";
 interface UseHyperBlogsQueryParams {
   /** Filter by data room ID */
   dataroomId?: string | null;
+  /** Filter by bonfire ID (returns hyperblogs from all datarooms belonging to the bonfire) */
+  bonfireId?: string | null;
   /** Filter by author wallet address */
   authorWallet?: string | null;
   /** Filter by public status */
@@ -41,6 +43,7 @@ export function hyperBlogsQueryKey(params: UseHyperBlogsQueryParams = {}) {
     "hyperblogs",
     {
       dataroomId: params.dataroomId ?? null,
+      bonfireId: params.bonfireId ?? null,
       authorWallet: params.authorWallet ?? null,
       isPublic: params.isPublic ?? null,
       limit: params.limit ?? 20,
@@ -57,6 +60,9 @@ function buildQueryString(params: UseHyperBlogsQueryParams): string {
 
   if (params.dataroomId) {
     searchParams.set("dataroom_id", params.dataroomId);
+  }
+  if (params.bonfireId) {
+    searchParams.set("bonfire_id", params.bonfireId);
   }
   if (params.authorWallet) {
     searchParams.set("author_wallet", params.authorWallet);
@@ -121,11 +127,13 @@ export function useMyHyperBlogs(walletAddress: string | null) {
  * Fetch public hyperblogs feed
  */
 export function usePublicHyperBlogsFeed(params?: {
+  bonfireId?: string | null;
   limit?: number;
   offset?: number;
 }) {
   return useHyperBlogsQuery({
     isPublic: true,
+    bonfireId: params?.bonfireId,
     limit: params?.limit,
     offset: params?.offset,
   });

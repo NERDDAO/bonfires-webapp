@@ -27,7 +27,7 @@ export default function BonfireLanding() {
     <main className="overflow-x-hidden max-w-screen-2xl mx-auto">
       <Hero staticGraph={staticGraph} />
       <KnowledgeGraph />
-      <HyperBlogsPreview />
+      <HyperBlogsPreview bonfireId={subdomainConfig?.bonfireId} />
       <HowItWorks />
       <Footer />
     </main>

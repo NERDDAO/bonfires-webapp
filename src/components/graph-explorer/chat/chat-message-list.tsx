@@ -14,13 +14,17 @@ import React, { useCallback, useEffect, useRef } from "react";
 
 import { Loader2 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+
 import { ChatMessageBubble } from "./chat-message-bubble";
 import type { ChatMessage } from "./types";
+import { PRESET_PROMPT_TITLE, PRESET_PROMPTS } from "@/content/graph-explorer";
 
 export interface ChatMessageListProps {
   agentId?: string;
   messages: ChatMessage[];
   isSending: boolean;
+  onSendMessage?: (content: string) => void | Promise<void>;
 }
 
 /** Pixel threshold: user is considered "near bottom" when within this distance. */
@@ -30,6 +34,7 @@ export function ChatMessageList({
   agentId,
   messages,
   isSending,
+  onSendMessage,
 }: ChatMessageListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -93,8 +98,22 @@ export function ChatMessageList({
       )}
 
       {agentId && messages.length === 0 && (
-        <div className="flex items-center justify-center h-full text-center text-white/60">
-          <p className="text-sm">Talk to this bonfire...</p>
+        <div className="flex flex-col justify-end h-full p-1 gap-2 text-white/60">
+          <p className="text-sm">{PRESET_PROMPT_TITLE}</p>
+          {onSendMessage && !isSending && (
+            <div className="flex flex-wrap items-center gap-2">
+              {PRESET_PROMPTS.map((text) => (
+                <Badge
+                  key={text}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-white/10 transition-colors text-sm"
+                  onClick={() => onSendMessage(text)}
+                >
+                  {text}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

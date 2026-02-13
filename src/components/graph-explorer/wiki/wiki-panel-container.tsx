@@ -25,8 +25,9 @@ import { border } from "../select-panel/select-panel-constants";
 
 export type { WikiNodeData, WikiEdgeData };
 
-const DEFAULT_WIDTH = 360;
-const DEFAULT_HEIGHT = 480;
+const SCALE_FACTOR = 1.25;
+const DEFAULT_WIDTH = 360*SCALE_FACTOR;
+const DEFAULT_HEIGHT = 480*SCALE_FACTOR;
 const MIN_LEFT = 0;
 const MIN_TOP = 0;
 
@@ -200,14 +201,16 @@ export function WikiPanelContainer({
             )}
           </button>
         )}
-        <button
-          type="button"
-          onClick={onClose}
-          className="btn btn-ghost btn-xs btn-square"
-          aria-label="Close"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-ghost btn-xs btn-square"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -240,16 +243,10 @@ export function WikiPanelContainer({
         <div
           ref={containerRef}
           className={cn(
-            "flex flex-col rounded-lg shadow-xl overflow-hidden w-full max-h-[85vh]",
+            "flex flex-col shadow-xl overflow-hidden w-full max-w-[calc(100vw-2rem)] h-full",
             border,
             className
           )}
-          style={{
-            width: DEFAULT_WIDTH,
-            maxWidth: "calc(100vw - 2rem)",
-            height: DEFAULT_HEIGHT,
-            maxHeight: "85vh",
-          }}
           onClick={(e) => e.stopPropagation()}
         >
           {panelContent}

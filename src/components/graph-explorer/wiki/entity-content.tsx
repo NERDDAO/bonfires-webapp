@@ -25,6 +25,16 @@ export function EntityContent({
 }: EntityContentProps) {
   return (
     <div className="space-y-4">
+      {/* Name */}
+      <section>
+        <h3 className="font-medium mb-2">
+          Title
+        </h3>
+        <p className="text-sm leading-relaxed">
+          {node.name}
+        </p>
+      </section>
+
       {/* Description */}
       {(node.summary || node.content) && (
         <section>

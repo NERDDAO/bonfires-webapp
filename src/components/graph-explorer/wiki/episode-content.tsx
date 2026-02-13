@@ -20,6 +20,18 @@ export interface EpisodeContentProps {
 export function EpisodeContent({ episode }: EpisodeContentProps) {
   return (
     <div className="space-y-4">
+      {/* Description */}
+      {episode.name && (
+        <section>
+          <h3 className="font-medium mb-2">
+            Title
+          </h3>
+          <p className="text-sm leading-relaxed">
+            {episode.name}
+          </p>
+        </section>
+      )}
+
       {/* Summary */}
       {episode.name && (
         <section>

@@ -87,6 +87,7 @@ export function ChatPanel({
             agentId={agentId}
             messages={messages}
             isSending={isSending}
+            onSendMessage={onSendMessage}
           />
           {error && <ChatErrorBanner error={error} onDismiss={onClearError} />}
           <ChatInput

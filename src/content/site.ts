@@ -20,7 +20,7 @@ export const siteCopy = {
     "Web3",
   ],
   author: "bonfires.ai",
-  telegramGroupUrl: "https://t.me/bonfiresai",
+  telegramGroupUrl: "https://t.me/+1MwB50azWsE3MTRh",
   twitterUrl: "https://x.com/bonfiresai",
   discordUrl: "https://discord.gg/bonfiresai",
   staticGraph: {

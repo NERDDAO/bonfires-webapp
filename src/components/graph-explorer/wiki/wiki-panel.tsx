@@ -7,7 +7,7 @@
 import React from "react";
 
 import type { WikiBreadcrumb, WikiMode } from "@/hooks";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 
@@ -217,22 +217,43 @@ export function WikiPanel({
         </div>
       </div>
 
-      {canSearchAroundNode && (
+      {(canSearchAroundNode || isMobile) && (
         <div className="p-3 border-t border-base-300 shrink-0">
-          <Button
-            variant="outline"
-            showElevation
-            onClick={(e) => {
-              e.stopPropagation();
-              onSearchAroundNode?.(node.uuid);
-            }}
-            className="w-full z-10"
-            aria-label="Search around this node"
-            title="Re-query the graph using this node as the center"
-            type="button"
-          >
-            Search around this node
-          </Button>
+          <div className="flex items-center gap-2">
+            {canSearchAroundNode && (
+              <Button
+                variant="outline"
+                showElevation={!isMobile}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSearchAroundNode?.(node.uuid);
+                }}
+                className={cn("z-10", isMobile ? "flex-1" : "w-full")}
+                aria-label="Search around this node"
+                title="Re-query the graph using this node as the center"
+                type="button"
+              >
+                Search around this node
+              </Button>
+            )}
+            {isMobile && (
+              <Button
+                variant="outline-white"
+                showElevation={false}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className={cn("shrink-0", !canSearchAroundNode && "w-full")}
+                aria-label="Close"
+                type="button"
+                innerClassName="text-white"
+                borderColor="border-[#333333]"
+              >
+                Close
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

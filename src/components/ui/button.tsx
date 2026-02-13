@@ -13,6 +13,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   showElevation?: boolean;
   /** Image src for an icon shown to the left of the label. */
   leftIcon?: string;
+  /** Class name for the inner element. */
+  innerClassName?: string;
+  /* Border color */
+  borderColor?: string;
 }
 
 type ButtonVariant = "primary" | "outline" | "outline-white";
@@ -26,6 +30,8 @@ const Button = React.forwardRef<
   (
     {
       className = "",
+      innerClassName = "",
+      borderColor,
       children,
       variant = "primary",
       href,
@@ -109,8 +115,10 @@ const Button = React.forwardRef<
             "absolute inset-0 rounded-lg",
             variant === "primary" && "bg-brand-secondary",
             variant === "outline" &&
-              "border bg-brand-black border-brand-secondary",
-            variant === "outline-white" && "border bg-brand-black border-white"
+              "border bg-brand-black",
+            variant === "outline" && (borderColor ?? "border-brand-secondary"),
+            variant === "outline-white" && "border bg-brand-black",
+            variant === "outline-white" && (borderColor ?? "border-white")
           )}
           aria-hidden
         />
@@ -119,9 +127,12 @@ const Button = React.forwardRef<
             "absolute left-0 top-0 flex items-center justify-center rounded-lg py-3 px-3.5 text-black transition-transform duration-75 ease-out whitespace-nowrap",
             variant === "primary" && "right-0 bg-brand-primary",
             variant === "outline" &&
-              "right-0 bg-brand-black text-brand-primary border border-brand-primary",
+              "right-0 bg-brand-black text-brand-primary border",
+            variant === "outline" && (borderColor ?? "border-brand-primary"),
             variant === "outline-white" &&
-              "right-0 bg-brand-black text-brand-primary border border-white"
+              "right-0 bg-brand-black text-brand-primary border",
+            variant === "outline-white" && (borderColor ?? "border-white"),
+            innerClassName
           )}
           style={{ transform: frontTransform }}
           aria-hidden

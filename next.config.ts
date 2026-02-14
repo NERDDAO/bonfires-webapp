@@ -14,19 +14,24 @@ const nextConfig: NextConfig = {
       process.env["NEXT_PUBLIC_IGNORE_BUILD_ERROR"] === "true",
   },
 
-  // Turbopack configuration (Next.js 16+ default)
-  // Empty config to allow webpack fallback for Web3 compatibility
-  turbopack: {},
+  // Server-side external packages (works with both Turbopack and webpack)
+  serverExternalPackages: ["pino-pretty", "lokijs", "encoding"],
 
-  // Webpack configuration for Web3 compatibility
-  // Note: Used when running with --webpack flag or in certain build scenarios
+  // Turbopack configuration (Next.js 16+ default bundler)
+  turbopack: {
+    resolveAlias: {
+      // Node.js built-in stubs for client bundles (Web3 compatibility)
+      fs: { browser: "./src/lib/empty-module.ts" },
+      net: { browser: "./src/lib/empty-module.ts" },
+      tls: { browser: "./src/lib/empty-module.ts" },
+    },
+  },
+
+  // Webpack fallback for Web3 compatibility
+  // Only used with --webpack flag; Turbopack is the default bundler in Next.js 16+
   webpack: (config) => {
-    // Node.js polyfills - set to false for browser
     config.resolve.fallback = { fs: false, net: false, tls: false };
-
-    // External packages that should not be bundled
     config.externals.push("pino-pretty", "lokijs", "encoding");
-
     return config;
   },
 
@@ -42,7 +47,6 @@ const nextConfig: NextConfig = {
 
   // Experimental features
   experimental: {
-    // Enable server actions
     serverActions: {
       bodySizeLimit: "2mb",
     },

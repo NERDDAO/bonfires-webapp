@@ -1,5 +1,7 @@
 export { QueryProvider } from "./QueryProvider";
-export { Web3Provider } from "./Web3Provider";
+// Web3Provider is NOT re-exported here to prevent WalletConnect's IndexedDB
+// side effects from leaking into server bundles via barrel imports.
+// Import directly: import("@/contexts/Web3Provider")
 export {
   SubdomainBonfireProvider,
   useSubdomainBonfire,

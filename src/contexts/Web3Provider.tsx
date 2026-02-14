@@ -67,7 +67,7 @@ const wagmiConfig = getDefaultConfig({
     process.env["NEXT_PUBLIC_ENVIRONMENT"] === "development"
       ? testnetChains
       : mainnetChains,
-  ssr: true,
+  ssr: false,
 });
 
 interface Web3ProviderProps {

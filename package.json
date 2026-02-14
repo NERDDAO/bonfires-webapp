@@ -84,7 +84,19 @@
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0 <24.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@clerk/shared",
+      "bufferutil",
+      "core-js",
+      "keccak",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver",
+      "utf-8-validate"
+    ]
   },
   "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }

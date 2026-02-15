@@ -4,7 +4,7 @@
  * HyperBlog Detail Page
  *
  * Displays a single hyperblog with full content when a hyperblog is clicked from the feed.
- * UI matches the expanded hyperblog-card: same badges, banner, footer, plus summary and full content.
+ * UI matches the expanded hyperblog-card: same badges, banner, footer, plus full content.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -414,14 +414,6 @@ export default function HyperBlogDetailPage() {
               <span className="text-red-200 text-sm">
                 Blog generation failed. Please try again later.
               </span>
-            </div>
-          )}
-
-          {/* Summary - keep as currently shown */}
-          {blog.summary && (
-            <div className="mt-6 rounded-xl bg-[#FFFFFF08] border border-[#333333] p-6">
-              <h3 className="font-semibold text-lg text-white mb-2">Summary</h3>
-              <p className="text-[#A9A9A9]">{blog.summary}</p>
             </div>
           )}
 

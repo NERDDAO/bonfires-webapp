@@ -27,5 +27,5 @@ export const siteCopy = {
     staticBonfireId: "68962cbc2c14173dafbe6dc9",
     staticAgentId: "68cadde6d6ce58d6050e8f7a",
   },
-  docsUrl: "https://docs.bonfires.ai/bonfires/docs/files/Welcome",
+  docsUrl: "https://docs.bonfires.ai/",
 } as const;

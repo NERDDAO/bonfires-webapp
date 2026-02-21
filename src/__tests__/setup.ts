@@ -9,7 +9,7 @@ import "@testing-library/jest-dom";
 // Mock fetch globally
 global.fetch = jest.fn();
 
-// Mock localStorage
+// Mock localStorage (only in JSDOM environment)
 const localStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
@@ -18,7 +18,9 @@ const localStorageMock = {
   length: 0,
   key: jest.fn(),
 };
-Object.defineProperty(window, "localStorage", { value: localStorageMock });
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "localStorage", { value: localStorageMock });
+}
 
 // Mock console methods to reduce noise
 jest.spyOn(console, "debug").mockImplementation(() => {});

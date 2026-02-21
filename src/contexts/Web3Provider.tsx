@@ -9,6 +9,7 @@ import {
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { defineChain } from "viem";
+import { mainnet } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 
 // Abstract Testnet chain configuration
@@ -56,8 +57,8 @@ const base = defineChain({
   },
 });
 
-const testnetChains: readonly [Chain, ...Chain[]] = [abstractTestnet];
-const mainnetChains: readonly [Chain, ...Chain[]] = [base];
+const testnetChains: readonly [Chain, ...Chain[]] = [abstractTestnet, mainnet];
+const mainnetChains: readonly [Chain, ...Chain[]] = [base, mainnet];
 
 // Wagmi configuration
 const wagmiConfig = getDefaultConfig({

@@ -8,8 +8,8 @@
  * - `balance`: how many of the configured token ID the connected wallet holds
  * - `isApproved`: whether the wrapper contract is already approved (Step 4b skip)
  */
-import { useReadContract } from "wagmi";
-import { useAccount } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
+import { mainnet } from "viem/chains";
 
 const ERC1155_ABI = [
   {
@@ -61,6 +61,7 @@ export function useBonfireToken(): UseBonfireTokenReturn {
     abi: ERC1155_ABI,
     functionName: "balanceOf",
     args: address ? [address, tokenId] : undefined,
+    chainId: mainnet.id,
     query: { enabled: !!address },
   });
 
@@ -73,6 +74,7 @@ export function useBonfireToken(): UseBonfireTokenReturn {
     abi: ERC1155_ABI,
     functionName: "isApprovedForAll",
     args: address ? [address, wrapperAddress] : undefined,
+    chainId: mainnet.id,
     query: { enabled: !!address },
   });
 

@@ -8,7 +8,7 @@ import {
   getDefaultConfig,
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { defineChain } from "viem";
+import { defineChain, http, fallback } from "viem";
 import { mainnet } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 
@@ -60,7 +60,13 @@ const base = defineChain({
 const testnetChains: readonly [Chain, ...Chain[]] = [abstractTestnet, mainnet];
 const mainnetChains: readonly [Chain, ...Chain[]] = [base, mainnet];
 
-// Wagmi configuration
+const mainnetTransport = fallback([
+  http("https://ethereum-rpc.publicnode.com"),
+  http("https://rpc.ankr.com/eth"),
+  http("https://cloudflare-eth.com"),
+  http(), // WalletConnect default as last resort
+]);
+
 const wagmiConfig = getDefaultConfig({
   appName: "Bonfires.ai",
   projectId: process.env["NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID"] ?? "bonfires-project-id",
@@ -68,6 +74,11 @@ const wagmiConfig = getDefaultConfig({
     process.env["NEXT_PUBLIC_ENVIRONMENT"] === "development"
       ? testnetChains
       : mainnetChains,
+  transports: {
+    [mainnet.id]: mainnetTransport,
+    [base.id]: http("https://mainnet.base.org"),
+    [abstractTestnet.id]: http("https://api.testnet.abs.xyz"),
+  },
   ssr: false,
 });
 

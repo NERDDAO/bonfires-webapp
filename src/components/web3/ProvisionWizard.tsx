@@ -174,7 +174,7 @@ export function ProvisionWizard() {
   const { switchChainAsync } = useSwitchChain();
 
   const { balance, isLoading: tokenLoading } = useBonfireToken();
-  const { state: processingState, provision, reset: resetProvision } = useProvision();
+  const { state: processingState, provision, reset: resetProvision, retry: retryProvision } = useProvision();
 
   const [step, setStep] = useState(0);
 
@@ -292,11 +292,10 @@ export function ProvisionWizard() {
 
   const handleRetry = useCallback(() => {
     processingStarted.current = false;
-    resetProvision();
-    // Re-trigger the useEffect
+    retryProvision();
     setStep(2);
     setTimeout(() => setStep(3), 0);
-  }, [resetProvision]);
+  }, [retryProvision]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 

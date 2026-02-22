@@ -12,7 +12,7 @@
  * Exposes a single `provision(formData)` function and a reactive `state`
  * object for the wizard to render progress.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { mainnet } from "viem/chains";
@@ -54,6 +54,7 @@ export interface UseProvisionReturn {
   state: ProcessingState;
   provision: (formData: ProvisionFormData) => Promise<ProvisionResult>;
   reset: () => void;
+  retry: () => void;
 }
 
 export function useProvision(): UseProvisionReturn {
@@ -66,8 +67,23 @@ export function useProvision(): UseProvisionReturn {
   const { writeContractAsync: writeApproval } = useWriteContract();
   const { writeContractAsync: writeProvision } = useWriteContract();
 
+  const completedIpfsUri = useRef<string | null>(null);
+  const completedTxHash = useRef<`0x${string}` | null>(null);
+
   const reset = useCallback(() => {
+    completedIpfsUri.current = null;
+    completedTxHash.current = null;
     setState({ step: "ipfs" });
+  }, []);
+
+  const retry = useCallback(() => {
+    if (completedTxHash.current) {
+      setState({ step: "backend", txHash: completedTxHash.current });
+    } else if (completedIpfsUri.current) {
+      setState({ step: "tx" });
+    } else {
+      setState({ step: "ipfs" });
+    }
   }, []);
 
   const provision = useCallback(
@@ -76,88 +92,98 @@ export function useProvision(): UseProvisionReturn {
         throw new Error("Wallet not connected");
       }
 
-      // ── Sub-step 1: IPFS upload ────────────────────────────────────────
-      setState({ step: "ipfs" });
+      let ipfsUri = completedIpfsUri.current;
+      let txHash = completedTxHash.current;
 
-      const ipfsResponse = await fetch("/api/ipfs/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.agentName,
-          description: formData.description,
-          capabilities: formData.capabilities,
-        }),
-      });
+      // ── Sub-step 1: IPFS upload (skip if already completed) ───────────
+      if (!ipfsUri) {
+        setState({ step: "ipfs" });
 
-      if (!ipfsResponse.ok) {
-        const errorData = await ipfsResponse.json().catch(() => ({})) as Record<string, unknown>;
-        const errorMsg =
-          typeof errorData["error"] === "string"
-            ? errorData["error"]
-            : "Failed to upload metadata to IPFS";
-        setState({ step: "error", error: errorMsg });
-        throw new Error(errorMsg);
+        const ipfsResponse = await fetch("/api/ipfs/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.agentName,
+            description: formData.description,
+            capabilities: formData.capabilities,
+          }),
+        });
+
+        if (!ipfsResponse.ok) {
+          const errorData = await ipfsResponse.json().catch(() => ({})) as Record<string, unknown>;
+          const errorMsg =
+            typeof errorData["error"] === "string"
+              ? errorData["error"]
+              : "Failed to upload metadata to IPFS";
+          setState({ step: "error", error: errorMsg });
+          throw new Error(errorMsg);
+        }
+
+        const data = (await ipfsResponse.json()) as { ipfs_uri: string };
+        ipfsUri = data.ipfs_uri;
+        completedIpfsUri.current = ipfsUri;
       }
 
-      const { ipfs_uri: ipfsUri } = (await ipfsResponse.json()) as { ipfs_uri: string };
-
       // ── Sub-step 2: ERC-1155 approval (skip if already approved) ──────
-      setState({ step: "approval" });
+      if (!txHash) {
+        setState({ step: "approval" });
 
-      if (!isApproved) {
+        if (!isApproved) {
+          try {
+            const approvalTx = await writeApproval({
+              address: erc1155Address,
+              abi: ERC1155_APPROVAL_ABI,
+              functionName: "setApprovalForAll",
+              args: [wrapperAddress, true],
+              chainId: mainnet.id,
+            });
+
+            await publicClient!.waitForTransactionReceipt({
+              hash: approvalTx,
+              confirmations: 1,
+              timeout: 300_000,
+            });
+          } catch (err) {
+            const msg =
+              err instanceof Error ? err.message : "Wallet approval rejected";
+            setState({ step: "error", error: msg });
+            throw err;
+          }
+        }
+
+        // ── Sub-step 3: provision(ipfs_uri) + wait for receipt ──────────
+        setState({ step: "tx" });
+
         try {
-          const approvalTx = await writeApproval({
-            address: erc1155Address,
-            abi: ERC1155_APPROVAL_ABI,
-            functionName: "setApprovalForAll",
-            args: [wrapperAddress, true],
+          txHash = await writeProvision({
+            address: wrapperAddress,
+            abi: WRAPPER_ABI,
+            functionName: "provision",
+            args: [ipfsUri],
             chainId: mainnet.id,
-          });
-
-          await publicClient!.waitForTransactionReceipt({
-            hash: approvalTx,
-            confirmations: 1,
-            timeout: 300_000,
           });
         } catch (err) {
           const msg =
-            err instanceof Error ? err.message : "Wallet approval rejected";
+            err instanceof Error ? err.message : "Wallet transaction rejected";
           setState({ step: "error", error: msg });
           throw err;
         }
-      }
 
-      // ── Sub-step 3: provision(ipfs_uri) + wait for receipt ────────────
-      setState({ step: "tx" });
+        setState({ step: "tx", txHash });
 
-      let txHash: `0x${string}`;
-      try {
-        txHash = await writeProvision({
-          address: wrapperAddress,
-          abi: WRAPPER_ABI,
-          functionName: "provision",
-          args: [ipfsUri],
-          chainId: mainnet.id,
+        const txReceipt = await publicClient!.waitForTransactionReceipt({
+          hash: txHash,
+          confirmations: 1,
+          timeout: 300_000,
         });
-      } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "Wallet transaction rejected";
-        setState({ step: "error", error: msg });
-        throw err;
-      }
 
-      setState({ step: "tx", txHash });
+        if (txReceipt.status === "reverted") {
+          const msg = "Transaction reverted on-chain";
+          setState({ step: "error", error: msg, txHash });
+          throw new Error(msg);
+        }
 
-      const txReceipt = await publicClient!.waitForTransactionReceipt({
-        hash: txHash,
-        confirmations: 1,
-        timeout: 300_000,
-      });
-
-      if (txReceipt.status === "reverted") {
-        const msg = "Transaction reverted on-chain";
-        setState({ step: "error", error: msg, txHash });
-        throw new Error(msg);
+        completedTxHash.current = txHash;
       }
 
       // ── Sub-step 4: POST /api/provision ───────────────────────────────
@@ -206,5 +232,5 @@ export function useProvision(): UseProvisionReturn {
     [address, isApproved, publicClient, writeApproval, writeProvision]
   );
 
-  return { state, provision, reset };
+  return { state, provision, reset, retry };
 }

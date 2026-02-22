@@ -14,7 +14,7 @@
  */
 import { useCallback, useState } from "react";
 
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { mainnet } from "viem/chains";
 
 import type { ProcessingState, ProvisionFormData, ProvisionResult } from "@/types";
@@ -59,28 +59,15 @@ export interface UseProvisionReturn {
 export function useProvision(): UseProvisionReturn {
   const { address } = useAccount();
   const { isApproved } = useBonfireToken();
+  const publicClient = usePublicClient({ chainId: mainnet.id });
 
   const [state, setState] = useState<ProcessingState>({ step: "ipfs" });
 
   const { writeContractAsync: writeApproval } = useWriteContract();
   const { writeContractAsync: writeProvision } = useWriteContract();
 
-  // We use a ref-like pattern for tx hash to feed into the receipt watcher
-  const [provisionTxHash, setProvisionTxHash] = useState<`0x${string}` | undefined>(undefined);
-
-  const { data: receipt, isLoading: isWaitingForReceipt } = useWaitForTransactionReceipt({
-    hash: provisionTxHash,
-    chainId: mainnet.id,
-    query: { enabled: !!provisionTxHash },
-  });
-
-  // Suppress unused warning — receipt is consumed imperatively in the provision fn
-  void receipt;
-  void isWaitingForReceipt;
-
   const reset = useCallback(() => {
     setState({ step: "ipfs" });
-    setProvisionTxHash(undefined);
   }, []);
 
   const provision = useCallback(
@@ -127,8 +114,11 @@ export function useProvision(): UseProvisionReturn {
             chainId: mainnet.id,
           });
 
-          // Wait for approval receipt
-          await waitForHash(approvalTx);
+          await publicClient!.waitForTransactionReceipt({
+            hash: approvalTx,
+            confirmations: 1,
+            timeout: 300_000,
+          });
         } catch (err) {
           const msg =
             err instanceof Error ? err.message : "Wallet approval rejected";
@@ -157,10 +147,12 @@ export function useProvision(): UseProvisionReturn {
       }
 
       setState({ step: "tx", txHash });
-      setProvisionTxHash(txHash);
 
-      // Poll for transaction receipt (up to 5 min)
-      const txReceipt = await waitForHash(txHash);
+      const txReceipt = await publicClient!.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+        timeout: 300_000,
+      });
 
       if (txReceipt.status === "reverted") {
         const msg = "Transaction reverted on-chain";
@@ -211,55 +203,8 @@ export function useProvision(): UseProvisionReturn {
         ipfsUri: result.ipfs_uri,
       };
     },
-    [address, isApproved, writeApproval, writeProvision]
+    [address, isApproved, publicClient, writeApproval, writeProvision]
   );
 
   return { state, provision, reset };
-}
-
-/**
- * Poll Ethereum for a transaction receipt.
- * Uses the wagmi/viem publicClient indirectly via native fetch to the RPC.
- * We rely on a simple polling loop rather than exposing a hook for this,
- * because `useWaitForTransactionReceipt` only works reactively (hook-level),
- * not imperatively inside an async function.
- */
-async function waitForHash(
-  txHash: `0x${string}`,
-  timeoutMs = 300_000,
-  intervalMs = 3_000
-): Promise<{ status: "success" | "reverted" }> {
-  const deadline = Date.now() + timeoutMs;
-
-  while (Date.now() < deadline) {
-    try {
-      // Use the Ethereum mainnet public RPC via wagmi's default config
-      const rpcUrl = "https://cloudflare-eth.com";
-      const response = await fetch(rpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "eth_getTransactionReceipt",
-          params: [txHash],
-        }),
-      });
-
-      const data = (await response.json()) as {
-        result: { status: string } | null;
-      };
-
-      if (data.result) {
-        const status = data.result.status === "0x1" ? "success" : "reverted";
-        return { status };
-      }
-    } catch {
-      // Network error — keep polling
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  }
-
-  throw new Error("Transaction receipt not found within timeout");
 }

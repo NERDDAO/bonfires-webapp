@@ -19,11 +19,25 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 
 import { useQuery } from "@tanstack/react-query";
-import { useAccount, useSignMessage } from "wagmi";
+import { useAccount, useReadContract, useSignMessage } from "wagmi";
+import { mainnet } from "viem/chains";
 
 import type { ProvisionedBonfireRecord } from "@/types";
 
 import { DashboardSection } from "./DashboardSection";
+
+const ERC8004_REGISTRY = (process.env["NEXT_PUBLIC_ERC8004_REGISTRY_ADDRESS"] ??
+  "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432") as `0x${string}`;
+
+const OWNER_OF_ABI = [
+  {
+    name: "ownerOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,7 +89,7 @@ async function fetchRevealApiKey(
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     if (res.status === 403) {
-      throw new Error("Wrong wallet — the connected wallet did not provision this Bonfire.");
+      throw new Error("Wrong wallet — the connected wallet does not own this Bonfire NFT.");
     }
     throw new Error(body.error ?? "Failed to reveal API key");
   }
@@ -153,10 +167,12 @@ function ApiKeyRow({
   record,
   revealState,
   onReveal,
+  disabled,
 }: {
   record: ProvisionedBonfireRecord;
   revealState: RevealState;
   onReveal: (txHash: string) => void;
+  disabled?: boolean;
 }) {
   const isRevealing =
     revealState.status === "fetching_nonce" ||
@@ -193,8 +209,9 @@ function ApiKeyRow({
         )}
         <button
           onClick={() => onReveal(record.tx_hash)}
-          disabled={isRevealing}
+          disabled={isRevealing || disabled}
           className="btn btn-xs btn-outline"
+          title={disabled ? "Only the NFT holder can reveal this key" : undefined}
         >
           {isRevealing
             ? (statusLabel[revealState.status] ?? "…")
@@ -211,11 +228,27 @@ function BonfireCard({
   record,
   revealState,
   onReveal,
+  connectedAddress,
 }: {
   record: ProvisionedBonfireRecord;
   revealState: RevealState;
   onReveal: (txHash: string) => void;
+  connectedAddress: string | undefined;
 }) {
+  const { data: nftOwner } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: OWNER_OF_ABI,
+    functionName: "ownerOf",
+    args: [BigInt(record.erc8004_bonfire_id)],
+    chainId: mainnet.id,
+    query: { enabled: record.status === "complete", staleTime: 60_000 },
+  });
+
+  const isCurrentOwner =
+    !!connectedAddress &&
+    !!nftOwner &&
+    connectedAddress.toLowerCase() === nftOwner.toLowerCase();
+
   const statusBadge: Record<string, string> = {
     complete: "badge-success",
     pending: "badge-warning",
@@ -234,12 +267,30 @@ function BonfireCard({
             </p>
           )}
         </div>
-        <span
-          className={`badge badge-sm shrink-0 ${statusBadge[record.status] ?? "badge-ghost"}`}
-        >
-          {record.status}
-        </span>
+        <div className="flex gap-1 shrink-0">
+          {record.status === "complete" && nftOwner && (
+            <span className={`badge badge-sm ${isCurrentOwner ? "badge-primary" : "badge-warning"}`}>
+              {isCurrentOwner ? "NFT Owner" : "Transferred"}
+            </span>
+          )}
+          <span
+            className={`badge badge-sm ${statusBadge[record.status] ?? "badge-ghost"}`}
+          >
+            {record.status}
+          </span>
+        </div>
       </div>
+
+      {/* Transferred notice */}
+      {record.status === "complete" && nftOwner && !isCurrentOwner && (
+        <div className="alert alert-warning py-2 text-xs">
+          <span>
+            This Bonfire&apos;s NFT has been transferred. Only the current NFT
+            holder ({nftOwner.slice(0, 6)}...{nftOwner.slice(-4)}) can reveal
+            the API key.
+          </span>
+        </div>
+      )}
 
       {/* Capabilities */}
       {record.capabilities.length > 0 && (
@@ -269,7 +320,8 @@ function BonfireCard({
           <ApiKeyRow
             record={record}
             revealState={revealState}
-            onReveal={onReveal}
+            onReveal={isCurrentOwner ? onReveal : () => {}}
+            disabled={!isCurrentOwner}
           />
         )}
         {record.status === "failed" && record.error_message && (
@@ -396,6 +448,7 @@ export function MyBonfiresSection() {
               record={record}
               revealState={revealStates[record.tx_hash] ?? { status: "idle" }}
               onReveal={handleReveal}
+              connectedAddress={address}
             />
           ))}
         </div>

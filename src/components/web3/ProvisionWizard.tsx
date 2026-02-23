@@ -184,6 +184,10 @@ export function ProvisionWizard() {
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [capabilityInput, setCapabilityInput] = useState("");
   const [image, setImage] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Step 5 result
   const [result, setResult] = useState<ProvisionResult | null>(null);
@@ -232,6 +236,65 @@ export function ProvisionWizard() {
 
   const removeCapability = useCallback((tag: string) => {
     setCapabilities((prev) => prev.filter((c) => c !== tag));
+  }, []);
+
+  // ── Image file upload ───────────────────────────────────────────────────
+
+  const handleImageFile = useCallback(async (file: File) => {
+    setImageError("");
+    setImageUploading(true);
+
+    const localPreview = URL.createObjectURL(file);
+    setImagePreview(localPreview);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/ipfs/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        throw new Error(
+          typeof data["error"] === "string" ? data["error"] : "Upload failed"
+        );
+      }
+      const data = (await res.json()) as { ipfs_uri: string; gateway_url: string };
+      setImage(data.ipfs_uri);
+      setImagePreview(data.gateway_url);
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : "Upload failed");
+      setImage("");
+      setImagePreview("");
+    } finally {
+      setImageUploading(false);
+    }
+  }, []);
+
+  const handleImageInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) handleImageFile(file);
+    },
+    [handleImageFile]
+  );
+
+  const handleImageDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file?.type.startsWith("image/")) handleImageFile(file);
+    },
+    [handleImageFile]
+  );
+
+  const clearImage = useCallback(() => {
+    setImage("");
+    setImagePreview("");
+    setImageError("");
+    if (imageInputRef.current) imageInputRef.current.value = "";
   }, []);
 
   // ── Step 3 → 4: kick off provisioning ────────────────────────────────────
@@ -481,41 +544,85 @@ export function ProvisionWizard() {
                 )}
               </div>
 
-              {/* Image URL */}
+              {/* Image Upload */}
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">
-                    Image URL{" "}
+                    Image{" "}
                     <span className="font-normal text-base-content/50">
                       (optional)
                     </span>
                   </span>
                 </label>
-                <input
-                  type="url"
-                  className="input input-bordered w-full"
-                  placeholder="https://… or ipfs://…"
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                />
-                <label className="label">
-                  <span className="label-text-alt text-base-content/50">
-                    HTTPS, IPFS, or data URI for the bonfire avatar (ERC-8004
-                    metadata)
-                  </span>
-                </label>
-                {image.trim() && image.trim().startsWith("http") && (
-                  <div className="mt-2 flex justify-center">
+
+                {!imagePreview ? (
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
+                      transition-colors hover:border-primary/50 hover:bg-base-200/50
+                      ${imageUploading ? "pointer-events-none opacity-60" : "border-base-300"}`}
+                    onClick={() => imageInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleImageDrop}
+                  >
+                    {imageUploading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="loading loading-spinner loading-md text-primary" />
+                        <span className="text-sm text-base-content/60">
+                          Uploading to IPFS…
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-2xl">🖼</span>
+                        <span className="text-sm text-base-content/60">
+                          Click to select or drag &amp; drop
+                        </span>
+                        <span className="text-xs text-base-content/40">
+                          PNG, JPEG, GIF, WebP, SVG · Max 5 MB
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4 border border-base-300 rounded-lg p-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={image.trim()}
-                      alt="Bonfire preview"
-                      className="w-20 h-20 rounded-lg object-cover border border-base-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
+                      src={imagePreview}
+                      alt="Bonfire image"
+                      className="w-16 h-16 rounded-lg object-cover border border-base-300 flex-shrink-0"
                     />
+                    <div className="flex-1 min-w-0">
+                      {image ? (
+                        <p className="text-xs font-mono text-base-content/60 truncate">
+                          {image}
+                        </p>
+                      ) : (
+                        <span className="loading loading-spinner loading-sm text-primary" />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost text-base-content/50"
+                      onClick={clearImage}
+                      title="Remove image"
+                    >
+                      ×
+                    </button>
                   </div>
+                )}
+
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={handleImageInputChange}
+                />
+
+                {imageError && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{imageError}</span>
+                  </label>
                 )}
               </div>
             </div>

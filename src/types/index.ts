@@ -115,3 +115,18 @@ export type {
   ProvisionFormData,
   ProvisionResult,
 } from "./provision";
+
+// Agent Config Types
+export type {
+  AgentDeployFormData,
+  AgentDeployRequest,
+  AgentDeployResult,
+  AgentFeatures,
+  AgentPlatform,
+  ChatConfig,
+  GroupConfig,
+  McpTool,
+  ReportingConfig,
+  TokenValidationResult,
+  TopicConfig,
+} from "./agent-config";

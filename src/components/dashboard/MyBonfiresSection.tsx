@@ -24,6 +24,7 @@ import { mainnet } from "viem/chains";
 
 import type { ProvisionedBonfireRecord } from "@/types";
 
+import { AgentDeployWizard } from "./AgentDeployWizard";
 import { DashboardSection } from "./DashboardSection";
 
 const ERC8004_REGISTRY = (process.env["NEXT_PUBLIC_ERC8004_REGISTRY_ADDRESS"] ??
@@ -228,11 +229,13 @@ function BonfireCard({
   record,
   revealState,
   onReveal,
+  onDeployAgent,
   connectedAddress,
 }: {
   record: ProvisionedBonfireRecord;
   revealState: RevealState;
   onReveal: (txHash: string) => void;
+  onDeployAgent: (bonfireId: string, bonfireName: string) => void;
   connectedAddress: string | undefined;
 }) {
   const { data: nftOwner } = useReadContract({
@@ -328,6 +331,18 @@ function BonfireCard({
           <div className="text-xs text-error mt-1">{record.error_message}</div>
         )}
       </div>
+
+      {/* Deploy Agent button - only for NFT owners of completed bonfires */}
+      {record.status === "complete" && isCurrentOwner && record.bonfire_id && (
+        <div className="border-t border-base-content/10 pt-3">
+          <button
+            className="btn btn-outline btn-sm w-full"
+            onClick={() => onDeployAgent(record.bonfire_id!, record.agent_name)}
+          >
+            + Deploy Agent
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -341,6 +356,9 @@ export function MyBonfiresSection() {
 
   // Per-bonfire reveal state keyed by tx_hash
   const [revealStates, setRevealStates] = useState<Record<string, RevealState>>({});
+
+  // Agent deploy wizard state
+  const [wizardTarget, setWizardTarget] = useState<{ bonfireId: string; bonfireName: string } | null>(null);
 
   const setRevealState = useCallback((txHash: string, state: RevealState) => {
     setRevealStates((prev) => ({ ...prev, [txHash]: state }));
@@ -448,10 +466,22 @@ export function MyBonfiresSection() {
               record={record}
               revealState={revealStates[record.tx_hash] ?? { status: "idle" }}
               onReveal={handleReveal}
+              onDeployAgent={(bonfireId, bonfireName) =>
+                setWizardTarget({ bonfireId, bonfireName })
+              }
               connectedAddress={address}
             />
           ))}
         </div>
+      )}
+
+      {wizardTarget && (
+        <AgentDeployWizard
+          bonfireId={wizardTarget.bonfireId}
+          bonfireName={wizardTarget.bonfireName}
+          isOpen={!!wizardTarget}
+          onClose={() => setWizardTarget(null)}
+        />
       )}
     </DashboardSection>
   );

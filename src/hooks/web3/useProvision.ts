@@ -106,6 +106,7 @@ export function useProvision(): UseProvisionReturn {
             name: formData.agentName,
             description: formData.description,
             capabilities: formData.capabilities,
+            image: formData.image,
           }),
         });
 
@@ -198,6 +199,7 @@ export function useProvision(): UseProvisionReturn {
           agent_name: formData.agentName,
           description: formData.description,
           capabilities: formData.capabilities,
+          image: formData.image,
         }),
       });
 

@@ -24,6 +24,7 @@ interface UploadRequestBody {
   name?: string;
   description?: string;
   capabilities?: string[];
+  image?: string;
 }
 
 interface PinataResponse {
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
     agentName: body.name.trim(),
     description: body.description.trim(),
     capabilities: body.capabilities ?? [],
+    image: body.image?.trim() ?? "",
   });
 
   try {

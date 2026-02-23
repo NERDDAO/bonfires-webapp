@@ -183,6 +183,7 @@ export function ProvisionWizard() {
   const [description, setDescription] = useState("");
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [capabilityInput, setCapabilityInput] = useState("");
+  const [image, setImage] = useState("");
 
   // Step 5 result
   const [result, setResult] = useState<ProvisionResult | null>(null);
@@ -251,6 +252,7 @@ export function ProvisionWizard() {
       agentName: agentName.trim(),
       description: description.trim(),
       capabilities,
+      image: image.trim(),
     };
 
     provision(formData)
@@ -261,7 +263,7 @@ export function ProvisionWizard() {
       .catch(() => {
         // state.step === "error" is set by the hook; stay on step 3
       });
-  }, [step, agentName, description, capabilities, provision]);
+  }, [step, agentName, description, capabilities, image, provision]);
 
   // ── Sub-step display mapping ──────────────────────────────────────────────
 
@@ -475,6 +477,44 @@ export function ProvisionWizard() {
                         </button>
                       </span>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Image URL */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">
+                    Image URL{" "}
+                    <span className="font-normal text-base-content/50">
+                      (optional)
+                    </span>
+                  </span>
+                </label>
+                <input
+                  type="url"
+                  className="input input-bordered w-full"
+                  placeholder="https://… or ipfs://…"
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                />
+                <label className="label">
+                  <span className="label-text-alt text-base-content/50">
+                    HTTPS, IPFS, or data URI for the bonfire avatar (ERC-8004
+                    metadata)
+                  </span>
+                </label>
+                {image.trim() && image.trim().startsWith("http") && (
+                  <div className="mt-2 flex justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.trim()}
+                      alt="Bonfire preview"
+                      className="w-20 h-20 rounded-lg object-cover border border-base-300"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
                   </div>
                 )}
               </div>

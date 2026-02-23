@@ -9,6 +9,7 @@ export interface ProvisionFormData {
   agentName: string;
   description: string;
   capabilities: string[];
+  image: string;
 }
 
 export type ProcessingStep =
@@ -49,6 +50,7 @@ export interface ProvisionedBonfireRecord {
   agent_name: string;
   description: string;
   capabilities: string[];
+  image: string;
   created_at: string;
   updated_at: string;
 }

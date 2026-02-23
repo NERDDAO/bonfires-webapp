@@ -16,13 +16,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AgentDeployFormData,
   AgentDeployRequest,
+  AgentFullResponse,
   AgentPlatform,
+  AgentUpdateRequest,
   McpTool,
   TokenValidationResult,
 } from "@/types/agent-config";
-import { createDefaultFormData } from "@/types/agent-config";
+import { agentResponseToFormData, createDefaultFormData } from "@/types/agent-config";
 
-import { useCreateAgent, useMcpTools, useValidateToken } from "@/hooks/useAgentDeploy";
+import {
+  useAgentDetails,
+  useCreateAgent,
+  useMcpTools,
+  useUpdateAgent,
+  useValidateToken,
+} from "@/hooks/useAgentDeploy";
 
 // ── Step indicator ───────────────────────────────────────────────────────────
 
@@ -57,6 +65,7 @@ interface AgentDeployWizardProps {
   bonfireName: string;
   isOpen: boolean;
   onClose: () => void;
+  editAgentId?: string;
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
@@ -66,15 +75,24 @@ export function AgentDeployWizard({
   bonfireName,
   isOpen,
   onClose,
+  editAgentId,
 }: AgentDeployWizardProps) {
+  const isEditMode = !!editAgentId;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<AgentDeployFormData>(createDefaultFormData);
+  const [formInitialized, setFormInitialized] = useState(false);
 
   // Mutations & queries
   const createAgent = useCreateAgent();
+  const updateAgent = useUpdateAgent();
   const validateToken = useValidateToken();
   const { data: mcpTools } = useMcpTools(isOpen);
+  const { data: existingAgent, isLoading: isLoadingAgent } = useAgentDetails(
+    isEditMode ? editAgentId : undefined,
+  );
+
+  const activeMutation = isEditMode ? updateAgent : createAgent;
 
   // Token validation state
   const [tokenValidation, setTokenValidation] = useState<TokenValidationResult | null>(null);
@@ -98,13 +116,22 @@ export function AgentDeployWizard({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isEditMode && existingAgent && !formInitialized) {
+      setForm(agentResponseToFormData(existingAgent));
+      setFormInitialized(true);
+    }
+  }, [isEditMode, existingAgent, formInitialized]);
+
   const handleClose = useCallback(() => {
     setStep(0);
     setForm(createDefaultFormData());
+    setFormInitialized(false);
     setTokenValidation(null);
     createAgent.reset();
+    updateAgent.reset();
     onClose();
-  }, [onClose, createAgent]);
+  }, [onClose, createAgent, updateAgent]);
 
   // ── Form updater ───────────────────────────────────────────────────────
 
@@ -192,34 +219,61 @@ export function AgentDeployWizard({
   // ── Step 6: Deploy ─────────────────────────────────────────────────────
 
   const handleDeploy = useCallback(async () => {
-    const payload: AgentDeployRequest = {
-      agentName: form.agentName.trim(),
-      agentUsername: form.agentUsername.trim(),
-      agentContext: form.agentContext.trim(),
-      bonfireId,
-      platform: form.platform,
-      isActive: form.isActive,
-      capabilities: form.capabilities,
-      timezone: form.timezone || undefined,
-      chatConfig: form.chatConfig,
-      agentFeatures: form.agentFeatures,
-      enabledMcpTools: form.enabledMcpTools.length > 0 ? form.enabledMcpTools : undefined,
-      agentEnvVars:
-        Object.keys(form.agentEnvVars).length > 0 ? form.agentEnvVars : undefined,
-    };
+    if (isEditMode && editAgentId) {
+      const payload: AgentUpdateRequest = {
+        name: form.agentName.trim(),
+        context: form.agentContext.trim(),
+        is_active: form.isActive,
+        capabilities: form.capabilities,
+        timezone: form.timezone || undefined,
+        chatConfig: form.chatConfig,
+        agentFeatures: form.agentFeatures,
+        enabledMcpTools: form.enabledMcpTools,
+        agentEnvVars:
+          Object.keys(form.agentEnvVars).length > 0 ? form.agentEnvVars : undefined,
+        deploymentConfiguration: {
+          platform: form.platform,
+          bonfireId,
+          ...(form.platform === "telegram" && form.telegramBotToken.trim()
+            ? { telegramBotToken: form.telegramBotToken.trim() }
+            : {}),
+          ...(form.platform === "discord" && form.discordBotToken.trim()
+            ? { discordBotToken: form.discordBotToken.trim() }
+            : {}),
+          ...(form.reportingConfig ? { reportingConfig: form.reportingConfig } : {}),
+        },
+      };
+      updateAgent.mutate({ agentId: editAgentId, data: payload });
+    } else {
+      const payload: AgentDeployRequest = {
+        agentName: form.agentName.trim(),
+        agentUsername: form.agentUsername.trim(),
+        agentContext: form.agentContext.trim(),
+        bonfireId,
+        platform: form.platform,
+        isActive: form.isActive,
+        capabilities: form.capabilities,
+        timezone: form.timezone || undefined,
+        chatConfig: form.chatConfig,
+        agentFeatures: form.agentFeatures,
+        enabledMcpTools: form.enabledMcpTools.length > 0 ? form.enabledMcpTools : undefined,
+        agentEnvVars:
+          Object.keys(form.agentEnvVars).length > 0 ? form.agentEnvVars : undefined,
+      };
 
-    if (form.platform === "telegram" && form.telegramBotToken.trim()) {
-      payload.telegramBotToken = form.telegramBotToken.trim();
-    }
-    if (form.platform === "discord" && form.discordBotToken.trim()) {
-      payload.discordBotToken = form.discordBotToken.trim();
-    }
-    if (form.reportingConfig) {
-      payload.reportingConfig = form.reportingConfig;
-    }
+      if (form.platform === "telegram" && form.telegramBotToken.trim()) {
+        payload.telegramBotToken = form.telegramBotToken.trim();
+      }
+      if (form.platform === "discord" && form.discordBotToken.trim()) {
+        payload.discordBotToken = form.discordBotToken.trim();
+      }
+      if (form.reportingConfig) {
+        payload.reportingConfig = form.reportingConfig;
+      }
 
-    createAgent.mutate(payload);
-  }, [form, bonfireId, createAgent]);
+      createAgent.mutate(payload);
+    }
+  }, [form, bonfireId, createAgent, updateAgent, isEditMode, editAgentId]);
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -233,15 +287,25 @@ export function AgentDeployWizard({
           ✕
         </button>
 
-        <h3 className="font-bold text-lg mb-1">Deploy Agent</h3>
+        <h3 className="font-bold text-lg mb-1">
+          {isEditMode ? "Edit Agent" : "Deploy Agent"}
+        </h3>
         <p className="text-sm text-base-content/60 mb-4">
           on <span className="font-semibold">{bonfireName}</span>
         </p>
 
-        {!createAgent.isSuccess && <StepIndicator current={step} />}
+        {isEditMode && isLoadingAgent && (
+          <div className="flex justify-center py-12">
+            <span className="loading loading-spinner loading-lg" />
+          </div>
+        )}
+
+        {!(isEditMode && isLoadingAgent) && !activeMutation.isSuccess && (
+          <StepIndicator current={step} />
+        )}
 
         {/* ── Step 1: Identity ──────────────────────────────────── */}
-        {step === 0 && (
+        {!(isEditMode && isLoadingAgent) && step === 0 && (
           <div className="space-y-4">
             <div className="form-control">
               <label className="label">
@@ -270,6 +334,7 @@ export function AgentDeployWizard({
                 value={form.agentUsername}
                 onChange={(e) => update("agentUsername", e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                 maxLength={30}
+                disabled={isEditMode}
               />
               {form.agentUsername && !usernameValid && (
                 <label className="label">
@@ -717,7 +782,7 @@ export function AgentDeployWizard({
         )}
 
         {/* ── Step 6: Review & Deploy ──────────────────────────── */}
-        {step === 5 && !createAgent.isSuccess && (
+        {step === 5 && !activeMutation.isSuccess && (
           <div className="space-y-4">
             <div className="border border-base-300 rounded-lg divide-y divide-base-300">
               <ReviewRow label="Name" value={form.agentName} />
@@ -753,26 +818,28 @@ export function AgentDeployWizard({
               <span className="label-text">Activate agent immediately</span>
             </label>
 
-            {createAgent.isError && (
+            {activeMutation.isError && (
               <div className="alert alert-error text-sm">
-                <span>{createAgent.error?.message ?? "Failed to create agent"}</span>
+                <span>{activeMutation.error?.message ?? `Failed to ${isEditMode ? "update" : "create"} agent`}</span>
               </div>
             )}
 
             <div className="flex justify-between mt-4">
-              <button className="btn btn-outline" onClick={() => setStep(4)} disabled={createAgent.isPending}>
+              <button className="btn btn-outline" onClick={() => setStep(4)} disabled={activeMutation.isPending}>
                 Back
               </button>
               <button
                 className="btn btn-primary"
                 onClick={handleDeploy}
-                disabled={createAgent.isPending}
+                disabled={activeMutation.isPending}
               >
-                {createAgent.isPending ? (
+                {activeMutation.isPending ? (
                   <>
                     <span className="loading loading-spinner loading-sm" />
-                    Deploying...
+                    {isEditMode ? "Saving..." : "Deploying..."}
                   </>
+                ) : isEditMode ? (
+                  "Save Changes"
                 ) : (
                   "Deploy Agent"
                 )}
@@ -782,7 +849,7 @@ export function AgentDeployWizard({
         )}
 
         {/* ── Success ──────────────────────────────────────────── */}
-        {createAgent.isSuccess && createAgent.data && (
+        {!isEditMode && createAgent.isSuccess && createAgent.data && (
           <div className="text-center space-y-4 py-4">
             <div className="text-5xl">🤖</div>
             <h3 className="text-xl font-bold">Agent Deployed!</h3>
@@ -798,6 +865,19 @@ export function AgentDeployWizard({
               <ReviewRow label="Platform" value={createAgent.data.deploymentConfiguration.platform} />
             </div>
 
+            <button className="btn btn-primary mt-4" onClick={handleClose}>
+              Done
+            </button>
+          </div>
+        )}
+
+        {isEditMode && updateAgent.isSuccess && (
+          <div className="text-center space-y-4 py-4">
+            <div className="text-5xl">&#9989;</div>
+            <h3 className="text-xl font-bold">Agent Updated!</h3>
+            <p className="text-sm text-base-content/60">
+              Changes to <span className="font-semibold">{form.agentName}</span> have been saved.
+            </p>
             <button className="btn btn-primary mt-4" onClick={handleClose}>
               Done
             </button>

@@ -5,17 +5,23 @@
  *
  * React Query hooks for the agent deployment wizard:
  *  - useCreateAgent: mutation to create an agent via POST /api/agent-config
+ *  - useUpdateAgent: mutation to update an agent via PUT /api/agents/[id]
+ *  - useBonfireAgents: query for agents registered to a bonfire
+ *  - useAgentDetails: query for full agent details (edit mode)
  *  - useMcpTools: query for available MCP tools
  *  - useValidateToken: mutation for bot token validation
  */
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   AgentDeployRequest,
   AgentDeployResult,
+  AgentFullResponse,
+  AgentUpdateRequest,
   McpTool,
   TokenValidationResult,
 } from "@/types/agent-config";
+import type { BonfireAgentsResponse } from "@/types/api";
 
 // ── Create Agent ─────────────────────────────────────────────────────────────
 
@@ -35,8 +41,88 @@ async function createAgentFn(data: AgentDeployRequest): Promise<AgentDeployResul
 }
 
 export function useCreateAgent() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createAgentFn,
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["bonfire-agents", variables.bonfireId] });
+    },
+  });
+}
+
+// ── Update Agent ─────────────────────────────────────────────────────────────
+
+async function updateAgentFn({
+  agentId,
+  data,
+}: {
+  agentId: string;
+  data: AgentUpdateRequest;
+}): Promise<AgentFullResponse> {
+  const res = await fetch(`/api/agents/${agentId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `Failed to update agent (${res.status})`);
+  }
+
+  return res.json() as Promise<AgentFullResponse>;
+}
+
+export function useUpdateAgent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateAgentFn,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["agent-details", data.id] });
+      if (data.bonfire_ref) {
+        queryClient.invalidateQueries({ queryKey: ["bonfire-agents", data.bonfire_ref] });
+      }
+    },
+  });
+}
+
+// ── Bonfire Agents ───────────────────────────────────────────────────────────
+
+async function fetchBonfireAgents(bonfireId: string): Promise<BonfireAgentsResponse> {
+  const res = await fetch(`/api/bonfires/${bonfireId}/agents`);
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? "Failed to fetch bonfire agents");
+  }
+  return res.json() as Promise<BonfireAgentsResponse>;
+}
+
+export function useBonfireAgents(bonfireId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["bonfire-agents", bonfireId],
+    queryFn: () => fetchBonfireAgents(bonfireId!),
+    enabled: enabled && !!bonfireId,
+    staleTime: 30_000,
+  });
+}
+
+// ── Agent Details ────────────────────────────────────────────────────────────
+
+async function fetchAgentDetails(agentId: string): Promise<AgentFullResponse> {
+  const res = await fetch(`/api/agents/${agentId}`);
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? "Failed to fetch agent details");
+  }
+  return res.json() as Promise<AgentFullResponse>;
+}
+
+export function useAgentDetails(agentId: string | undefined) {
+  return useQuery({
+    queryKey: ["agent-details", agentId],
+    queryFn: () => fetchAgentDetails(agentId!),
+    enabled: !!agentId,
+    staleTime: 30_000,
   });
 }
 

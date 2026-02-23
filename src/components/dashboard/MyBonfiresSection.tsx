@@ -22,7 +22,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount, useReadContract, useSignMessage } from "wagmi";
 import { mainnet } from "viem/chains";
 
-import type { ProvisionedBonfireRecord } from "@/types";
+import type { AgentInfo, ProvisionedBonfireRecord } from "@/types";
+
+import { useBonfireAgents } from "@/hooks/useAgentDeploy";
 
 import { AgentDeployWizard } from "./AgentDeployWizard";
 import { DashboardSection } from "./DashboardSection";
@@ -225,17 +227,80 @@ function ApiKeyRow({
   );
 }
 
+function DeployedAgentsList({
+  bonfireId,
+  isOwner,
+  onEditAgent,
+}: {
+  bonfireId: string;
+  isOwner: boolean;
+  onEditAgent: (agentId: string) => void;
+}) {
+  const { data, isLoading } = useBonfireAgents(bonfireId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-base-content/50 py-2">
+        <span className="loading loading-spinner loading-xs" />
+        Loading agents...
+      </div>
+    );
+  }
+
+  if (!data || data.agents.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="border-t border-base-content/10 pt-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-base-content/60 uppercase tracking-wide">
+          Deployed Agents ({data.agents.length})
+        </span>
+      </div>
+      {data.agents.map((agent: AgentInfo) => (
+        <div
+          key={agent.id}
+          className="flex items-center justify-between bg-base-200 rounded-lg px-3 py-2"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className={`badge badge-xs ${agent.is_active ? "badge-success" : "badge-ghost"}`}
+              title={agent.is_active ? "Active" : "Inactive"}
+            />
+            <span className="font-medium text-sm truncate">{agent.name}</span>
+            {agent.username && (
+              <span className="text-xs text-base-content/40 font-mono">@{agent.username}</span>
+            )}
+          </div>
+          {isOwner && (
+            <button
+              className="btn btn-xs btn-ghost"
+              onClick={() => onEditAgent(agent.id)}
+              title="Edit agent configuration"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function BonfireCard({
   record,
   revealState,
   onReveal,
   onDeployAgent,
+  onEditAgent,
   connectedAddress,
 }: {
   record: ProvisionedBonfireRecord;
   revealState: RevealState;
   onReveal: (txHash: string) => void;
   onDeployAgent: (bonfireId: string, bonfireName: string) => void;
+  onEditAgent: (agentId: string, bonfireId: string, bonfireName: string) => void;
   connectedAddress: string | undefined;
 }) {
   const { data: nftOwner } = useReadContract({
@@ -332,6 +397,17 @@ function BonfireCard({
         )}
       </div>
 
+      {/* Deployed agents list */}
+      {record.status === "complete" && record.bonfire_id && (
+        <DeployedAgentsList
+          bonfireId={record.bonfire_id}
+          isOwner={isCurrentOwner}
+          onEditAgent={(agentId) =>
+            onEditAgent(agentId, record.bonfire_id!, record.agent_name)
+          }
+        />
+      )}
+
       {/* Deploy Agent button - only for NFT owners of completed bonfires */}
       {record.status === "complete" && isCurrentOwner && record.bonfire_id && (
         <div className="border-t border-base-content/10 pt-3">
@@ -357,8 +433,12 @@ export function MyBonfiresSection() {
   // Per-bonfire reveal state keyed by tx_hash
   const [revealStates, setRevealStates] = useState<Record<string, RevealState>>({});
 
-  // Agent deploy wizard state
-  const [wizardTarget, setWizardTarget] = useState<{ bonfireId: string; bonfireName: string } | null>(null);
+  // Agent deploy/edit wizard state
+  const [wizardTarget, setWizardTarget] = useState<{
+    bonfireId: string;
+    bonfireName: string;
+    editAgentId?: string;
+  } | null>(null);
 
   const setRevealState = useCallback((txHash: string, state: RevealState) => {
     setRevealStates((prev) => ({ ...prev, [txHash]: state }));
@@ -469,6 +549,9 @@ export function MyBonfiresSection() {
               onDeployAgent={(bonfireId, bonfireName) =>
                 setWizardTarget({ bonfireId, bonfireName })
               }
+              onEditAgent={(agentId, bonfireId, bonfireName) =>
+                setWizardTarget({ bonfireId, bonfireName, editAgentId: agentId })
+              }
               connectedAddress={address}
             />
           ))}
@@ -481,6 +564,7 @@ export function MyBonfiresSection() {
           bonfireName={wizardTarget.bonfireName}
           isOpen={!!wizardTarget}
           onClose={() => setWizardTarget(null)}
+          editAgentId={wizardTarget.editAgentId}
         />
       )}
     </DashboardSection>

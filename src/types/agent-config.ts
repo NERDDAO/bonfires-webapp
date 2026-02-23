@@ -114,6 +114,43 @@ export interface AgentDeployResult {
   };
 }
 
+export interface AgentFullResponse {
+  id: string;
+  username: string;
+  name: string;
+  context: string;
+  capabilities: string[];
+  metadata: Record<string, unknown>;
+  is_active: boolean;
+  bonfire_ref: string | null;
+  api_key: string | null;
+  chatConfig: ChatConfig | null;
+  deploymentConfiguration: {
+    platform?: AgentPlatform;
+    bonfireId?: string;
+    telegramBotToken?: string;
+    discordBotToken?: string;
+    reportingConfig?: ReportingConfig;
+  } | null;
+  agentFeatures: AgentFeatures | null;
+  enabledMcpTools: string[];
+  timezone: string | null;
+  agentEnvVars: Record<string, string> | null;
+}
+
+export interface AgentUpdateRequest {
+  name?: string;
+  context?: string;
+  capabilities?: string[];
+  is_active?: boolean;
+  chatConfig?: ChatConfig;
+  agentFeatures?: AgentFeatures;
+  deploymentConfiguration?: Record<string, unknown>;
+  enabledMcpTools?: string[];
+  timezone?: string;
+  agentEnvVars?: Record<string, string>;
+}
+
 // ── MCP Tools ────────────────────────────────────────────────────────────────
 
 export interface McpTool {
@@ -173,5 +210,30 @@ export function createDefaultFormData(): AgentDeployFormData {
     enabledMcpTools: [],
     agentEnvVars: {},
     isActive: false,
+  };
+}
+
+export function agentResponseToFormData(agent: AgentFullResponse): AgentDeployFormData {
+  const deploy = agent.deploymentConfiguration;
+  const platform = (deploy?.platform ?? "web") as AgentPlatform;
+  return {
+    agentName: agent.name,
+    agentUsername: agent.username,
+    agentContext: agent.context,
+    timezone: agent.timezone ?? "",
+    platform,
+    telegramBotToken: "",
+    discordBotToken: "",
+    reportingConfig: deploy?.reportingConfig ?? null,
+    capabilities: agent.capabilities ?? [],
+    agentFeatures: agent.agentFeatures
+      ? { ...DEFAULT_AGENT_FEATURES, ...agent.agentFeatures }
+      : { ...DEFAULT_AGENT_FEATURES },
+    chatConfig: agent.chatConfig
+      ? { ...DEFAULT_CHAT_CONFIG, ...agent.chatConfig }
+      : { ...DEFAULT_CHAT_CONFIG },
+    enabledMcpTools: agent.enabledMcpTools ?? [],
+    agentEnvVars: agent.agentEnvVars ?? {},
+    isActive: agent.is_active,
   };
 }

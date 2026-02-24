@@ -69,7 +69,7 @@ export function ChatProvider({
   onReady,
 }: ChatProviderProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const chatMutation = useSendChatMessage();
 
   const mode: PanelMode = isOpen ? "chat" : "none";

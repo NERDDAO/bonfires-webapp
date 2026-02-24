@@ -1,7 +1,3 @@
-/**
- * GraphExplorer Component
- * Main orchestrating component for graph visualization, wiki, chat, and timeline features
- */
 "use client";
 
 import React, {
@@ -24,172 +20,41 @@ import {
 import type {
   AgentLatestEpisodesResponse,
   GraphData,
-  GraphEdge,
-  GraphElementPayload,
-  GraphNode,
-  GraphStatePayload,
-  NodeType,
 } from "@/types";
 
 import { ErrorMessage } from "@/components/common";
 
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
-import { synthesizeEpisodicEdges } from "@/lib/utils/graph-utils";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
-import { useWalletAccount } from "@/lib/wallet/e2e";
 
+import { AgentSelectionProvider, useAgentSelectionContext } from "./agent-selection-context";
 import Chat from "./chat";
+import type { ChatGraphContext } from "./chat/chat-context";
 import {
-  GraphSearchHistoryProvider,
-  useGraphSearchHistory,
-} from "./graph-context";
+  buildGraphStatePayload,
+} from "./helpers/graph-state";
+import {
+  extractEpisodesFromGraphNodes,
+  graphDataToElements,
+  mergeGraphData,
+  parseHydrationResponse,
+} from "./helpers/graph-data";
+import { normalizeNodeId } from "./helpers/graph-normalize";
+import { GraphSearchHistoryProvider } from "./graph-context";
 import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
+import { GraphExplorerPanelProvider } from "./select-panel/panel-context";
 import GraphStatusOverlay from "./ui/graph-status-overlay";
 import type { WikiNodeData } from "./wiki/wiki-panel-container";
 import { WikiPanelContainer } from "./wiki/wiki-panel-container";
-import type { WikiPanelContextValue } from "./wiki/wiki-panel-context";
 import { useWikiPanel, WikiPanelProvider } from "./wiki/wiki-panel-context";
 
 /**
  * GraphExplorer Component
  * Main orchestrating component for graph visualization, wiki, chat, and timeline features
  */
-
-/**
- * GraphExplorer Component
- * Main orchestrating component for graph visualization, wiki, chat, and timeline features
- */
-
-function resolveNodeType(rawType: unknown, labels: string[]): NodeType {
-  const normalized = typeof rawType === "string" ? rawType.toLowerCase() : "";
-  if (normalized.includes("episode")) return "episode";
-  if (normalized.includes("entity")) return "entity";
-  const hasEpisodeLabel = labels.some(
-    (label) => label.toLowerCase() === "episode"
-  );
-  return hasEpisodeLabel ? "episode" : "entity";
-}
-
-function buildProperties(
-  raw: Record<string, unknown>
-): Record<string, unknown> {
-  const base = { ...raw };
-  if (raw["properties"] && typeof raw["properties"] === "object") {
-    Object.assign(base, raw["properties"] as Record<string, unknown>);
-  }
-  return base;
-}
-
-function normalizeNode(raw: Record<string, unknown>): GraphNode | null {
-  const rawUuid = String(
-    raw["uuid"] ?? raw["id"] ?? raw["node_uuid"] ?? raw["nodeId"] ?? ""
-  );
-  const uuid = rawUuid.replace(/^n:/, "");
-  if (!uuid) return null;
-
-  const labels = Array.isArray(raw["labels"])
-    ? raw["labels"].filter(
-        (label): label is string => typeof label === "string"
-      )
-    : [];
-
-  const nameCandidate =
-    raw["name"] ?? raw["label"] ?? raw["title"] ?? raw["summary"] ?? uuid;
-  const type = resolveNodeType(
-    raw["type"] ?? raw["node_type"] ?? raw["entity_type"],
-    labels
-  );
-
-  return {
-    uuid,
-    name: String(nameCandidate),
-    type,
-    labels,
-    properties: buildProperties(raw),
-  };
-}
-
-function normalizeNodeId(value: unknown): string {
-  return String(value ?? "").replace(/^n:/, "");
-}
-
-function normalizeEdge(raw: Record<string, unknown>): GraphEdge | null {
-  const sourceValue =
-    raw["source"] ??
-    raw["source_uuid"] ??
-    raw["source_node_uuid"] ??
-    raw["from_uuid"] ??
-    raw["from"];
-  const targetValue =
-    raw["target"] ??
-    raw["target_uuid"] ??
-    raw["target_node_uuid"] ??
-    raw["to_uuid"] ??
-    raw["to"];
-
-  if (!sourceValue || !targetValue) return null;
-
-  const type = String(
-    raw["type"] ??
-      raw["relationship"] ??
-      raw["relationship_type"] ??
-      raw["label"] ??
-      "related_to"
-  );
-
-  return {
-    source: normalizeNodeId(sourceValue),
-    target: normalizeNodeId(targetValue),
-    type,
-    properties: buildProperties(raw),
-  };
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value as Record<string, unknown>;
-}
-
-function buildGraphStatePayload(
-  elements: GraphElement[],
-  centerNodeId: string | null
-): GraphStatePayload {
-  const nodes: GraphElementPayload[] = [];
-  const edges: GraphElementPayload[] = [];
-
-  for (const element of elements) {
-    if (!element.data) continue;
-    const data = { ...element.data } as GraphElementPayload["data"];
-
-    if (typeof data.node_type === "string") {
-      nodes.push({
-        data,
-        classes: element.classes,
-      });
-      continue;
-    }
-
-    if (data.source && data.target) {
-      edges.push({
-        data,
-        classes: element.classes,
-      });
-    }
-  }
-
-  return {
-    nodes,
-    edges,
-    nodeCount: nodes.length,
-    edgeCount: edges.length,
-    centerNodeUuid: centerNodeId
-      ? normalizeNodeId(centerNodeId) || undefined
-      : undefined,
-    lastUpdated: new Date().toISOString(),
-  };
-}
 
 /** When provided, bonfire/agent are fixed; URL and initial props are ignored and graph selector is hidden. */
 export interface StaticGraphConfig {
@@ -204,109 +69,12 @@ interface GraphExplorerProps {
   initialAgentId?: string | null;
   /** When set, use only these IDs (ignore URL/initial) and hide graph selector dropdowns */
   staticGraph?: StaticGraphConfig | null;
+  /** When true, hide the graph selector (e.g. when a subdomain is configured). If not set, selector is shown. */
+  hideGraphSelector?: boolean;
   /** Whether to run in embedded mode (limited interactions) */
   embedded?: boolean;
   /** Additional CSS classes */
   className?: string;
-}
-
-/** Bridge that uses search history context and provides breadcrumbs + wrapped handler. */
-function GraphExplorerSearchHistoryBridge({
-  handleSearchAroundNode,
-  selectedNode,
-  urlAgentId,
-  searchSubmitCount,
-  effectiveCenterNode,
-  render,
-}: {
-  handleSearchAroundNode: (nodeUuid: string) => void;
-  selectedNode: WikiNodeData | null;
-  urlAgentId: string | null | undefined;
-  searchSubmitCount: number;
-  effectiveCenterNode: string | null;
-  render: (props: {
-    searchHistoryBreadcrumbs: { label: string; onClick: () => void }[];
-    activeBreadcrumb: string | null;
-    handleSearchAroundNode: (nodeUuid: string) => void;
-  }) => React.ReactNode;
-}) {
-  const {
-    pushSearchAround,
-    resetSearchHistory,
-    searchHistoryStack,
-    currentIndex,
-    navigateToSearchHistoryIndex,
-  } = useGraphSearchHistory();
-
-  useEffect(() => {
-    resetSearchHistory();
-  }, [urlAgentId, searchSubmitCount, resetSearchHistory]);
-
-  // Seed stack with current center when graph has a center but stack is empty (so breadcrumbs show on load)
-  useEffect(() => {
-    if (!effectiveCenterNode || searchHistoryStack.length > 0) return;
-    const label =
-      selectedNode?.uuid === effectiveCenterNode
-        ? (selectedNode?.name ?? selectedNode?.label)
-        : undefined;
-    pushSearchAround(effectiveCenterNode, label);
-  }, [
-    effectiveCenterNode,
-    searchHistoryStack.length,
-    pushSearchAround,
-    selectedNode,
-  ]);
-
-  const handleSearchAroundNodeWithPush = useCallback(
-    (nodeUuid: string) => {
-      handleSearchAroundNode(nodeUuid);
-      pushSearchAround(
-        nodeUuid,
-        selectedNode?.name ?? selectedNode?.label ?? undefined
-      );
-    },
-    [handleSearchAroundNode, pushSearchAround, selectedNode]
-  );
-
-  const searchHistoryBreadcrumbs = useMemo(
-    () =>
-      searchHistoryStack.map((item, i) => ({
-        label: item.label ?? item.nodeId.slice(0, 8),
-        onClick: () => navigateToSearchHistoryIndex(i),
-      })),
-    [searchHistoryStack, navigateToSearchHistoryIndex]
-  );
-
-  const activeBreadcrumb =
-    currentIndex >= 0 && currentIndex < searchHistoryStack.length
-      ? (searchHistoryStack[currentIndex]?.label ??
-        searchHistoryStack[currentIndex]?.nodeId.slice(0, 8) ??
-        null)
-      : null;
-
-  return (
-    <>
-      {render({
-        searchHistoryBreadcrumbs,
-        activeBreadcrumb,
-        handleSearchAroundNode: handleSearchAroundNodeWithPush,
-      })}
-    </>
-  );
-}
-
-/**
- * Stable wrapper that consumes wiki context and renders via render prop.
- * Defined at module level so it keeps a stable identity and the graph subtree
- * does not unmount on parent re-renders (which was causing the center to jump).
- */
-function GraphExplorerContentWithWiki({
-  children,
-}: {
-  children: (wiki: WikiPanelContextValue) => React.ReactNode;
-}) {
-  const wiki = useWikiPanel();
-  return <>{children(wiki)}</>;
 }
 
 /**
@@ -316,25 +84,204 @@ export function GraphExplorer({
   initialBonfireId,
   initialAgentId,
   staticGraph,
+  hideGraphSelector = false,
   embedded = false,
   className,
 }: GraphExplorerProps) {
   const searchParams = useSearchParams();
-  const { address: walletAddress, isConnected: isWalletConnected } =
-    useWalletAccount();
-
-  // When staticGraph is provided, ignore URL and initial props; otherwise use URL/initial
-  const effectiveBonfireId = staticGraph
+  const urlBonfireId = staticGraph
     ? staticGraph.staticBonfireId
-    : (searchParams.get("bonfireId") ?? initialBonfireId);
-  const effectiveAgentId = staticGraph
+    : (searchParams.get("bonfireId") ?? initialBonfireId) ?? null;
+  const urlAgentId = staticGraph
     ? staticGraph.staticAgentId
-    : (searchParams.get("agentId") ?? initialAgentId);
-
-  const urlBonfireId = effectiveBonfireId;
-  const urlAgentId = effectiveAgentId;
+    : (searchParams.get("agentId") ?? initialAgentId) ?? null;
   const urlCenterNode = searchParams.get("centerNode");
   const urlSearchQuery = searchParams.get("q") ?? "";
+
+  return (
+    <AgentSelectionProvider
+      initialBonfireId={urlBonfireId}
+      initialAgentId={urlAgentId}
+      forceInitialSelection={!!staticGraph}
+    >
+      <GraphExplorerContent
+        urlBonfireId={urlBonfireId}
+        urlAgentId={urlAgentId}
+        urlCenterNode={urlCenterNode}
+        urlSearchQuery={urlSearchQuery}
+        embedded={embedded}
+        className={className}
+        staticGraph={staticGraph ?? null}
+        hideGraphSelector={hideGraphSelector}
+      />
+    </AgentSelectionProvider>
+  );
+}
+
+/** Body rendered inside WikiPanelProvider; uses useWikiPanel() directly. */
+function GraphExplorerBody({
+  className,
+  setSelectedEpisodeId,
+  setPanToNodeId,
+  searchQuery,
+  onSearchQueryChange,
+  onSearch,
+  isGraphLoading,
+  episodes,
+  selectedEpisodeId,
+  elements,
+  staticGraph,
+  hideGraphSelector,
+  embedded,
+  openChatRef,
+  graphError,
+  onRetry,
+  selection,
+  highlightedNodeIds,
+  effectiveCenterNode,
+  panToNodeId,
+  handleBackgroundClick,
+  panel,
+  getChatGraphContext,
+  agentSelection,
+}: {
+  className?: string;
+  setSelectedEpisodeId: (id: string | null) => void;
+  setPanToNodeId: (id: string | null) => void;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
+  onSearch: () => void;
+  isGraphLoading: boolean;
+  episodes: EpisodeTimelineItem[];
+  selectedEpisodeId: string | null;
+  elements: GraphElement[];
+  staticGraph: StaticGraphConfig | null;
+  hideGraphSelector: boolean;
+  embedded: boolean;
+  openChatRef: React.MutableRefObject<() => void>;
+  graphError: Error | string | null;
+  onRetry: () => void;
+  selection: { selectedNodeId: string | null; selectedEdgeId: string | null };
+  highlightedNodeIds: string[];
+  effectiveCenterNode: string | null;
+  panToNodeId: string | null;
+  handleBackgroundClick: () => void;
+  panel: { rightPanelMode: string };
+  getChatGraphContext: () => ChatGraphContext;
+  agentSelection: ReturnType<typeof useAgentSelectionContext>;
+}) {
+  const wiki = useWikiPanel();
+  const {
+    handleNodeClick: _wikiH,
+    handleEdgeClick: _wikiE,
+    ...wikiPanelContainerProps
+  } = wiki;
+  const handleEpisodeSelect = useCallback(
+    (episodeUuid: string) => {
+      setSelectedEpisodeId(episodeUuid);
+      setPanToNodeId(episodeUuid);
+      wiki.handleNodeClick(`n:${episodeUuid}`);
+    },
+    [setSelectedEpisodeId, setPanToNodeId, wiki]
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col h-full overflow-hidden",
+        className
+      )}
+    >
+      <GraphExplorerPanelProvider
+        searchQuery={searchQuery}
+        onSearchQueryChange={onSearchQueryChange}
+        onSearch={onSearch}
+        isSearching={isGraphLoading}
+        episodes={episodes}
+        selectedEpisodeId={selectedEpisodeId}
+        onEpisodeSelect={handleEpisodeSelect}
+        episodesLoading={isGraphLoading}
+        graphVisible={elements.length > 0}
+        hideGraphSelector={hideGraphSelector}
+        onOpenChat={
+          !embedded ? () => openChatRef.current?.() : undefined
+        }
+      >
+        <GraphExplorerPanel />
+      </GraphExplorerPanelProvider>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <h1 className="sr-only">Graph Explorer</h1>
+        <div className="flex-1 flex overflow-hidden relative">
+          <div className="flex-1 relative">
+            {graphError && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
+                <ErrorMessage
+                  message={
+                    (graphError as Error | null)?.message ??
+                    "Failed to load graph"
+                  }
+                  onRetry={onRetry}
+                  variant="card"
+                />
+              </div>
+            )}
+            <GraphWrapper
+              elements={elements}
+              loading={isGraphLoading}
+              error={graphError}
+              selectedNodeId={selection.selectedNodeId}
+              selectedEdgeId={selection.selectedEdgeId}
+              highlightedNodeIds={highlightedNodeIds}
+              centerNodeId={effectiveCenterNode}
+              panToNodeId={panToNodeId}
+              onPanToNodeComplete={() => setPanToNodeId(null)}
+              onNodeClick={wiki.handleNodeClick}
+              onEdgeClick={wiki.handleEdgeClick}
+              onBackgroundClick={handleBackgroundClick}
+            />
+          </div>
+          {panel.rightPanelMode === "wiki" && (
+            <WikiPanelContainer {...wikiPanelContainerProps} />
+          )}
+        </div>
+      </main>
+      {!embedded && (
+        <Chat
+          agentId={agentSelection.selectedAgentId ?? undefined}
+          agentName={agentSelection.selectedAgent?.name}
+          bonfireId={agentSelection.selectedBonfireId ?? undefined}
+          getGraphContext={getChatGraphContext}
+          onReady={({ openChat }) => {
+            openChatRef.current = openChat;
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Inner content that consumes agent selection from context. */
+function GraphExplorerContent({
+  urlBonfireId,
+  urlAgentId,
+  urlCenterNode,
+  urlSearchQuery,
+  embedded,
+  className,
+  staticGraph,
+  hideGraphSelector,
+}: {
+  urlBonfireId: string | null;
+  urlAgentId: string | null;
+  urlCenterNode: string | null;
+  urlSearchQuery: string;
+  embedded: boolean;
+  className?: string;
+  staticGraph: StaticGraphConfig | null;
+  hideGraphSelector: boolean;
+}) {
+  const agentSelection = useAgentSelectionContext();
+  const searchParams = useSearchParams();
 
   // Effective search/center (from URL or from in-page "Search around this node" — no navigation)
   const [effectiveSearchQuery, setEffectiveSearchQuery] =
@@ -345,15 +292,8 @@ export function GraphExplorer({
 
   // State management
   const { state, actions } = useGraphExplorerState();
-  const { selection, panel, timeline } = state;
-  const { dispatchSelection, dispatchPanel, dispatchTimeline } = actions;
-
-  // Agent selection (when staticGraph is set, force IDs even if not in fetched lists)
-  const agentSelection = useAgentSelection({
-    initialBonfireId: urlBonfireId ?? undefined,
-    initialAgentId: urlAgentId ?? undefined,
-    forceInitialSelection: !!staticGraph,
-  });
+  const { selection, panel } = state;
+  const { dispatchSelection, dispatchPanel } = actions;
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -414,76 +354,15 @@ export function GraphExplorer({
         }
       );
 
-      const rawNodes = [
-        ...(response.nodes ?? []),
-        ...(response.entities ?? []),
-      ];
-      const nodes = rawNodes
-        .map((node) => normalizeNode(node as Record<string, unknown>))
-        .filter((node): node is GraphNode => !!node);
-
-      const edges = (response.edges ?? [])
-        .map((edge) => normalizeEdge(edge as Record<string, unknown>))
-        .filter((edge): edge is GraphEdge => !!edge);
-
-      const graphData: GraphData = {
-        nodes,
-        edges,
-        metadata: {
-          bonfire_id: agentSelection.selectedBonfireId,
-          agent_id: agentSelection.selectedAgentId,
-          query: "latest_episodes",
-          timestamp: new Date().toISOString(),
-        },
-      };
+      const { graphData, episodeItems } = parseHydrationResponse(
+        response,
+        agentSelection.selectedBonfireId,
+        agentSelection.selectedAgentId,
+        latestEpisodeUuids
+      );
 
       setInitialGraphData(graphData);
-
-      const responseEpisodes: EpisodeTimelineItem[] = (
-        response.episodes ?? []
-      ).map((episode) => {
-        const episodeRecord = episode as Record<string, unknown>;
-        return {
-          uuid: String(episodeRecord["uuid"] ?? episodeRecord["id"] ?? ""),
-          name: (episodeRecord["name"] ?? episodeRecord["title"]) as
-            | string
-            | undefined,
-          summary: episodeRecord["summary"] as string | undefined,
-          valid_at: episodeRecord["valid_at"] as string | undefined,
-        };
-      });
-
-      let episodeItems: EpisodeTimelineItem[] = responseEpisodes.filter(
-        (episode) => episode.uuid
-      );
-      if (episodeItems.length === 0) {
-        episodeItems = nodes
-          .filter((node) => node.type === "episode" && !!node.uuid)
-          .map((node) => ({
-            uuid: node.uuid as string,
-            name: node.name,
-            summary: node.properties?.["summary"] as string | undefined,
-            valid_at: node.properties?.["valid_at"] as string | undefined,
-          }));
-      }
-
-      if (latestEpisodeUuids.length > 0) {
-        const episodeById = new Map(
-          episodeItems.map((episode) => [episode.uuid, episode])
-        );
-        const filtered = latestEpisodeUuids.flatMap((uuid) => {
-          const episode = episodeById.get(uuid);
-          return episode ? [episode] : [];
-        });
-        if (filtered.length > 0) {
-          episodeItems = filtered;
-        }
-      }
-
       setEpisodes(episodeItems);
-
-      // Do not auto-select a node on first load so the graph starts with no active state.
-      // preferredCenter is still used elsewhere (e.g. panning) when set from URL.
     } catch (error) {
       const message =
         error instanceof Error
@@ -519,7 +398,11 @@ export function GraphExplorer({
     expandCenterRef.current = null;
     setEffectiveSearchQuery(searchParams.get("q") ?? "");
     setEffectiveCenterNode(searchParams.get("centerNode"));
-  }, [agentSelection.selectedAgentId, agentSelection.selectedBonfireId]);
+  }, [
+    agentSelection.selectedAgentId,
+    agentSelection.selectedBonfireId,
+    searchParams,
+  ]);
 
   useEffect(() => {
     if (!agentSelection.selectedAgentId || !agentSelection.selectedBonfireId)
@@ -539,223 +422,24 @@ export function GraphExplorer({
 
   const activeGraphData = graphQuery.data ?? initialGraphData;
 
-  const mergeGraphData = useCallback(
-    (base: GraphData | null, incoming: GraphData | null) => {
-      if (!base) return incoming;
-      if (!incoming) return base;
-
-      const nodeIds = new Set<string>();
-      const mergedNodes: GraphData["nodes"] = [];
-
-      for (const node of base.nodes) {
-        const nodeRecord = asRecord(node);
-        const nodeId = String(
-          nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
-        ).replace(/^n:/, "");
-        if (!nodeId || nodeIds.has(nodeId)) continue;
-        nodeIds.add(nodeId);
-        mergedNodes.push(node);
-      }
-
-      for (const node of incoming.nodes) {
-        const nodeRecord = asRecord(node);
-        const nodeId = String(
-          nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
-        ).replace(/^n:/, "");
-        if (!nodeId || nodeIds.has(nodeId)) continue;
-        nodeIds.add(nodeId);
-        mergedNodes.push(node);
-      }
-
-      const edgeKeys = new Set<string>();
-      const mergedEdges: GraphData["edges"] = [];
-
-      const addEdge = (edge: GraphData["edges"][number]) => {
-        const edgeRecord = asRecord(edge);
-        const sourceId = normalizeNodeId(
-          edgeRecord["source"] ??
-            edgeRecord["source_uuid"] ??
-            edgeRecord["source_node_uuid"] ??
-            edgeRecord["from_uuid"] ??
-            edgeRecord["from"]
-        );
-        const targetId = normalizeNodeId(
-          edgeRecord["target"] ??
-            edgeRecord["target_uuid"] ??
-            edgeRecord["target_node_uuid"] ??
-            edgeRecord["to_uuid"] ??
-            edgeRecord["to"]
-        );
-        if (!sourceId || !targetId) return;
-        const edgeType = String(
-          edgeRecord["type"] ??
-            edgeRecord["relationship"] ??
-            edgeRecord["relationship_type"] ??
-            edgeRecord["label"] ??
-            ""
-        );
-        const key = `${sourceId}|${targetId}|${edgeType}`;
-        if (edgeKeys.has(key)) return;
-        edgeKeys.add(key);
-        mergedEdges.push(edge);
-      };
-
-      for (const edge of base.edges) addEdge(edge);
-      for (const edge of incoming.edges) addEdge(edge);
-
-      return {
-        nodes: mergedNodes,
-        edges: mergedEdges,
-        metadata: base.metadata ?? incoming.metadata,
-      };
-    },
-    []
-  );
-
   const combinedGraphData = useMemo(
     () => mergeGraphData(activeGraphData, extraGraphData),
-    [activeGraphData, extraGraphData, mergeGraphData]
+    [activeGraphData, extraGraphData]
   );
   const isGraphLoading = graphQuery.isLoading || isHydrating;
   const graphError =
     graphQuery.error ?? (hydrationError ? new Error(hydrationError) : null);
 
   // Convert graph data to elements: one node per canonical id (uuid), all edges preserved
-  const elements: GraphElement[] = useMemo(() => {
-    if (!combinedGraphData) return [];
-
-    const result: GraphElement[] = [];
-    const nodeIds = new Set<string>();
-    const cachedNodes = nodeCacheRef.current;
-
-    // Convert nodes — one element per canonical node id (uuid); duplicates are merged into a single node
-    for (const node of combinedGraphData.nodes) {
-      const nodeRecord = asRecord(node);
-      const nodeId = String(
-        nodeRecord["uuid"] ?? nodeRecord["id"] ?? ""
-      ).replace(/^n:/, "");
-      if (!nodeId || nodeIds.has(nodeId)) continue;
-      nodeIds.add(nodeId);
-
-      const rawLabels = nodeRecord["labels"];
-      const labels = Array.isArray(rawLabels)
-        ? rawLabels.filter(
-            (label): label is string => typeof label === "string"
-          )
-        : [];
-      const nodeType = resolveNodeType(
-        nodeRecord["type"] ??
-          nodeRecord["node_type"] ??
-          nodeRecord["entity_type"],
-        labels
-      );
-      const properties =
-        (nodeRecord["properties"] as Record<string, unknown> | undefined) ??
-        (nodeRecord["attributes"] as Record<string, unknown> | undefined) ??
-        {};
-      if (!("content" in properties) && nodeRecord["content"] !== undefined) {
-        properties["content"] = nodeRecord["content"];
-      }
-      if (!("summary" in properties) && nodeRecord["summary"] !== undefined) {
-        properties["summary"] = nodeRecord["summary"];
-      }
-      if (!("valid_at" in properties) && nodeRecord["valid_at"] !== undefined) {
-        properties["valid_at"] = nodeRecord["valid_at"];
-      }
-
-      result.push({
-        data: {
-          id: `n:${nodeId}`,
-          label: (nodeRecord["name"] ??
-            nodeRecord["label"] ??
-            nodeRecord["title"] ??
-            "") as string | undefined,
-          node_type: nodeType,
-          labels,
-          ...properties,
-        },
-      });
-    }
-
-    // Convert edges: include every edge whose endpoints exist; one node per id so all connections attach to the single node
-    let edgeIndex = 0;
-    for (const edge of combinedGraphData.edges) {
-      const edgeRecord = asRecord(edge);
-      const sourceValue =
-        edgeRecord["source"] ??
-        edgeRecord["source_uuid"] ??
-        edgeRecord["source_node_uuid"] ??
-        edgeRecord["from_uuid"] ??
-        edgeRecord["from"];
-      const targetValue =
-        edgeRecord["target"] ??
-        edgeRecord["target_uuid"] ??
-        edgeRecord["target_node_uuid"] ??
-        edgeRecord["to_uuid"] ??
-        edgeRecord["to"];
-      if (!sourceValue || !targetValue) continue;
-      const sourceId = String(sourceValue).replace(/^n:/, "");
-      const targetId = String(targetValue).replace(/^n:/, "");
-      if (!nodeIds.has(sourceId) || !nodeIds.has(targetId)) continue;
-      const uniqueEdgeId = `e:${sourceId}-${targetId}-${edgeIndex}`;
-      edgeIndex += 1;
-      const edgeType = (edgeRecord["type"] ??
-        edgeRecord["relationship"] ??
-        edgeRecord["relationship_type"] ??
-        edgeRecord["label"]) as string | undefined;
-      const edgeName = edgeRecord["name"] as string | undefined;
-      const edgeFact = edgeRecord["fact"] as string | undefined;
-      const properties =
-        (edgeRecord["properties"] as Record<string, unknown> | undefined) ??
-        (edgeRecord["attributes"] as Record<string, unknown> | undefined) ??
-        (edgeRecord as Record<string, unknown>);
-
-      result.push({
-        data: {
-          id: uniqueEdgeId,
-          source: `n:${sourceId}`,
-          target: `n:${targetId}`,
-          label: edgeName ?? edgeType ?? edgeFact,
-          name: edgeName,
-          fact: edgeFact,
-          relationship: edgeType,
-          attributes: properties,
-          ...properties,
-        },
-      });
-    }
-
-    // Synthesize episodic edges: connect episode nodes to entities they mention
-    const episodicEdges = synthesizeEpisodicEdges(
-      combinedGraphData.edges,
-      nodeIds
-    );
-    result.push(...episodicEdges);
-
-    const centerId = effectiveCenterNode?.replace(/^n:/, "");
-    if (centerId && !nodeIds.has(centerId)) {
-      const cached = cachedNodes.get(centerId);
-      const cachedLabel =
-        (cached?.label as string | undefined) ??
-        (cached?.name as string | undefined) ??
-        (cached?.["title"] as string | undefined);
-
-      result.push({
-        data: {
-          ...(cached ?? {}),
-          id: `n:${centerId}`,
-          label: cachedLabel ?? `center:${centerId.slice(0, 8)}`,
-          node_type:
-            (cached?.node_type as "episode" | "entity" | undefined) ??
-            "episode",
-          placeholder: !cached,
-        },
-      });
-      nodeIds.add(centerId);
-    }
-
-    return result;
-  }, [combinedGraphData, effectiveCenterNode]);
+  const elements: GraphElement[] = useMemo(
+    () =>
+      graphDataToElements(
+        combinedGraphData,
+        effectiveCenterNode,
+        nodeCacheRef.current
+      ),
+    [combinedGraphData, effectiveCenterNode]
+  );
 
   useEffect(() => {
     if (!agentSelection.selectedBonfireId || !effectiveCenterNode) return;
@@ -784,7 +468,6 @@ export function GraphExplorer({
     activeGraphData,
     agentSelection.selectedBonfireId,
     expand,
-    mergeGraphData,
     effectiveCenterNode,
     effectiveSearchQuery,
   ]);
@@ -804,32 +487,7 @@ export function GraphExplorer({
   // Update episodes from graph data
   useEffect(() => {
     if (!activeGraphData?.nodes) return;
-
-    const episodeNodes = activeGraphData.nodes
-      .filter((n) => {
-        const nodeRecord = asRecord(n);
-        const nodeType = nodeRecord["type"] ?? nodeRecord["node_type"];
-        return nodeType === "episode";
-      })
-      .map((n) => {
-        const nodeRecord = asRecord(n);
-        const properties =
-          (nodeRecord["properties"] as Record<string, unknown> | undefined) ??
-          (nodeRecord["attributes"] as Record<string, unknown> | undefined) ??
-          {};
-        return {
-          uuid: String(nodeRecord["uuid"] ?? "").replace(/^n:/, ""),
-          name: nodeRecord["name"] as string | undefined,
-          valid_at: (properties["valid_at"] ?? nodeRecord["valid_at"]) as
-            | string
-            | undefined,
-          content: (properties["content"] ?? nodeRecord["content"]) as
-            | string
-            | undefined,
-        };
-      });
-
-    setEpisodes(episodeNodes);
+    setEpisodes(extractEpisodesFromGraphNodes(activeGraphData.nodes));
   }, [activeGraphData?.nodes]);
 
   // Get selected node/edge data
@@ -924,129 +582,49 @@ export function GraphExplorer({
   }
 
   return (
-    <GraphSearchHistoryProvider onNavigateToCenter={onNavigateToCenter}>
-      <GraphExplorerSearchHistoryBridge
-        handleSearchAroundNode={handleSearchAroundNode}
-        selectedNode={selectedNode}
-        urlAgentId={urlAgentId ?? null}
-        searchSubmitCount={searchSubmitCount}
-        effectiveCenterNode={effectiveCenterNode}
-        render={({
-          searchHistoryBreadcrumbs,
-          activeBreadcrumb,
-          handleSearchAroundNode: wrappedSearchAround,
-        }) => (
-          <WikiPanelProvider
-            elements={elements}
-            selection={selection}
-            panel={panel}
-            dispatchSelection={dispatchSelection}
-            dispatchPanel={dispatchPanel}
-            onSearchAroundNode={wrappedSearchAround}
-            onBeforeNodeSelect={() => setSelectedEpisodeId(null)}
-          >
-            <GraphExplorerContentWithWiki>
-              {(wiki) => {
-                const {
-                  handleNodeClick: _wikiH,
-                  handleEdgeClick: _wikiE,
-                  ...wikiPanelContainerProps
-                } = wiki;
-                const handleEpisodeSelect = (episodeUuid: string) => {
-                  setSelectedEpisodeId(episodeUuid);
-                  setPanToNodeId(episodeUuid);
-                  wiki.handleNodeClick(`n:${episodeUuid}`);
-                };
-                return (
-                  <div
-                    className={cn(
-                      "flex flex-col h-full overflow-hidden",
-                      className
-                    )}
-                  >
-                    <GraphExplorerPanel
-                      availableBonfires={agentSelection.availableBonfires}
-                      availableAgents={agentSelection.availableAgents}
-                      selectedBonfireId={agentSelection.selectedBonfireId}
-                      selectedAgentId={agentSelection.selectedAgentId}
-                      loading={agentSelection.loading}
-                      error={agentSelection.error}
-                      onSelectBonfire={agentSelection.selectBonfire}
-                      onSelectAgent={agentSelection.selectAgent}
-                      searchQuery={searchQuery}
-                      onSearchQueryChange={setSearchQuery}
-                      onSearch={handleSearch}
-                      isSearching={isGraphLoading}
-                      searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
-                      activeBreadcrumb={activeBreadcrumb}
-                      episodes={episodes}
-                      selectedEpisodeId={selectedEpisodeId}
-                      onEpisodeSelect={handleEpisodeSelect}
-                      episodesLoading={isGraphLoading}
-                      graphVisible={elements.length > 0}
-                      onOpenChat={
-                        !embedded
-                          ? () => openChatRef.current?.()
-                          : undefined
-                      }
-                      hideGraphSelector={!!staticGraph}
-                    />
-                    <main className="flex-1 flex flex-col overflow-hidden">
-                      <h1 className="sr-only">Graph Explorer</h1>
-                      <div className="flex-1 flex overflow-hidden relative">
-                        <div className="flex-1 relative">
-                          {graphError && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
-                              <ErrorMessage
-                                message={
-                                  (graphError as Error | null)?.message ??
-                                  "Failed to load graph"
-                                }
-                                onRetry={handleRetry}
-                                variant="card"
-                              />
-                            </div>
-                          )}
-                          <GraphWrapper
-                            elements={elements}
-                            loading={isGraphLoading}
-                            error={graphError}
-                            selectedNodeId={selection.selectedNodeId}
-                            selectedEdgeId={selection.selectedEdgeId}
-                            highlightedNodeIds={highlightedNodeIds}
-                            centerNodeId={effectiveCenterNode}
-                            panToNodeId={panToNodeId}
-                            onPanToNodeComplete={() => setPanToNodeId(null)}
-                            onNodeClick={wiki.handleNodeClick}
-                            onEdgeClick={wiki.handleEdgeClick}
-                            onBackgroundClick={handleBackgroundClick}
-                          />
-                        </div>
-                        {panel.rightPanelMode === "wiki" && (
-                          <WikiPanelContainer
-                            {...wikiPanelContainerProps}
-                          />
-                        )}
-                      </div>
-                    </main>
-                    {!embedded && (
-                      <Chat
-                        agentId={agentSelection.selectedAgentId ?? undefined}
-                        agentName={agentSelection.selectedAgent?.name}
-                        bonfireId={agentSelection.selectedBonfireId ?? undefined}
-                        getGraphContext={getChatGraphContext}
-                        onReady={({ openChat }) => {
-                          openChatRef.current = openChat;
-                        }}
-                      />
-                    )}
-                  </div>
-                );
-              }}
-            </GraphExplorerContentWithWiki>
-          </WikiPanelProvider>
-        )}
-      />
+    <GraphSearchHistoryProvider
+      onNavigateToCenter={onNavigateToCenter}
+      urlAgentId={urlAgentId ?? null}
+      searchSubmitCount={searchSubmitCount}
+      effectiveCenterNode={effectiveCenterNode}
+      selectedNode={selectedNode ?? null}
+      handleSearchAroundNode={handleSearchAroundNode}
+    >
+      <WikiPanelProvider
+        elements={elements}
+        selection={selection}
+        panel={panel}
+        dispatchSelection={dispatchSelection}
+        dispatchPanel={dispatchPanel}
+        onBeforeNodeSelect={() => setSelectedEpisodeId(null)}
+      >
+        <GraphExplorerBody
+          className={className}
+          setSelectedEpisodeId={setSelectedEpisodeId}
+          setPanToNodeId={setPanToNodeId}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onSearch={handleSearch}
+          isGraphLoading={isGraphLoading}
+          episodes={episodes}
+          selectedEpisodeId={selectedEpisodeId}
+          elements={elements}
+          staticGraph={staticGraph}
+          hideGraphSelector={hideGraphSelector}
+          embedded={embedded}
+          openChatRef={openChatRef}
+          graphError={graphError}
+          onRetry={handleRetry}
+          selection={selection}
+          highlightedNodeIds={highlightedNodeIds}
+          effectiveCenterNode={effectiveCenterNode}
+          panToNodeId={panToNodeId}
+          handleBackgroundClick={handleBackgroundClick}
+          panel={panel}
+          getChatGraphContext={getChatGraphContext}
+          agentSelection={agentSelection}
+        />
+      </WikiPanelProvider>
     </GraphSearchHistoryProvider>
   );
 }

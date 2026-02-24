@@ -10,12 +10,20 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 
 export interface SearchHistoryItem {
   nodeId: string;
+  label?: string;
+}
+
+/** Minimal node shape for provider effect deps (label derivation). */
+export interface GraphSearchHistoryNodeSnapshot {
+  uuid: string;
+  name?: string;
   label?: string;
 }
 
@@ -30,6 +38,12 @@ export interface GraphSearchHistoryContextValue {
   resetSearchHistory: () => void;
   /** Go to a breadcrumb by index; keep full path, only change center. */
   navigateToSearchHistoryIndex: (index: number) => void;
+  /** Breadcrumbs for UI; derived from stack. */
+  searchHistoryBreadcrumbs: { label: string; onClick: () => void }[];
+  /** Label of the currently active breadcrumb. */
+  activeBreadcrumb: string | null;
+  /** When set, call this to "search around" a node (pushes to history then invokes handler). */
+  searchAroundNode: ((nodeUuid: string) => void) | undefined;
 }
 
 const GraphSearchHistoryContext =
@@ -39,11 +53,26 @@ export interface GraphSearchHistoryProviderProps {
   children: React.ReactNode;
   /** Called when user chooses a breadcrumb or pushes; consumer should set center node. */
   onNavigateToCenter: (nodeId: string) => void;
+  /** When changed, history is reset (e.g. agent or query change). */
+  urlAgentId?: string | null;
+  /** When changed, history is reset. */
+  searchSubmitCount?: number;
+  /** When set and stack is empty, seed stack with this center (e.g. initial load). */
+  effectiveCenterNode?: string | null;
+  /** Used for breadcrumb labels when seeding or when pushing. */
+  selectedNode?: GraphSearchHistoryNodeSnapshot | null;
+  /** When provided, searchAroundNode in context will push then call this. */
+  handleSearchAroundNode?: (nodeUuid: string) => void;
 }
 
 export function GraphSearchHistoryProvider({
   children,
   onNavigateToCenter,
+  urlAgentId,
+  searchSubmitCount,
+  effectiveCenterNode,
+  selectedNode,
+  handleSearchAroundNode,
 }: GraphSearchHistoryProviderProps) {
   const [searchHistoryStack, setSearchHistoryStack] = useState<
     SearchHistoryItem[]
@@ -80,6 +109,60 @@ export function GraphSearchHistoryProvider({
     [searchHistoryStack, onNavigateToCenter]
   );
 
+  // Reset history when agent or search query identity changes
+  useEffect(() => {
+    resetSearchHistory();
+  }, [urlAgentId, searchSubmitCount, resetSearchHistory]);
+
+  // Seed stack with current center when graph has a center but stack is empty
+  useEffect(() => {
+    if (!effectiveCenterNode || searchHistoryStack.length > 0) return;
+    const label =
+      selectedNode?.uuid === effectiveCenterNode
+        ? (selectedNode?.name ?? selectedNode?.label)
+        : undefined;
+    pushSearchAround(effectiveCenterNode, label);
+  }, [
+    effectiveCenterNode,
+    searchHistoryStack.length,
+    pushSearchAround,
+    selectedNode?.uuid,
+    selectedNode?.name,
+    selectedNode?.label,
+  ]);
+
+  const searchHistoryBreadcrumbs = useMemo(
+    () =>
+      searchHistoryStack.map((item, i) => ({
+        label: item.label ?? item.nodeId.slice(0, 8),
+        onClick: () => navigateToSearchHistoryIndex(i),
+      })),
+    [searchHistoryStack, navigateToSearchHistoryIndex]
+  );
+
+  const activeBreadcrumb = useMemo(
+    () =>
+      currentIndex >= 0 && currentIndex < searchHistoryStack.length
+        ? (searchHistoryStack[currentIndex]?.label ??
+          searchHistoryStack[currentIndex]?.nodeId.slice(0, 8) ??
+          null)
+        : null,
+    [currentIndex, searchHistoryStack]
+  );
+
+  const searchAroundNode = useMemo(():
+    | ((nodeUuid: string) => void)
+    | undefined => {
+    if (!handleSearchAroundNode) return undefined;
+    return (nodeUuid: string) => {
+      handleSearchAroundNode(nodeUuid);
+      pushSearchAround(
+        nodeUuid,
+        selectedNode?.name ?? selectedNode?.label ?? undefined
+      );
+    };
+  }, [handleSearchAroundNode, pushSearchAround, selectedNode?.name, selectedNode?.label]);
+
   const value = useMemo<GraphSearchHistoryContextValue>(
     () => ({
       searchHistoryStack,
@@ -87,6 +170,9 @@ export function GraphSearchHistoryProvider({
       pushSearchAround,
       resetSearchHistory,
       navigateToSearchHistoryIndex,
+      searchHistoryBreadcrumbs,
+      activeBreadcrumb,
+      searchAroundNode,
     }),
     [
       searchHistoryStack,
@@ -94,6 +180,9 @@ export function GraphSearchHistoryProvider({
       pushSearchAround,
       resetSearchHistory,
       navigateToSearchHistoryIndex,
+      searchHistoryBreadcrumbs,
+      activeBreadcrumb,
+      searchAroundNode,
     ]
   );
 

@@ -17,6 +17,8 @@ import type { PanelAction, SelectionAction } from "@/hooks";
 import { PanelActionType, SelectionActionType } from "@/hooks";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 
+import { useGraphSearchHistoryOptional } from "@/components/graph-explorer/graph-context";
+
 import {
   elementToWikiEdge,
   elementToWikiNode,
@@ -67,9 +69,13 @@ export function WikiPanelProvider({
   panel,
   dispatchSelection,
   dispatchPanel,
-  onSearchAroundNode,
+  onSearchAroundNode: onSearchAroundNodeProp,
   onBeforeNodeSelect,
 }: WikiPanelProviderProps) {
+  const historyCtx = useGraphSearchHistoryOptional();
+  const onSearchAroundNode =
+    onSearchAroundNodeProp ?? historyCtx?.searchAroundNode;
+
   const [lastWikiDisplay, setLastWikiDisplay] = useState<{
     nodeId: string | null;
     edgeId: string | null;

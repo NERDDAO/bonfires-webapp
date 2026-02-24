@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 
-import type { AgentInfo, BonfireInfo } from "@/types";
-
+import { useAgentSelectionContext } from "@/components/graph-explorer/agent-selection-context";
+import { useGraphSearchHistoryOptional } from "@/components/graph-explorer/graph-context";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
-
 import { cn } from "@/lib/cn";
 
+import { useGraphExplorerPanel } from "./panel-context";
 import { SearchHistoryBreadcrumbs } from "./search-history-breadcrumbs";
 import {
   contentClass,
@@ -18,55 +18,30 @@ import {
   width,
 } from "./select-panel-constants";
 
-export interface PanelHeaderProps {
-  hideGraphSelector: boolean;
-  loading: { bonfires: boolean; agents: boolean };
-  error: { bonfires?: string; agents?: string };
-  availableBonfires: BonfireInfo[];
-  availableAgents: AgentInfo[];
-  selectedBonfireId: string | null;
-  selectedAgentId: string | null;
-  onSelectBonfire: (id: string | null) => void;
-  onSelectAgent: (id: string | null) => void;
-  searchQuery: string;
-  onSearchQueryChange: (value: string) => void;
-  onSearch: () => void;
-  isSearching: boolean;
-  searchHistoryBreadcrumbs: { label: string; onClick: () => void }[];
-  /** Label of the currently active breadcrumb (from search history). When provided, used for highlighting. */
-  activeBreadcrumb?: string | null;
-}
+export function PanelHeader() {
+  const agentSelection = useAgentSelectionContext();
+  const panel = useGraphExplorerPanel();
+  const historyCtx = useGraphSearchHistoryOptional();
+  const searchHistoryBreadcrumbs = historyCtx?.searchHistoryBreadcrumbs ?? [];
+  const activeBreadcrumbProp = historyCtx?.activeBreadcrumb ?? null;
 
-export function PanelHeader({
-  hideGraphSelector,
-  loading,
-  error,
-  availableBonfires,
-  availableAgents,
-  selectedBonfireId,
-  selectedAgentId,
-  onSelectBonfire,
-  onSelectAgent,
-  searchQuery,
-  onSearchQueryChange,
-  onSearch,
-  isSearching,
-  searchHistoryBreadcrumbs,
-  activeBreadcrumb: activeBreadcrumbProp,
-}: PanelHeaderProps) {
   const selectedBonfire =
-    availableBonfires.find((b) => b.id === selectedBonfireId) ?? null;
+    agentSelection.availableBonfires.find(
+      (b) => b.id === agentSelection.selectedBonfireId
+    ) ?? null;
   const selectedAgent =
-    availableAgents.find((a) => a.id === selectedAgentId) ?? null;
-  const hasSearchText = searchQuery.trim().length > 0;
+    agentSelection.availableAgents.find(
+      (a) => a.id === agentSelection.selectedAgentId
+    ) ?? null;
+  const hasSearchText = panel.searchQuery.trim().length > 0;
 
   function handleSearchKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") onSearch();
+    if (e.key === "Enter") panel.onSearch();
   }
 
   const activeBreadcrumb =
     activeBreadcrumbProp ??
-    searchHistoryBreadcrumbs.find((crumb) => crumb.label === searchQuery)
+    searchHistoryBreadcrumbs.find((crumb) => crumb.label === panel.searchQuery)
       ?.label ??
     null;
 
@@ -74,30 +49,32 @@ export function PanelHeader({
     <>
       <header
         className={cn(panelContainerClass, "mb-3 lg:mb-0 lg:mt-2")}
-        aria-label={hideGraphSelector ? "Search" : "Bonfire, agent and search"}
+        aria-label={
+          panel.hideGraphSelector ? "Search" : "Bonfire, agent and search"
+        }
       >
-        {!hideGraphSelector && (
+        {!panel.hideGraphSelector && (
           <div className="flex gap-4 flex-1 flex-col lg:flex-row mb-2">
             <div className="flex-1 flex flex-col">
               <label htmlFor="bonfire-select" className={labelClass}>
                 Bonfire
               </label>
-              {loading.bonfires ? (
+              {agentSelection.loading.bonfires ? (
                 <div className={skeletonClass} aria-hidden />
-              ) : error.bonfires ? (
+              ) : agentSelection.error.bonfires ? (
                 <div className={errorClass} role="alert">
-                  {error.bonfires}
+                  {agentSelection.error.bonfires}
                 </div>
               ) : (
                 <SelectDropdown
                   id="bonfire-select"
                   value={selectedBonfire?.id ?? null}
-                  options={availableBonfires.map((b) => ({
+                  options={agentSelection.availableBonfires.map((b) => ({
                     value: b.id,
                     label: b.name,
                   }))}
                   placeholder="Select a bonfire"
-                  onChange={onSelectBonfire}
+                  onChange={agentSelection.selectBonfire}
                   aria-label="Select bonfire"
                   className={width}
                   contentClassName={contentClass}
@@ -109,29 +86,32 @@ export function PanelHeader({
               <label htmlFor="agent-select" className={labelClass}>
                 Agent
               </label>
-              {loading.agents ? (
+              {agentSelection.loading.agents ? (
                 <div className={skeletonClass} aria-hidden />
-              ) : error.agents ? (
+              ) : selectedBonfire?.id && agentSelection.error.agents ? (
                 <div className={errorClass} role="alert">
-                  {error.agents}
+                  {agentSelection.error.agents}
                 </div>
               ) : (
                 <SelectDropdown
                   id="agent-select"
                   value={selectedAgent?.id ?? null}
-                  options={availableAgents.map((a) => ({
+                  options={agentSelection.availableAgents.map((a) => ({
                     value: a.id,
                     label: a.name || a.username || a.id,
                   }))}
                   placeholder={
-                    !selectedBonfireId
+                    !agentSelection.selectedBonfireId
                       ? "Select a bonfire first"
-                      : availableAgents.length === 0
+                      : agentSelection.availableAgents.length === 0
                         ? "No agents available"
                         : "Select an agent"
                   }
-                  onChange={onSelectAgent}
-                  disabled={!selectedBonfireId || availableAgents.length === 0}
+                  onChange={agentSelection.selectAgent}
+                  disabled={
+                    !agentSelection.selectedBonfireId ||
+                    agentSelection.availableAgents.length === 0
+                  }
                   aria-label="Select agent"
                   className={width}
                   contentClassName={contentClass}
@@ -147,8 +127,8 @@ export function PanelHeader({
           </label>
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
+            value={panel.searchQuery}
+            onChange={(e) => panel.onSearchQueryChange(e.target.value)}
             onKeyDown={handleSearchKeyDown}
             placeholder="Enter search query"
             className={cn(
@@ -162,8 +142,8 @@ export function PanelHeader({
           {hasSearchText && (
             <button
               type="button"
-              onClick={onSearch}
-              disabled={isSearching}
+              onClick={panel.onSearch}
+              disabled={panel.isSearching}
               className={cn(
                 "p-1.5 rounded-md text-sm font-medium shrink-0",
                 "bg-primary text-primary-content absolute right-2 bottom-2 flex items-center justify-center",
@@ -174,12 +154,14 @@ export function PanelHeader({
             >
               <Image
                 src={
-                  isSearching ? "/icons/loader-circle.svg" : "/icons/search.svg"
+                  panel.isSearching
+                    ? "/icons/loader-circle.svg"
+                    : "/icons/search.svg"
                 }
-                alt={isSearching ? "Searching" : "Search"}
+                alt={panel.isSearching ? "Searching" : "Search"}
                 width={16}
                 height={16}
-                className={cn(isSearching && "animate-spin")}
+                className={cn(panel.isSearching && "animate-spin")}
               />
             </button>
           )}

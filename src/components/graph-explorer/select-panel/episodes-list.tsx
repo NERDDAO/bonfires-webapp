@@ -1,9 +1,9 @@
-import { SkeletonLoader } from "@/components/common";
 import { EpisodeTimelineItem } from "@/components/graph/Timeline";
 
 import { cn } from "@/lib/cn";
 
 import { parseEpisodeContent } from "../wiki/wiki-panel-utils";
+import { useGraphExplorerPanelOptional } from "./panel-context";
 import { labelClass, panelContainerClass } from "./select-panel-constants";
 
 function formatEpisodeDate(dateStr?: string): string {
@@ -23,9 +23,10 @@ function formatEpisodeDate(dateStr?: string): string {
 }
 
 export interface EpisodesListProps {
-  episodes: EpisodeTimelineItem[];
-  selectedEpisodeId: string | null;
-  onEpisodeSelect: (episodeUuid: string) => void;
+  /** When provided (e.g. hero), used instead of context. When omitted, uses panel context. */
+  episodes?: EpisodeTimelineItem[];
+  selectedEpisodeId?: string | null;
+  onEpisodeSelect?: (episodeUuid: string) => void;
   episodesLoading?: boolean;
   /** When false, the "Recent Activity" heading is not rendered (e.g. when parent shows its own header). Default true. */
   showTitle?: boolean;
@@ -36,15 +37,23 @@ export interface EpisodesListProps {
 }
 
 export default function EpisodesList({
-  episodes,
-  selectedEpisodeId,
-  onEpisodeSelect,
-  episodesLoading = false,
+  episodes: episodesProp,
+  selectedEpisodeId: selectedEpisodeIdProp,
+  onEpisodeSelect: onEpisodeSelectProp,
+  episodesLoading: episodesLoadingProp = false,
   showTitle = true,
   className,
   variant = "default",
   scrollContainerRef,
-}: EpisodesListProps) {
+}: EpisodesListProps = {}) {
+  const panelCtx = useGraphExplorerPanelOptional();
+  const episodes = episodesProp ?? panelCtx?.episodes ?? [];
+  const selectedEpisodeId =
+    selectedEpisodeIdProp ?? panelCtx?.selectedEpisodeId ?? null;
+  const onEpisodeSelect =
+    onEpisodeSelectProp ?? panelCtx?.onEpisodeSelect ?? (() => {});
+  const episodesLoading =
+    episodesLoadingProp ?? panelCtx?.episodesLoading ?? false;
   // reverse sort episodes by date
   const sortedEpisodes = [...episodes]
     .sort((a, b) => {

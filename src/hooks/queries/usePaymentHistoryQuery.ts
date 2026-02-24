@@ -8,7 +8,6 @@
 
 import type {
   PaymentHistoryResponse,
-  PaymentTransaction,
   PaymentType,
 } from "@/types";
 import { useQuery } from "@tanstack/react-query";

@@ -10,7 +10,7 @@
  */
 import { useCallback, useMemo, useState } from "react";
 
-import type { AgentInfo, AgentSelectionState, BonfireInfo } from "@/types";
+import type { AgentInfo, AgentSelectionState } from "@/types";
 
 import { useAgentsQuery } from "./useAgentsQuery";
 import { useBonfiresQuery } from "./useBonfiresQuery";

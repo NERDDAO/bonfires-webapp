@@ -9,7 +9,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { PanelMode } from "@/hooks";
 import {
   Loader2,
-  Maximize2,
   MessageSquare,
   Minimize2,
   Send,

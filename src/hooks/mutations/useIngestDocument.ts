@@ -7,7 +7,7 @@
 "use client";
 
 import type {
-  DocumentInfo,
+  
   DocumentIngestRequest,
   DocumentIngestResponse,
 } from "@/types";

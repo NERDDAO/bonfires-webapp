@@ -5,9 +5,9 @@
  */
 "use client";
 
-import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { memo, useCallback, useEffect, useRef } from "react";
 
-import { ErrorMessage, LoadingSpinner } from "@/components/common";
+
 
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 

@@ -19,7 +19,6 @@ import {
   type PanelMode,
   SelectionActionType,
   useAgentSelection,
-  useBonfiresQuery,
   useGraphExpand,
   useGraphExplorerState,
   useGraphQuery,
@@ -34,7 +33,7 @@ import type {
   GraphStatePayload,
   NodeType,
 } from "@/types";
-import { RefreshCw, Search, Settings } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 
 import { ErrorMessage, LoadingSpinner, toast } from "@/components/common";
 import {

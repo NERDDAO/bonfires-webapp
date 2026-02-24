@@ -12,7 +12,6 @@ import { useSearchParams } from "next/navigation";
 
 import {
   SelectionActionType,
-  useAgentSelection,
   useGraphExpand,
   useGraphExplorerState,
   useGraphQuery,

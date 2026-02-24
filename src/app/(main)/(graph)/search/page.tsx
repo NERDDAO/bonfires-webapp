@@ -15,7 +15,7 @@ import { ArrowLeft, Search } from "lucide-react";
 import { LoadingSpinner } from "@/components/common";
 import type { NodeData } from "@/components/graph";
 
-import { cn } from "@/lib/cn";
+
 
 /**
  * Graph Search Page

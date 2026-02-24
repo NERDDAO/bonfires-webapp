@@ -10,7 +10,7 @@ import type { WikiMode } from "@/hooks";
 import { Maximize2, Minimize2, X } from "lucide-react";
 
 import { cn } from "@/lib/cn";
-import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
 
 /**
  * WikiPanel Component

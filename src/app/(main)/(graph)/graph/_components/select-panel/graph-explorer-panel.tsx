@@ -17,7 +17,7 @@ import EpisodesList from "./episodes-list";
 import { MobileBottomButtons } from "./mobile-bottom-buttons";
 import { PanelHeader } from "./panel-header";
 import { useGraphExplorerPanel } from "./panel-context";
-import type { GraphExplorerPanelProps } from "./panel-types";
+
 import { border } from "./select-panel-constants";
 
 // Re-export for consumers (e.g. episodes-list)

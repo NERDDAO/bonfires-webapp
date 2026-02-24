@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import * as d3 from "d3";
 
-import type { GraphElement } from "@/lib/utils/sigma-adapter";
+
 
 import { IconButton } from "../ui/icon-button";
 import {

@@ -4,7 +4,7 @@
  */
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {  useEffect, useRef, useState } from "react";
 
 import {
   ControlsContainer,
@@ -22,7 +22,6 @@ import { NodeCircleProgram } from "sigma/rendering";
 
 import {
   GraphThemeColors,
-  NODE_COLOR_DEFAULTS,
   SigmaSettings,
 } from "@/lib/utils/graph-theme";
 import type {

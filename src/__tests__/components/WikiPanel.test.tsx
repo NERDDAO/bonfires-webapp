@@ -3,7 +3,7 @@
  *
  * Ensures the wiki panel renders node actions correctly.
  */
-import type { WikiBreadcrumb, WikiMode } from "@/hooks";
+import type { WikiMode } from "@/hooks";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import { type WikiNodeData, WikiPanel } from "@/components/graph/WikiPanel";
@@ -14,7 +14,6 @@ const baseNode: WikiNodeData = {
   type: "entity",
 };
 
-const breadcrumbs: WikiBreadcrumb[] = [];
 const mode: WikiMode = "sidebar";
 
 describe("WikiPanel", () => {
@@ -30,13 +29,8 @@ describe("WikiPanel", () => {
         nodeRelationships={[]}
         enabled
         mode={mode}
-        breadcrumbs={breadcrumbs}
-        canGoBack={false}
-        canGoForward={false}
         onClose={jest.fn()}
         onToggleMode={jest.fn()}
-        onBack={jest.fn()}
-        onForward={jest.fn()}
         onNodeSelect={jest.fn()}
         onSearchAroundNode={onSearchAroundNode}
       />
@@ -58,13 +52,8 @@ describe("WikiPanel", () => {
         nodeRelationships={[]}
         enabled
         mode={mode}
-        breadcrumbs={breadcrumbs}
-        canGoBack={false}
-        canGoForward={false}
         onClose={jest.fn()}
         onToggleMode={jest.fn()}
-        onBack={jest.fn()}
-        onForward={jest.fn()}
         onNodeSelect={jest.fn()}
         onSearchAroundNode={jest.fn()}
       />

@@ -1,22 +1,16 @@
-/**
- * WikiPanelContainer
- * Draggable, minimizable, closeable wrapper for WikiPanel. Can be placed anywhere.
- */
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { Maximize2, Minimize2, X } from "lucide-react";
 
+import { useIsMobile } from "@/hooks/useMediaQuery";
+
 import { cn } from "@/lib/cn";
 
-import {
-  type WikiEdgeData,
-  type WikiNodeData,
-  WikiPanel,
-  type WikiPanelProps,
-} from "./wiki-panel";
 import { border } from "../select-panel/select-panel-constants";
+import { WikiPanel, type WikiPanelProps } from "./wiki-panel";
+import type { WikiEdgeData, WikiNodeData } from "./wiki-panel-utils";
 
 /**
  * WikiPanelContainer
@@ -26,8 +20,8 @@ import { border } from "../select-panel/select-panel-constants";
 export type { WikiNodeData, WikiEdgeData };
 
 const SCALE_FACTOR = 1.25;
-const DEFAULT_WIDTH = 360*SCALE_FACTOR;
-const DEFAULT_HEIGHT = 480*SCALE_FACTOR;
+const DEFAULT_WIDTH = 360 * SCALE_FACTOR;
+const DEFAULT_HEIGHT = 480 * SCALE_FACTOR;
 const MIN_LEFT = 0;
 const MIN_TOP = 0;
 
@@ -35,8 +29,6 @@ const MIN_TOP = 0;
 const OFFSET_RIGHT = 64;
 /** Offset from the top edge when placing the panel in the top-right corner (px). */
 const OFFSET_TOP = 94;
-
-const MOBILE_BREAKPOINT = 768;
 
 export interface WikiPanelContainerProps extends WikiPanelProps {
   /** Initial position (left in px). If not set, derived from viewport. */
@@ -68,11 +60,7 @@ export function WikiPanelContainer({
     top: defaultTop ?? OFFSET_TOP,
   }));
   const [internalMinimized, setInternalMinimized] = useState(false);
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined"
-      ? window.innerWidth < MOBILE_BREAKPOINT
-      : false
-  );
+  const isMobile = useIsMobile();
   const isControlled = controlledMinimized !== undefined;
   const isMinimized = isControlled ? controlledMinimized : internalMinimized;
   const dragRef = useRef<{
@@ -82,13 +70,6 @@ export function WikiPanelContainer({
     startTop: number;
   } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const handler = () => setIsMobile(mql.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
 
   // Default position on mount (for SSR-safe initial)
   useEffect(() => {

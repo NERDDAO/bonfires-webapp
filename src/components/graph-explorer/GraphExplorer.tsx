@@ -15,14 +15,11 @@ import React, {
 import { useSearchParams } from "next/navigation";
 
 import {
-  PanelActionType,
   SelectionActionType,
   useAgentSelection,
-  useBonfiresQuery,
   useGraphExpand,
   useGraphExplorerState,
   useGraphQuery,
-  useWikiNavigation,
 } from "@/hooks";
 import type {
   AgentLatestEpisodesResponse,
@@ -34,7 +31,7 @@ import type {
   NodeType,
 } from "@/types";
 
-import { ErrorMessage, LoadingSpinner, toast } from "@/components/common";
+import { ErrorMessage } from "@/components/common";
 
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
@@ -51,11 +48,10 @@ import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
 import GraphStatusOverlay from "./ui/graph-status-overlay";
-import {
-  type WikiEdgeData,
-  type WikiNodeData,
-  WikiPanelContainer,
-} from "./wiki/wiki-panel-container";
+import type { WikiNodeData } from "./wiki/wiki-panel-container";
+import { WikiPanelContainer } from "./wiki/wiki-panel-container";
+import type { WikiPanelContextValue } from "./wiki/wiki-panel-context";
+import { useWikiPanel, WikiPanelProvider } from "./wiki/wiki-panel-context";
 
 /**
  * GraphExplorer Component
@@ -300,6 +296,20 @@ function GraphExplorerSearchHistoryBridge({
 }
 
 /**
+ * Stable wrapper that consumes wiki context and renders via render prop.
+ * Defined at module level so it keeps a stable identity and the graph subtree
+ * does not unmount on parent re-renders (which was causing the center to jump).
+ */
+function GraphExplorerContentWithWiki({
+  children,
+}: {
+  children: (wiki: WikiPanelContextValue) => React.ReactNode;
+}) {
+  const wiki = useWikiPanel();
+  return <>{children(wiki)}</>;
+}
+
+/**
  * GraphExplorer - Main graph visualization component
  */
 export function GraphExplorer({
@@ -338,9 +348,6 @@ export function GraphExplorer({
   const { selection, panel, timeline } = state;
   const { dispatchSelection, dispatchPanel, dispatchTimeline } = actions;
 
-  // Wiki navigation
-  const wikiNav = useWikiNavigation();
-
   // Agent selection (when staticGraph is set, force IDs even if not in fetched lists)
   const agentSelection = useAgentSelection({
     initialBonfireId: urlBonfireId ?? undefined,
@@ -351,12 +358,6 @@ export function GraphExplorer({
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLimit, setSearchLimit] = useState(30);
-
-  // Last node/edge shown in wiki panel; kept when selection is cleared (e.g. background click) so panel content persists
-  const [lastWikiDisplay, setLastWikiDisplay] = useState<{
-    nodeId: string | null;
-    edgeId: string | null;
-  }>({ nodeId: null, edgeId: null });
 
   // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
   // Use "relationships" only as API fallback when center node is set and search is empty (do not put in search bar)
@@ -857,144 +858,6 @@ export function GraphExplorer({
     };
   }, [selection.selectedNodeId, elements]);
 
-  const selectedEdge = useMemo((): WikiEdgeData | null => {
-    if (!selection.selectedEdgeId) return null;
-    const element = elements.find(
-      (el) => el.data?.id === selection.selectedEdgeId
-    );
-    if (!element?.data || !element.data["source"] || !element.data["target"])
-      return null;
-    return {
-      id: element.data["id"] as string,
-      label: element.data["name"] as string | undefined,
-      relation_type:
-        (element.data["relationship"] as string | undefined) ??
-        (element.data["label"] as string | undefined),
-      source: element.data["source"] as string,
-      target: element.data["target"] as string,
-      strength: element.data["rel_strength"] as number | undefined,
-      fact: element.data["fact"] as string | undefined,
-      attributes: element.data["attributes"] as
-        | Record<string, unknown>
-        | undefined,
-    };
-  }, [selection.selectedEdgeId, elements]);
-
-  // IDs to show in wiki panel: current selection, or last selected when selection is cleared (e.g. background click)
-  const displayedNodeId = selection.selectedNodeId ?? lastWikiDisplay.nodeId;
-  const displayedEdgeId = selection.selectedEdgeId ?? lastWikiDisplay.edgeId;
-
-  // Displayed node/edge data for wiki panel (persists when selection is cleared)
-  const displayedNode = useMemo((): WikiNodeData | null => {
-    if (!displayedNodeId) return null;
-    const element = elements.find(
-      (el) =>
-        el.data?.id === displayedNodeId ||
-        el.data?.id === `n:${displayedNodeId}`
-    );
-    if (!element?.data) return null;
-    return {
-      uuid: (element.data["id"] as string).replace(/^n:/, ""),
-      name:
-        (element.data["label"] as string) || (element.data["name"] as string),
-      label: element.data["label"] as string | undefined,
-      type: element.data["node_type"] as "episode" | "entity" | undefined,
-      node_type: element.data["node_type"] as "episode" | "entity" | undefined,
-      summary: element.data["summary"] as string | undefined,
-      content: element.data["content"] as string | undefined,
-      valid_at: element.data["valid_at"] as string | undefined,
-      attributes: element.data["attributes"] as
-        | Record<string, unknown>
-        | undefined,
-      labels: element.data["labels"] as string[] | undefined,
-    };
-  }, [displayedNodeId, elements]);
-
-  const displayedEdge = useMemo((): WikiEdgeData | null => {
-    if (!displayedEdgeId) return null;
-    const element = elements.find((el) => el.data?.id === displayedEdgeId);
-    if (!element?.data || !element.data["source"] || !element.data["target"])
-      return null;
-    return {
-      id: element.data["id"] as string,
-      label: element.data["name"] as string | undefined,
-      relation_type:
-        (element.data["relationship"] as string | undefined) ??
-        (element.data["label"] as string | undefined),
-      source: element.data["source"] as string,
-      target: element.data["target"] as string,
-      strength: element.data["rel_strength"] as number | undefined,
-      fact: element.data["fact"] as string | undefined,
-      attributes: element.data["attributes"] as
-        | Record<string, unknown>
-        | undefined,
-    };
-  }, [displayedEdgeId, elements]);
-
-  // Get node relationships (for selected node, used by wiki panel)
-  const nodeRelationships = useMemo((): WikiEdgeData[] => {
-    if (!selection.selectedNodeId) return [];
-    const nodeId = selection.selectedNodeId.replace(/^n:/, "");
-    return elements
-      .filter(
-        (el) =>
-          el.data?.source &&
-          el.data?.target &&
-          (el.data.source.includes(nodeId) || el.data.target.includes(nodeId))
-      )
-      .map((el) => ({
-        id: el.data!.id,
-        label: el.data!.name as string | undefined,
-        relation_type:
-          (el.data!.relationship as string | undefined) ??
-          (el.data!.label as string | undefined),
-        source: el.data!.source!,
-        target: el.data!.target!,
-        fact: el.data!["fact"] as string | undefined,
-      }));
-  }, [selection.selectedNodeId, elements]);
-
-  // Node relationships for displayed node (so wiki panel keeps showing them when selection is cleared)
-  const displayedNodeRelationships = useMemo((): WikiEdgeData[] => {
-    if (!displayedNodeId) return [];
-    const nodeId = displayedNodeId.replace(/^n:/, "");
-    return elements
-      .filter(
-        (el) =>
-          el.data?.source &&
-          el.data?.target &&
-          (el.data.source.includes(nodeId) || el.data.target.includes(nodeId))
-      )
-      .map((el) => ({
-        id: el.data!.id,
-        label: el.data!.name as string | undefined,
-        relation_type:
-          (el.data!.relationship as string | undefined) ??
-          (el.data!.label as string | undefined),
-        source: el.data!.source!,
-        target: el.data!.target!,
-        fact: el.data!["fact"] as string | undefined,
-      }));
-  }, [displayedNodeId, elements]);
-
-  // Map node id -> display title (name/label) for relationship targets
-  const getRelatedNodeTitle = useCallback(
-    (nodeId: string): string | undefined => {
-      const normalizedId = nodeId.replace(/^n:/, "");
-      const element = elements.find(
-        (el) =>
-          el.data?.node_type != null &&
-          (el.data?.id === normalizedId || el.data?.id === `n:${normalizedId}`)
-      );
-      if (!element?.data) return undefined;
-      const title =
-        (element.data.label as string | undefined) ??
-        (element.data.name as string | undefined);
-      return title ?? undefined;
-    },
-    [elements]
-  );
-
   // Only highlight nodes when there is an explicit selection; do not highlight center node on initial load.
   const highlightedNodeIds = useMemo(() => {
     const ids = new Set<string>();
@@ -1008,97 +871,9 @@ export function GraphExplorer({
   }, [selection.selectedNodeId, effectiveCenterNode]);
 
   // Handlers
-  const handleNodeClick = useCallback(
-    (nodeId: string) => {
-      if (!nodeId) {
-        dispatchSelection({ type: SelectionActionType.CLEAR_SELECTION });
-        setSelectedEpisodeId(null);
-        return;
-      }
-
-      setSelectedEpisodeId(null);
-
-      dispatchSelection({
-        type: SelectionActionType.SELECT_NODE,
-        nodeId,
-        userTriggered: true,
-      });
-      setLastWikiDisplay({ nodeId, edgeId: null });
-
-      // Update wiki navigation
-      const element = elements.find(
-        (el) => el.data?.id === nodeId || el.data?.id === `n:${nodeId}`
-      );
-      if (element?.data) {
-        const nodeType = element.data.node_type as
-          | "episode"
-          | "entity"
-          | undefined;
-        wikiNav.navigateTo({
-          type: nodeType || "entity",
-          id: nodeId.replace(/^n:/, ""),
-          label: element.data.label || element.data.name,
-        });
-      }
-
-      // Open wiki panel if minimized and expand so contents are visible
-      if (panel.wikiEnabled) {
-        if (panel.rightPanelMode === "none") {
-          dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
-        }
-        dispatchPanel({ type: PanelActionType.SET_WIKI_MODE, mode: "full" });
-        dispatchPanel({
-          type: PanelActionType.SET_WIKI_MINIMIZED,
-          minimized: false,
-        });
-      }
-    },
-    [
-      dispatchSelection,
-      dispatchPanel,
-      elements,
-      panel.wikiEnabled,
-      panel.rightPanelMode,
-      wikiNav,
-    ]
-  );
-
-  const handleEdgeClick = useCallback(
-    (edgeId: string) => {
-      dispatchSelection({
-        type: SelectionActionType.SELECT_EDGE,
-        edgeId,
-        userTriggered: true,
-      });
-      setLastWikiDisplay({ nodeId: null, edgeId });
-
-      // Open wiki panel when closed so edge content is visible (same as node click)
-      if (panel.wikiEnabled) {
-        if (panel.rightPanelMode === "none") {
-          dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
-        }
-        dispatchPanel({ type: PanelActionType.SET_WIKI_MODE, mode: "full" });
-        dispatchPanel({
-          type: PanelActionType.SET_WIKI_MINIMIZED,
-          minimized: false,
-        });
-      }
-    },
-    [dispatchSelection, dispatchPanel, panel.wikiEnabled, panel.rightPanelMode]
-  );
-
   const handleBackgroundClick = useCallback(() => {
     dispatchSelection({ type: SelectionActionType.CLEAR_SELECTION });
   }, [dispatchSelection]);
-
-  const handleEpisodeSelect = useCallback(
-    (episodeUuid: string) => {
-      setSelectedEpisodeId(episodeUuid);
-      setPanToNodeId(episodeUuid);
-      handleNodeClick(`n:${episodeUuid}`);
-    },
-    [handleNodeClick]
-  );
 
   const [searchSubmitCount, setSearchSubmitCount] = useState(0);
 
@@ -1161,130 +936,115 @@ export function GraphExplorer({
           activeBreadcrumb,
           handleSearchAroundNode: wrappedSearchAround,
         }) => (
-          <div
-            className={cn("flex flex-col h-full overflow-hidden", className)}
+          <WikiPanelProvider
+            elements={elements}
+            selection={selection}
+            panel={panel}
+            dispatchSelection={dispatchSelection}
+            dispatchPanel={dispatchPanel}
+            onSearchAroundNode={wrappedSearchAround}
+            onBeforeNodeSelect={() => setSelectedEpisodeId(null)}
           >
-            {/* Header */}
-            <GraphExplorerPanel
-              availableBonfires={agentSelection.availableBonfires}
-              availableAgents={agentSelection.availableAgents}
-              selectedBonfireId={agentSelection.selectedBonfireId}
-              selectedAgentId={agentSelection.selectedAgentId}
-              loading={agentSelection.loading}
-              error={agentSelection.error}
-              onSelectBonfire={agentSelection.selectBonfire}
-              onSelectAgent={agentSelection.selectAgent}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
-              onSearch={handleSearch}
-              isSearching={isGraphLoading}
-              searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
-              activeBreadcrumb={activeBreadcrumb}
-              episodes={episodes}
-              selectedEpisodeId={selectedEpisodeId}
-              onEpisodeSelect={handleEpisodeSelect}
-              episodesLoading={isGraphLoading}
-              graphVisible={elements.length > 0}
-              onOpenChat={!embedded ? () => openChatRef.current?.() : undefined}
-              hideGraphSelector={!!staticGraph}
-            />
-
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden">
-              <h1 className="sr-only">Graph Explorer</h1>
-
-              {/* Graph and Panels */}
-              <div className="flex-1 flex overflow-hidden relative">
-                {/* Graph Visualization */}
-                <div className="flex-1 relative">
-                  {graphError && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
-                      <ErrorMessage
-                        message={
-                          (graphError as Error | null)?.message ??
-                          "Failed to load graph"
-                        }
-                        onRetry={handleRetry}
-                        variant="card"
+            <GraphExplorerContentWithWiki>
+              {(wiki) => {
+                const {
+                  handleNodeClick: _wikiH,
+                  handleEdgeClick: _wikiE,
+                  ...wikiPanelContainerProps
+                } = wiki;
+                const handleEpisodeSelect = (episodeUuid: string) => {
+                  setSelectedEpisodeId(episodeUuid);
+                  setPanToNodeId(episodeUuid);
+                  wiki.handleNodeClick(`n:${episodeUuid}`);
+                };
+                return (
+                  <div
+                    className={cn(
+                      "flex flex-col h-full overflow-hidden",
+                      className
+                    )}
+                  >
+                    <GraphExplorerPanel
+                      availableBonfires={agentSelection.availableBonfires}
+                      availableAgents={agentSelection.availableAgents}
+                      selectedBonfireId={agentSelection.selectedBonfireId}
+                      selectedAgentId={agentSelection.selectedAgentId}
+                      loading={agentSelection.loading}
+                      error={agentSelection.error}
+                      onSelectBonfire={agentSelection.selectBonfire}
+                      onSelectAgent={agentSelection.selectAgent}
+                      searchQuery={searchQuery}
+                      onSearchQueryChange={setSearchQuery}
+                      onSearch={handleSearch}
+                      isSearching={isGraphLoading}
+                      searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
+                      activeBreadcrumb={activeBreadcrumb}
+                      episodes={episodes}
+                      selectedEpisodeId={selectedEpisodeId}
+                      onEpisodeSelect={handleEpisodeSelect}
+                      episodesLoading={isGraphLoading}
+                      graphVisible={elements.length > 0}
+                      onOpenChat={
+                        !embedded
+                          ? () => openChatRef.current?.()
+                          : undefined
+                      }
+                      hideGraphSelector={!!staticGraph}
+                    />
+                    <main className="flex-1 flex flex-col overflow-hidden">
+                      <h1 className="sr-only">Graph Explorer</h1>
+                      <div className="flex-1 flex overflow-hidden relative">
+                        <div className="flex-1 relative">
+                          {graphError && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
+                              <ErrorMessage
+                                message={
+                                  (graphError as Error | null)?.message ??
+                                  "Failed to load graph"
+                                }
+                                onRetry={handleRetry}
+                                variant="card"
+                              />
+                            </div>
+                          )}
+                          <GraphWrapper
+                            elements={elements}
+                            loading={isGraphLoading}
+                            error={graphError}
+                            selectedNodeId={selection.selectedNodeId}
+                            selectedEdgeId={selection.selectedEdgeId}
+                            highlightedNodeIds={highlightedNodeIds}
+                            centerNodeId={effectiveCenterNode}
+                            panToNodeId={panToNodeId}
+                            onPanToNodeComplete={() => setPanToNodeId(null)}
+                            onNodeClick={wiki.handleNodeClick}
+                            onEdgeClick={wiki.handleEdgeClick}
+                            onBackgroundClick={handleBackgroundClick}
+                          />
+                        </div>
+                        {panel.rightPanelMode === "wiki" && (
+                          <WikiPanelContainer
+                            {...wikiPanelContainerProps}
+                          />
+                        )}
+                      </div>
+                    </main>
+                    {!embedded && (
+                      <Chat
+                        agentId={agentSelection.selectedAgentId ?? undefined}
+                        agentName={agentSelection.selectedAgent?.name}
+                        bonfireId={agentSelection.selectedBonfireId ?? undefined}
+                        getGraphContext={getChatGraphContext}
+                        onReady={({ openChat }) => {
+                          openChatRef.current = openChat;
+                        }}
                       />
-                    </div>
-                  )}
-
-                  <GraphWrapper
-                    elements={elements}
-                    loading={isGraphLoading}
-                    error={graphError}
-                    selectedNodeId={selection.selectedNodeId}
-                    selectedEdgeId={selection.selectedEdgeId}
-                    highlightedNodeIds={highlightedNodeIds}
-                    centerNodeId={effectiveCenterNode}
-                    panToNodeId={panToNodeId}
-                    onPanToNodeComplete={() => setPanToNodeId(null)}
-                    onNodeClick={handleNodeClick}
-                    onEdgeClick={handleEdgeClick}
-                    onBackgroundClick={handleBackgroundClick}
-                  />
-                </div>
-
-                {/* Wiki Panel (draggable container) */}
-                {panel.rightPanelMode === "wiki" && (
-                  <WikiPanelContainer
-                    node={displayedNode}
-                    edge={displayedEdge}
-                    edgeSourceNode={null} // TODO: Implement
-                    edgeTargetNode={null} // TODO: Implement
-                    nodeRelationships={displayedNodeRelationships}
-                    enabled={panel.wikiEnabled}
-                    mode={panel.wikiMode}
-                    minimized={panel.wikiMinimized}
-                    onMinimizedChange={(minimized) =>
-                      dispatchPanel({
-                        type: PanelActionType.SET_WIKI_MINIMIZED,
-                        minimized,
-                      })
-                    }
-                    breadcrumbs={wikiNav.breadcrumbs}
-                    canGoBack={wikiNav.canGoBack}
-                    canGoForward={wikiNav.canGoForward}
-                    onClose={() => {
-                      setLastWikiDisplay({ nodeId: null, edgeId: null });
-                      dispatchSelection({
-                        type: SelectionActionType.CLEAR_SELECTION,
-                      });
-                      dispatchPanel({
-                        type: PanelActionType.SET_PANEL_MODE,
-                        mode: "none",
-                      });
-                    }}
-                    onToggleMode={() =>
-                      dispatchPanel({
-                        type: PanelActionType.SET_WIKI_MODE,
-                        mode: panel.wikiMode === "sidebar" ? "full" : "sidebar",
-                      })
-                    }
-                    onBack={wikiNav.back}
-                    onForward={wikiNav.forward}
-                    onNodeSelect={handleNodeClick}
-                    onSearchAroundNode={wrappedSearchAround}
-                    getRelatedNodeTitle={getRelatedNodeTitle}
-                  />
-                )}
-              </div>
-            </main>
-
-            {/* Chat Panel */}
-            {!embedded && (
-              <Chat
-                agentId={agentSelection.selectedAgentId ?? undefined}
-                agentName={agentSelection.selectedAgent?.name}
-                bonfireId={agentSelection.selectedBonfireId ?? undefined}
-                getGraphContext={getChatGraphContext}
-                onReady={({ openChat }) => {
-                  openChatRef.current = openChat;
-                }}
-              />
-            )}
-          </div>
+                    )}
+                  </div>
+                );
+              }}
+            </GraphExplorerContentWithWiki>
+          </WikiPanelProvider>
         )}
       />
     </GraphSearchHistoryProvider>

@@ -24,7 +24,6 @@ import {
   useGraphExplorerState,
   useGraphQuery,
   useSendChatMessage,
-  useWikiNavigation,
 } from "@/hooks";
 import type {
   AgentLatestEpisodesResponse,
@@ -284,9 +283,6 @@ export function GraphExplorer({
   const { state, actions } = useGraphExplorerState();
   const { selection, panel, timeline } = state;
   const { dispatchSelection, dispatchPanel, dispatchTimeline } = actions;
-
-  // Wiki navigation
-  const wikiNav = useWikiNavigation();
 
   // Agent selection
   const agentSelection = useAgentSelection({
@@ -884,22 +880,6 @@ export function GraphExplorer({
         userTriggered: true,
       });
 
-      // Update wiki navigation
-      const element = elements.find(
-        (el) => el.data?.id === nodeId || el.data?.id === `n:${nodeId}`
-      );
-      if (element?.data) {
-        const nodeType = element.data.node_type as
-          | "episode"
-          | "entity"
-          | undefined;
-        wikiNav.navigateTo({
-          type: nodeType || "entity",
-          id: nodeId.replace(/^n:/, ""),
-          label: element.data.label || element.data.name,
-        });
-      }
-
       // Open wiki panel if enabled
       if (panel.wikiEnabled && panel.rightPanelMode === "none") {
         dispatchPanel({ type: PanelActionType.SET_PANEL_MODE, mode: "wiki" });
@@ -908,10 +888,8 @@ export function GraphExplorer({
     [
       dispatchSelection,
       dispatchPanel,
-      elements,
       panel.wikiEnabled,
       panel.rightPanelMode,
-      wikiNav,
     ]
   );
 
@@ -1268,10 +1246,7 @@ export function GraphExplorer({
                     nodeRelationships={nodeRelationships}
                     enabled={panel.wikiEnabled}
                     mode={panel.wikiMode}
-                    breadcrumbs={wikiNav.breadcrumbs}
                     searchHistoryBreadcrumbs={searchHistoryBreadcrumbs}
-                    canGoBack={wikiNav.canGoBack}
-                    canGoForward={wikiNav.canGoForward}
                     onClose={() => {
                       dispatchSelection({
                         type: SelectionActionType.CLEAR_SELECTION,
@@ -1287,8 +1262,6 @@ export function GraphExplorer({
                         mode: panel.wikiMode === "sidebar" ? "full" : "sidebar",
                       })
                     }
-                    onBack={wikiNav.back}
-                    onForward={wikiNav.forward}
                     onNodeSelect={handleNodeClick}
                     onSearchAroundNode={wrappedSearchAround}
                   />

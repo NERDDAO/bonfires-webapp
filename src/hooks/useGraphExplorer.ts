@@ -73,8 +73,8 @@ export enum TimelineActionType {
   SET_FALLBACK_CENTER = "SET_FALLBACK_CENTER",
 }
 
-// Selection actions
-type SelectionAction =
+// Selection actions (exported for wiki panel context)
+export type SelectionAction =
   | {
       type: SelectionActionType.SELECT_NODE;
       nodeId: string;
@@ -88,8 +88,8 @@ type SelectionAction =
   | { type: SelectionActionType.CLEAR_SELECTION }
   | { type: SelectionActionType.SET_AUTO_SELECTED; autoSelected: boolean };
 
-// Panel actions
-type PanelAction =
+// Panel actions (exported for wiki panel context)
+export type PanelAction =
   | { type: PanelActionType.SET_PANEL_MODE; mode: PanelMode }
   | { type: PanelActionType.SET_CHAT_OPEN; open: boolean }
   | { type: PanelActionType.SET_WIKI_ENABLED; enabled: boolean }

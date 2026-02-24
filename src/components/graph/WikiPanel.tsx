@@ -6,14 +6,8 @@
 
 import React from "react";
 
-import type { WikiBreadcrumb, WikiMode } from "@/hooks";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Maximize2,
-  Minimize2,
-  X,
-} from "lucide-react";
+import type { WikiMode } from "@/hooks";
+import { Maximize2, Minimize2, X } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
@@ -63,22 +57,12 @@ export interface WikiPanelProps {
   enabled: boolean;
   /** Panel display mode */
   mode: WikiMode;
-  /** Navigation breadcrumbs */
-  breadcrumbs: WikiBreadcrumb[];
   /** Search-around history as breadcrumbs (clickable to navigate to that center) */
   searchHistoryBreadcrumbs?: { label: string; onClick: () => void }[];
-  /** Whether back navigation is available */
-  canGoBack: boolean;
-  /** Whether forward navigation is available */
-  canGoForward: boolean;
   /** Callback to close the panel */
   onClose: () => void;
   /** Callback to toggle panel mode */
   onToggleMode: () => void;
-  /** Callback to go back */
-  onBack: () => void;
-  /** Callback to go forward */
-  onForward: () => void;
   /** Callback when a node is selected from wiki */
   onNodeSelect: (nodeId: string) => void;
   /** Callback to search around selected node */
@@ -110,14 +94,9 @@ export function WikiPanel({
   nodeRelationships,
   enabled,
   mode,
-  breadcrumbs,
   searchHistoryBreadcrumbs = [],
-  canGoBack,
-  canGoForward,
   onClose,
   onToggleMode,
-  onBack,
-  onForward,
   onNodeSelect,
   onSearchAroundNode,
   className,
@@ -344,26 +323,6 @@ export function WikiPanel({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-base-300">
         <div className="flex items-center gap-2 min-w-0">
-          {/* Navigation buttons */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onBack}
-              disabled={!canGoBack}
-              className="btn btn-ghost btn-xs btn-square"
-              aria-label="Go back"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onForward}
-              disabled={!canGoForward}
-              className="btn btn-ghost btn-xs btn-square"
-              aria-label="Go forward"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
           {/* Title */}
           <div className="flex items-center gap-2 min-w-0">
             <span
@@ -417,27 +376,6 @@ export function WikiPanel({
                   >
                     {crumb.label}
                   </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {/* Wiki navigation breadcrumbs */}
-      {breadcrumbs.length > 1 && (
-        <div className="px-4 py-2 border-b border-base-300 overflow-x-auto">
-          <div className="breadcrumbs text-xs">
-            <ul>
-              {breadcrumbs.map((crumb, idx) => (
-                <li key={idx}>
-                  {crumb.onClick ? (
-                    <button onClick={crumb.onClick} className="link">
-                      {crumb.label}
-                    </button>
-                  ) : (
-                    <span className="text-base-content/70">{crumb.label}</span>
-                  )}
                 </li>
               ))}
             </ul>

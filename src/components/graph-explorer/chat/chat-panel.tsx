@@ -5,18 +5,17 @@
  */
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { MessageSquare } from "lucide-react";
 
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/cn";
 
 import { border } from "../select-panel/select-panel-constants";
 import { useChat } from "./chat-context";
 import { ChatInput } from "./chat-input";
 import { ChatMessageList } from "./chat-message-list";
-
-const MOBILE_BREAKPOINT = 768;
 
 /**
  * ChatPanel - Agent chat interface
@@ -38,19 +37,8 @@ export function ChatPanel() {
   } = useChat();
 
   const [inputValue, setInputValue] = useState("");
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined"
-      ? window.innerWidth < MOBILE_BREAKPOINT
-      : false
-  );
+  const isMobile = useIsMobile();
   const isExpanded = mode === "chat";
-
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const handler = () => setIsMobile(mql.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
 
   const handleSend = useCallback(async () => {
     const trimmedValue = inputValue.trim();

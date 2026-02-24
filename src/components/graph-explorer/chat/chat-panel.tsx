@@ -1,40 +1,42 @@
 /**
  * ChatPanel - Agent chat interface
  * Composes header, message list, error banner, and input.
+ * Reads all state and handlers from ChatContext (must be inside ChatProvider).
  */
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 
+import { MessageSquare } from "lucide-react";
+
 import { cn } from "@/lib/cn";
 
-import { ChatErrorBanner } from "./chat-error-banner";
+import { border } from "../select-panel/select-panel-constants";
+import { useChat } from "./chat-context";
 import { ChatInput } from "./chat-input";
 import { ChatMessageList } from "./chat-message-list";
-import { ChatPanelCollapsed } from "./chat-panel-collapsed";
-import { ChatPanelHeader } from "./chat-panel-header";
-import type { ChatPanelProps } from "./types";
-import { border } from "../select-panel/select-panel-constants";
+
+const MOBILE_BREAKPOINT = 768;
 
 /**
  * ChatPanel - Agent chat interface
  * Composes header, message list, error banner, and input.
+ * Reads all state and handlers from ChatContext (must be inside ChatProvider).
  */
 
-const MOBILE_BREAKPOINT = 768;
+export function ChatPanel() {
+  const {
+    agentId,
+    agentName,
+    messages,
+    isSending,
+    mode,
+    error,
+    sendMessage,
+    setMode,
+    clearError,
+  } = useChat();
 
-export function ChatPanel({
-  agentId,
-  agentName,
-  messages,
-  isSending,
-  mode,
-  error,
-  onSendMessage,
-  onModeChange,
-  onClearError,
-  className,
-}: ChatPanelProps) {
   const [inputValue, setInputValue] = useState("");
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined"
@@ -56,15 +58,15 @@ export function ChatPanel({
 
     setInputValue("");
     try {
-      await onSendMessage(trimmedValue);
+      await sendMessage(trimmedValue);
     } catch {
-      // Error is handled by parent
+      // Error is handled by context / toast
     }
-  }, [inputValue, isSending, agentId, onSendMessage]);
+  }, [inputValue, isSending, agentId, sendMessage]);
 
   const handleClose = useCallback(() => {
-    onModeChange("none");
-  }, [onModeChange]);
+    setMode("none");
+  }, [setMode]);
 
   if (mode === "none") {
     return null;
@@ -73,23 +75,49 @@ export function ChatPanel({
   const panelContent = (
     <>
       {!isExpanded && (
-        <ChatPanelCollapsed onOpen={() => onModeChange("chat")} />
+        <button
+          onClick={() => setMode("chat")}
+          className="w-full h-full flex items-center justify-center rounded-lg bg-primary text-primary-content hover:bg-primary/90 transition-colors"
+          aria-label="Open chat"
+        >
+          <MessageSquare className="w-5 h-5" />
+        </button>
       )}
 
       {isExpanded && (
         <>
-          <ChatPanelHeader
-            agentName={agentName}
-            agentId={agentId}
-            onClose={handleClose}
-          />
+          <div className="flex items-center justify-between p-3 border-b border-[#333333] shrink-0">
+            <span className="font-medium text-sm text-white truncate min-w-0">
+              {agentName || "Agent Chat"}
+            </span>
+            <button
+              onClick={handleClose}
+              className="btn btn-ghost btn-xs btn-square text-white/80 hover:text-white hover:bg-white/10 shrink-0"
+              aria-label="Close chat"
+            >
+              —
+            </button>
+          </div>
+
           <ChatMessageList
             agentId={agentId}
             messages={messages}
             isSending={isSending}
-            onSendMessage={onSendMessage}
+            onSendMessage={sendMessage}
           />
-          {error && <ChatErrorBanner error={error} onDismiss={onClearError} />}
+          {error && (
+            <div className="px-3 py-2 bg-error/10 border-t border-error/20">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-error">{error}</span>
+                <button
+                  onClick={clearError}
+                  className="text-xs text-error hover:underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
           <ChatInput
             value={inputValue}
             onChange={setInputValue}
@@ -116,8 +144,7 @@ export function ChatPanel({
           className={cn(
             "flex flex-col overflow-hidden",
             border,
-            "shadow-xl w-full max-w-[calc(100vw-2rem)] h-full",
-            className
+            "shadow-xl w-full max-w-[calc(100vw-2rem)] h-full"
           )}
           onClick={(e) => e.stopPropagation()}
         >
@@ -135,8 +162,7 @@ export function ChatPanel({
         border,
         "shadow-xl",
         isExpanded ? "w-96 h-[500px]" : "w-12 h-12",
-        "transition-all duration-200",
-        className
+        "transition-all duration-200"
       )}
     >
       {panelContent}

@@ -22,7 +22,6 @@ import {
   useGraphExpand,
   useGraphExplorerState,
   useGraphQuery,
-  useSendChatMessage,
   useWikiNavigation,
 } from "@/hooks";
 import type {
@@ -43,7 +42,7 @@ import { synthesizeEpisodicEdges } from "@/lib/utils/graph-utils";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import { useWalletAccount } from "@/lib/wallet/e2e";
 
-import { type ChatMessage, ChatPanel, FloatingChatButton } from "./chat";
+import Chat from "./chat";
 import {
   GraphSearchHistoryProvider,
   useGraphSearchHistory,
@@ -57,6 +56,11 @@ import {
   type WikiNodeData,
   WikiPanelContainer,
 } from "./wiki/wiki-panel-container";
+
+/**
+ * GraphExplorer Component
+ * Main orchestrating component for graph visualization, wiki, chat, and timeline features
+ */
 
 /**
  * GraphExplorer Component
@@ -379,10 +383,6 @@ export function GraphExplorer({
   const expandCenterRef = useRef<string | null>(null);
   const { expand } = useGraphExpand();
   const nodeCacheRef = useRef<Map<string, GraphElement["data"]>>(new Map());
-
-  // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const chatMutation = useSendChatMessage();
 
   // Mock episodes for timeline (will be populated from graph data)
   const [episodes, setEpisodes] = useState<EpisodeTimelineItem[]>([]);
@@ -881,10 +881,8 @@ export function GraphExplorer({
   }, [selection.selectedEdgeId, elements]);
 
   // IDs to show in wiki panel: current selection, or last selected when selection is cleared (e.g. background click)
-  const displayedNodeId =
-    selection.selectedNodeId ?? lastWikiDisplay.nodeId;
-  const displayedEdgeId =
-    selection.selectedEdgeId ?? lastWikiDisplay.edgeId;
+  const displayedNodeId = selection.selectedNodeId ?? lastWikiDisplay.nodeId;
+  const displayedEdgeId = selection.selectedEdgeId ?? lastWikiDisplay.edgeId;
 
   // Displayed node/edge data for wiki panel (persists when selection is cleared)
   const displayedNode = useMemo((): WikiNodeData | null => {
@@ -914,9 +912,7 @@ export function GraphExplorer({
 
   const displayedEdge = useMemo((): WikiEdgeData | null => {
     if (!displayedEdgeId) return null;
-    const element = elements.find(
-      (el) => el.data?.id === displayedEdgeId
-    );
+    const element = elements.find((el) => el.data?.id === displayedEdgeId);
     if (!element?.data || !element.data["source"] || !element.data["target"])
       return null;
     return {
@@ -1128,62 +1124,16 @@ export function GraphExplorer({
     setEffectiveCenterNode(nodeId);
   }, []);
 
-  const handleSendChatMessage = useCallback(
-    async (content: string) => {
-      if (!agentSelection.selectedAgentId) {
-        throw new Error("No agent selected");
-      }
+  const getChatGraphContext = useCallback(() => {
+    const centerNodeId =
+      selection.selectedNodeId ?? effectiveCenterNode ?? null;
+    return {
+      centerNodeUuid: centerNodeId ? normalizeNodeId(centerNodeId) : null,
+      graphState: buildGraphStatePayload(elements, centerNodeId),
+    };
+  }, [selection.selectedNodeId, effectiveCenterNode, elements]);
 
-      const userMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: "user",
-        content,
-        timestamp: new Date().toISOString(),
-      };
-
-      setChatMessages((prev) => [...prev, userMessage]);
-
-      try {
-        const centerNodeId =
-          selection.selectedNodeId ?? effectiveCenterNode ?? null;
-        const graphState = buildGraphStatePayload(elements, centerNodeId);
-        const response = await chatMutation.mutateAsync({
-          agentId: agentSelection.selectedAgentId,
-          message: content,
-          bonfireId: agentSelection.selectedBonfireId ?? undefined,
-          centerNodeUuid: graphState.centerNodeUuid,
-          graphMode: "static",
-          context: {
-            graphState,
-          },
-        });
-
-        const assistantMessage: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          content: response.reply ?? "No response",
-          timestamp: new Date().toISOString(),
-        };
-
-        setChatMessages((prev) => [...prev, assistantMessage]);
-      } catch (error) {
-        toast.error("Failed to send message");
-        throw error;
-      }
-    },
-    [
-      agentSelection.selectedAgentId,
-      agentSelection.selectedBonfireId,
-      chatMutation,
-    ]
-  );
-
-  const handleToggleChatPanel = useCallback(() => {
-    dispatchPanel({
-      type: PanelActionType.SET_CHAT_OPEN,
-      open: !panel.chatOpen,
-    });
-  }, [panel.chatOpen, dispatchPanel]);
+  const openChatRef = useRef<() => void>(() => {});
 
   const handleRetry = useCallback(() => {
     if (shouldRunGraphQuery) {
@@ -1235,7 +1185,7 @@ export function GraphExplorer({
               onEpisodeSelect={handleEpisodeSelect}
               episodesLoading={isGraphLoading}
               graphVisible={elements.length > 0}
-              onOpenChat={handleToggleChatPanel}
+              onOpenChat={!embedded ? () => openChatRef.current?.() : undefined}
               hideGraphSelector={!!staticGraph}
             />
 
@@ -1324,29 +1274,15 @@ export function GraphExplorer({
 
             {/* Chat Panel */}
             {!embedded && (
-              <>
-                <ChatPanel
-                  agentId={agentSelection.selectedAgentId ?? undefined}
-                  agentName={agentSelection.selectedAgent?.name}
-                  messages={chatMessages}
-                  isSending={chatMutation.isPending}
-                  mode={panel.chatOpen ? "chat" : "none"}
-                  error={chatMutation.error?.message}
-                  onSendMessage={handleSendChatMessage}
-                  onModeChange={(mode) =>
-                    dispatchPanel({
-                      type: PanelActionType.SET_CHAT_OPEN,
-                      open: mode === "chat",
-                    })
-                  }
-                  onClearError={() => chatMutation.reset()}
-                />
-
-                <FloatingChatButton
-                  mode={panel.chatOpen ? "chat" : "none"}
-                  onToggle={handleToggleChatPanel}
-                />
-              </>
+              <Chat
+                agentId={agentSelection.selectedAgentId ?? undefined}
+                agentName={agentSelection.selectedAgent?.name}
+                bonfireId={agentSelection.selectedBonfireId ?? undefined}
+                getGraphContext={getChatGraphContext}
+                onReady={({ openChat }) => {
+                  openChatRef.current = openChat;
+                }}
+              />
             )}
           </div>
         )}

@@ -1,3 +1,15 @@
+"use client";
+
+import { useCallback, useEffect, useRef } from "react";
+
+import { PRESET_PROMPTS, PRESET_PROMPT_TITLE } from "@/content/graph-explorer";
+import { Loader2 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+
+import type { ChatMessage } from "./chat-context";
+import { ChatMessageBubble } from "./chat-message-bubble";
+
 /**
  * Chat messages list with empty states and typing indicator.
  *
@@ -8,17 +20,6 @@
  *    the **top** of the reply. The user then scrolls down manually.
  *  - If the user has scrolled up (reading history) → no auto-scroll.
  */
-"use client";
-
-import React, { useCallback, useEffect, useRef } from "react";
-
-import { Loader2 } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
-
-import { ChatMessageBubble } from "./chat-message-bubble";
-import type { ChatMessage } from "./types";
-import { PRESET_PROMPT_TITLE, PRESET_PROMPTS } from "@/content/graph-explorer";
 
 export interface ChatMessageListProps {
   agentId?: string;

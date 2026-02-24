@@ -1,24 +1,19 @@
-/**
- * Single chat message bubble
- * Styled like recent activity cards (episodes list).
- * Assistant messages are rendered as markdown; user messages stay plain text.
- */
 "use client";
-
-import React from "react";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { cn } from "@/lib/cn";
 
-import type { ChatMessage as ChatMessageType } from "./types";
+import type { ChatMessage } from "./chat-context";
 
-export interface ChatMessageBubbleProps {
-  message: ChatMessageType;
-}
+/**
+ * Single chat message bubble
+ * Styled like recent activity cards (episodes list).
+ * Assistant messages are rendered as markdown; user messages stay plain text.
+ */
 
-export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
   return (
     <div

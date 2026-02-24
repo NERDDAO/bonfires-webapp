@@ -1,5 +1,3 @@
-import { EpisodeTimelineItem } from "@/components/graph/Timeline";
-
 import { cn } from "@/lib/cn";
 
 import { parseEpisodeContent } from "../wiki/wiki-panel-utils";
@@ -34,6 +32,13 @@ export interface EpisodesListProps {
   variant?: "default" | "hero";
   /** Ref for the scrollable container (hero variant only). Used for scroll-linked animation. */
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+}
+
+export interface EpisodeTimelineItem {
+  uuid: string;
+  name?: string;
+  valid_at?: string;
+  content?: string;
 }
 
 export default function EpisodesList({
@@ -80,7 +85,8 @@ export default function EpisodesList({
         "h-full overflow-y-auto overscroll-x-none gap-0",
         variant === "hero"
           ? "max-h-[412px] lg:max-h-[calc(100dvh-8rem)] rounded-b-none border-b-0"
-          : "mt-3"
+          : "mt-3",
+        className
       )}
       aria-label="Episodes"
     >

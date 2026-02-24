@@ -10,7 +10,6 @@
  */
 import Image from "next/image";
 
-import { useGraphSearchHistoryOptional } from "@/app/(main)/(graph)/graph/_contexts/graph-context";
 import { cn } from "@/lib/cn";
 
 import EpisodesList from "./episodes-list";
@@ -29,9 +28,6 @@ export type {
 
 export function GraphExplorerPanel({ className }: { className?: string } = {}) {
   const panel = useGraphExplorerPanel();
-  const historyCtx = useGraphSearchHistoryOptional();
-  const searchHistoryBreadcrumbs = historyCtx?.searchHistoryBreadcrumbs ?? [];
-  const activeBreadcrumb = historyCtx?.activeBreadcrumb ?? null;
 
   const effectiveExpanded = !panel.graphVisible || !panel.isCollapsed;
   const showCollapseBadge = panel.graphVisible && effectiveExpanded;

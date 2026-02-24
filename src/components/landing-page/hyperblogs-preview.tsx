@@ -17,7 +17,6 @@ interface HyperBlogsPreviewProps {
 export default function HyperBlogsPreview({ bonfireId }: HyperBlogsPreviewProps) {
   const {
     title,
-    tooltipAlt,
     tooltipContent,
     description,
     cta,
@@ -27,7 +26,7 @@ export default function HyperBlogsPreview({ bonfireId }: HyperBlogsPreviewProps)
     viewMoreCtaTitle,
     viewMoreCtaHref,
   } = hyperblogsPreviewSectionCopy;
-  const { data, isLoading, error } = usePublicHyperBlogsFeed({ bonfireId, limit: 5 });
+  const { data } = usePublicHyperBlogsFeed({ bonfireId, limit: 5 });
 
   const [featuredBlogData, setFeaturedBlogData] = useState<
     HyperBlogInfo | undefined

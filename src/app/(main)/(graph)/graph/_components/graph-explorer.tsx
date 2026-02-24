@@ -16,10 +16,7 @@ import {
   useGraphExplorerState,
   useGraphQuery,
 } from "@/hooks";
-import type {
-  AgentLatestEpisodesResponse,
-  GraphData,
-} from "@/types";
+import type { AgentLatestEpisodesResponse, GraphData } from "@/types";
 
 import { ErrorMessage } from "@/components/common";
 
@@ -27,12 +24,14 @@ import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 
-import { AgentSelectionProvider, useAgentSelectionContext } from "../_contexts/agent-selection-context";
-import Chat from "./chat";
-import type { ChatGraphContext } from "../_contexts/chat-context";
 import {
-  buildGraphStatePayload,
-} from "./helpers/graph-state";
+  AgentSelectionProvider,
+  useAgentSelectionContext,
+} from "../_contexts/agent-selection-context";
+import type { ChatGraphContext } from "../_contexts/chat-context";
+import { GraphSearchHistoryProvider } from "../_contexts/graph-context";
+import Chat from "./chat";
+import GraphWrapper from "./graph/graph-wrapper";
 import {
   extractEpisodesFromGraphNodes,
   graphDataToElements,
@@ -40,15 +39,14 @@ import {
   parseHydrationResponse,
 } from "./helpers/graph-data";
 import { normalizeNodeId } from "./helpers/graph-normalize";
-import { GraphSearchHistoryProvider } from "../_contexts/graph-context";
-import GraphWrapper from "./graph/graph-wrapper";
+import { buildGraphStatePayload } from "./helpers/graph-state";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";
 import { GraphExplorerPanelProvider } from "./select-panel/panel-context";
 import GraphStatusOverlay from "./ui/graph-status-overlay";
 import type { WikiNodeData } from "./wiki/wiki-panel-container";
 import { WikiPanelContainer } from "./wiki/wiki-panel-container";
-import { useWikiPanel, WikiPanelProvider } from "./wiki/wiki-panel-context";
+import { WikiPanelProvider, useWikiPanel } from "./wiki/wiki-panel-context";
 
 /**
  * GraphExplorer Component
@@ -90,10 +88,10 @@ export function GraphExplorer({
   const searchParams = useSearchParams();
   const urlBonfireId = staticGraph
     ? staticGraph.staticBonfireId
-    : (searchParams.get("bonfireId") ?? initialBonfireId) ?? null;
+    : (searchParams.get("bonfireId") ?? initialBonfireId ?? null);
   const urlAgentId = staticGraph
     ? staticGraph.staticAgentId
-    : (searchParams.get("agentId") ?? initialAgentId) ?? null;
+    : (searchParams.get("agentId") ?? initialAgentId ?? null);
   const urlCenterNode = searchParams.get("centerNode");
   const urlSearchQuery = searchParams.get("q") ?? "";
 
@@ -104,13 +102,11 @@ export function GraphExplorer({
       forceInitialSelection={!!staticGraph}
     >
       <GraphExplorerContent
-        urlBonfireId={urlBonfireId}
         urlAgentId={urlAgentId}
         urlCenterNode={urlCenterNode}
         urlSearchQuery={urlSearchQuery}
         embedded={embedded}
         className={className}
-        staticGraph={staticGraph ?? null}
         hideGraphSelector={hideGraphSelector}
       />
     </AgentSelectionProvider>
@@ -129,7 +125,6 @@ function GraphExplorerBody({
   episodes,
   selectedEpisodeId,
   elements,
-  staticGraph,
   hideGraphSelector,
   embedded,
   openChatRef,
@@ -154,7 +149,6 @@ function GraphExplorerBody({
   episodes: EpisodeTimelineItem[];
   selectedEpisodeId: string | null;
   elements: GraphElement[];
-  staticGraph: StaticGraphConfig | null;
   hideGraphSelector: boolean;
   embedded: boolean;
   openChatRef: React.MutableRefObject<() => void>;
@@ -185,12 +179,7 @@ function GraphExplorerBody({
   );
 
   return (
-    <div
-      className={cn(
-        "flex flex-col h-full overflow-hidden",
-        className
-      )}
-    >
+    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       <GraphExplorerPanelProvider
         searchQuery={searchQuery}
         onSearchQueryChange={onSearchQueryChange}
@@ -202,9 +191,7 @@ function GraphExplorerBody({
         episodesLoading={isGraphLoading}
         graphVisible={elements.length > 0}
         hideGraphSelector={hideGraphSelector}
-        onOpenChat={
-          !embedded ? () => openChatRef.current?.() : undefined
-        }
+        onOpenChat={!embedded ? () => openChatRef.current?.() : undefined}
       >
         <GraphExplorerPanel />
       </GraphExplorerPanelProvider>
@@ -261,22 +248,18 @@ function GraphExplorerBody({
 
 /** Inner content that consumes agent selection from context. */
 function GraphExplorerContent({
-  urlBonfireId,
   urlAgentId,
   urlCenterNode,
   urlSearchQuery,
   embedded,
   className,
-  staticGraph,
   hideGraphSelector,
 }: {
-  urlBonfireId: string | null;
   urlAgentId: string | null;
   urlCenterNode: string | null;
   urlSearchQuery: string;
   embedded: boolean;
   className?: string;
-  staticGraph: StaticGraphConfig | null;
   hideGraphSelector: boolean;
 }) {
   const agentSelection = useAgentSelectionContext();
@@ -296,7 +279,7 @@ function GraphExplorerContent({
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchLimit, setSearchLimit] = useState(30);
+  const [searchLimit] = useState(30);
 
   // Graph data - using the graph query hook (effective = URL or in-page "Search around this node")
   // Use "relationships" only as API fallback when center node is set and search is empty (do not put in search bar)
@@ -608,7 +591,6 @@ function GraphExplorerContent({
           episodes={episodes}
           selectedEpisodeId={selectedEpisodeId}
           elements={elements}
-          staticGraph={staticGraph}
           hideGraphSelector={hideGraphSelector}
           embedded={embedded}
           openChatRef={openChatRef}

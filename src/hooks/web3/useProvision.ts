@@ -213,23 +213,11 @@ export function useProvision(): UseProvisionReturn {
         throw new Error(errorMsg);
       }
 
-      const result = (await provisionResponse.json()) as {
-        bonfire_id: string;
-        agent_id: string;
-        erc8004_bonfire_id: number;
-        api_key_last4: string;
-        ipfs_uri: string;
-      };
+      const result = (await provisionResponse.json()) as ProvisionResult;
 
       setState({ step: "done", txHash });
 
-      return {
-        bonfireId: result.bonfire_id,
-        agentId: result.agent_id,
-        erc8004BonfireId: result.erc8004_bonfire_id,
-        apiKeyLast4: result.api_key_last4,
-        ipfsUri: result.ipfs_uri,
-      };
+      return result;
     },
     [address, isApproved, publicClient, writeApproval, writeProvision]
   );

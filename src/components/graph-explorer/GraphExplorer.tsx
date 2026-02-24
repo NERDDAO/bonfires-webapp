@@ -43,7 +43,6 @@ import { synthesizeEpisodicEdges } from "@/lib/utils/graph-utils";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import { useWalletAccount } from "@/lib/wallet/e2e";
 
-import { NodeContextMenu, type NodeData } from "./NodeContextMenu";
 import { type ChatMessage, ChatPanel, FloatingChatButton } from "./chat";
 import {
   GraphSearchHistoryProvider,
@@ -207,8 +206,6 @@ interface GraphExplorerProps {
   staticGraph?: StaticGraphConfig | null;
   /** Whether to run in embedded mode (limited interactions) */
   embedded?: boolean;
-  /** Callback when "Create Data Room" is clicked */
-  onCreateDataRoom?: (nodeData: NodeData, bonfireId: string) => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -306,7 +303,6 @@ export function GraphExplorer({
   initialAgentId,
   staticGraph,
   embedded = false,
-  onCreateDataRoom,
   className,
 }: GraphExplorerProps) {
   const searchParams = useSearchParams();
@@ -387,17 +383,6 @@ export function GraphExplorer({
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const chatMutation = useSendChatMessage();
-
-  // Context menu state
-  const [contextMenu, setContextMenu] = useState<{
-    visible: boolean;
-    position: { x: number; y: number };
-    nodeData: NodeData | null;
-  }>({
-    visible: false,
-    position: { x: 0, y: 0 },
-    nodeData: null,
-  });
 
   // Mock episodes for timeline (will be populated from graph data)
   const [episodes, setEpisodes] = useState<EpisodeTimelineItem[]>([]);
@@ -1143,45 +1128,6 @@ export function GraphExplorer({
     setEffectiveCenterNode(nodeId);
   }, []);
 
-  const handleContextMenu = useCallback(
-    (nodeData: NodeData, position: { x: number; y: number }) => {
-      if (embedded) return; // No context menu in embedded mode
-      setContextMenu({
-        visible: true,
-        position,
-        nodeData,
-      });
-    },
-    [embedded]
-  );
-
-  const handleExpandNode = useCallback((nodeData: NodeData) => {
-    // Trigger graph expansion
-    toast.info(`Expanding node: ${nodeData.label || nodeData.id}`);
-    // TODO: Implement node expansion
-  }, []);
-
-  const handleDeleteNode = useCallback((nodeData: NodeData) => {
-    // Remove node from graph
-    toast.info(`Removed: ${nodeData.label || nodeData.id}`);
-    // TODO: Implement node deletion
-  }, []);
-
-  const handleCreateDataRoom = useCallback(
-    (nodeData: NodeData) => {
-      if (!isWalletConnected) {
-        toast.warning("Connect your wallet to create a data room");
-        return;
-      }
-      if (!agentSelection.selectedBonfireId) {
-        toast.error("No bonfire selected");
-        return;
-      }
-      onCreateDataRoom?.(nodeData, agentSelection.selectedBonfireId);
-    },
-    [isWalletConnected, agentSelection.selectedBonfireId, onCreateDataRoom]
-  );
-
   const handleSendChatMessage = useCallback(
     async (content: string) => {
       if (!agentSelection.selectedAgentId) {
@@ -1402,22 +1348,6 @@ export function GraphExplorer({
                 />
               </>
             )}
-
-            {/* Context Menu */}
-            <NodeContextMenu
-              visible={contextMenu.visible}
-              position={contextMenu.position}
-              nodeData={contextMenu.nodeData ?? { id: "" }}
-              isWalletConnected={isWalletConnected}
-              onExpand={handleExpandNode}
-              onDelete={handleDeleteNode}
-              onCreateDataRoom={
-                onCreateDataRoom ? handleCreateDataRoom : undefined
-              }
-              onClose={() =>
-                setContextMenu((prev) => ({ ...prev, visible: false }))
-              }
-            />
           </div>
         )}
       />

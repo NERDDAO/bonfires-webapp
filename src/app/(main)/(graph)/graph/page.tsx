@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { siteCopy } from "@/content";
 import { useSubdomainBonfire } from "@/contexts";
 
-import { GraphExplorer } from "@/components/graph-explorer/GraphExplorer";
+import { GraphExplorer } from "@/app/(main)/(graph)/graph/_components/graph-explorer";
 
 function GraphExplorerContent() {
   const searchParams = useSearchParams();

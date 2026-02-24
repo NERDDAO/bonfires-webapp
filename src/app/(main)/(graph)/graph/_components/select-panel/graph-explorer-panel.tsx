@@ -10,7 +10,7 @@
  */
 import Image from "next/image";
 
-import { useGraphSearchHistoryOptional } from "@/components/graph-explorer/graph-context";
+import { useGraphSearchHistoryOptional } from "@/app/(main)/(graph)/graph/_contexts/graph-context";
 import { cn } from "@/lib/cn";
 
 import EpisodesList from "./episodes-list";

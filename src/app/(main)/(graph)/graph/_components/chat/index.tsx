@@ -2,8 +2,8 @@ import {
   ChatProvider,
   ChatProviderProps,
   useChat,
-} from "@/components/graph-explorer/chat/chat-context";
-import ChatPanel from "@/components/graph-explorer/chat/chat-panel";
+} from "@/app/(main)/(graph)/graph/_contexts/chat-context";
+import ChatPanel from "@/app/(main)/(graph)/graph/_components/chat/chat-panel";
 import { Button } from "@/components/ui/button";
 
 function ChatInner() {

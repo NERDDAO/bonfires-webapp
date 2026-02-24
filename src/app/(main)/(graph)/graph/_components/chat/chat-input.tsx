@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef } from "react";
 
 import { Send } from "lucide-react";
 
-import { IconButton } from "@/components/graph-explorer/ui/icon-button";
+import { IconButton } from "@/app/(main)/(graph)/graph/_components/ui/icon-button";
 
 /**
  * Chat input with textarea and send button.

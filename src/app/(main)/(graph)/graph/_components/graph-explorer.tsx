@@ -28,9 +28,9 @@ import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 
-import { AgentSelectionProvider, useAgentSelectionContext } from "./agent-selection-context";
+import { AgentSelectionProvider, useAgentSelectionContext } from "../_contexts/agent-selection-context";
 import Chat from "./chat";
-import type { ChatGraphContext } from "./chat/chat-context";
+import type { ChatGraphContext } from "../_contexts/chat-context";
 import {
   buildGraphStatePayload,
 } from "./helpers/graph-state";
@@ -41,7 +41,7 @@ import {
   parseHydrationResponse,
 } from "./helpers/graph-data";
 import { normalizeNodeId } from "./helpers/graph-normalize";
-import { GraphSearchHistoryProvider } from "./graph-context";
+import { GraphSearchHistoryProvider } from "../_contexts/graph-context";
 import GraphWrapper from "./graph/graph-wrapper";
 import { GraphExplorerPanel } from "./select-panel/graph-explorer-panel";
 import type { EpisodeTimelineItem } from "./select-panel/graph-explorer-panel";

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 
-import { useAgentSelectionContext } from "@/components/graph-explorer/agent-selection-context";
-import { useGraphSearchHistoryOptional } from "@/components/graph-explorer/graph-context";
+import { useAgentSelectionContext } from "@/app/(main)/(graph)/graph/_contexts/agent-selection-context";
+import { useGraphSearchHistoryOptional } from "@/app/(main)/(graph)/graph/_contexts/graph-context";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { cn } from "@/lib/cn";
 

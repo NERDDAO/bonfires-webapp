@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/cn";
 
 import { border } from "../select-panel/select-panel-constants";
-import { useChat } from "./chat-context";
+import { useChat } from "../../_contexts/chat-context";
 import { ChatInput } from "./chat-input";
 import { ChatMessageList } from "./chat-message-list";
 

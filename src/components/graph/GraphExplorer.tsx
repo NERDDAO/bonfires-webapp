@@ -40,7 +40,7 @@ import { ErrorMessage, LoadingSpinner, toast } from "@/components/common";
 import {
   GraphSearchHistoryProvider,
   useGraphSearchHistory,
-} from "@/components/graph-explorer/graph-context";
+} from "@/app/(main)/(graph)/graph/_contexts/graph-context";
 
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";

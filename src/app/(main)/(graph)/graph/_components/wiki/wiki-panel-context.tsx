@@ -17,7 +17,7 @@ import type { PanelAction, SelectionAction } from "@/hooks";
 import { PanelActionType, SelectionActionType } from "@/hooks";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 
-import { useGraphSearchHistoryOptional } from "@/components/graph-explorer/graph-context";
+import { useGraphSearchHistoryOptional } from "@/app/(main)/(graph)/graph/_contexts/graph-context";
 
 import {
   elementToWikiEdge,

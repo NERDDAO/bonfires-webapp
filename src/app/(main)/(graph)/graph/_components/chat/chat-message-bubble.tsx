@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 
 import { cn } from "@/lib/cn";
 
-import type { ChatMessage } from "./chat-context";
+import type { ChatMessage } from "../../_contexts/chat-context";
 
 /**
  * Single chat message bubble

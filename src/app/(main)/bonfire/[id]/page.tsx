@@ -18,9 +18,11 @@ import {
   useBonfireAgents,
   useBonfirePricing,
   usePurchaseAgent,
+  useValidateToken,
 } from "@/hooks/useAgentDeploy";
 import type { PurchaseAgentPayload, PurchaseAgentResult } from "@/hooks/useAgentDeploy";
 import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
+import { AgentDeployWizard } from "@/components/dashboard/AgentDeployWizard";
 
 type Platform = "web" | "telegram" | "discord";
 
@@ -40,10 +42,12 @@ async function fetchBonfireDetail(id: string): Promise<BonfireDetail> {
 
 function PurchaseForm({
   bonfireId,
+  bonfireName,
   pricePerEpisode,
   maxEpisodes,
 }: {
   bonfireId: string;
+  bonfireName: string;
   pricePerEpisode: string;
   maxEpisodes: number;
 }) {
@@ -55,6 +59,16 @@ function PurchaseForm({
   const [agentContext, setAgentContext] = useState("");
   const [episodes, setEpisodes] = useState(10);
   const [botToken, setBotToken] = useState("");
+  const [agentUsername, setAgentUsername] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [reportingChatId, setReportingChatId] = useState("");
+  const [reportingTopicId, setReportingTopicId] = useState("");
+  const [processReportingMessages, setProcessReportingMessages] = useState(false);
+  const [tokenValidation, setTokenValidation] = useState<{
+    valid: boolean;
+    username?: string;
+    error?: string;
+  } | null>(null);
 
   const [purchaseResult, setPurchaseResult] = useState<PurchaseAgentResult | null>(null);
   const [revealState, setRevealState] = useState<{
@@ -62,15 +76,19 @@ function PurchaseForm({
     apiKey?: string;
     error?: string;
   }>({ status: "idle" });
+  const [isAdvancedConfigOpen, setIsAdvancedConfigOpen] = useState(false);
 
   const { buildAndSignPaymentHeader, isLoading: isSigningPayment } = usePaymentHeader();
   const purchaseAgent = usePurchaseAgent();
+  const validateToken = useValidateToken();
+  const needsToken = platform === "telegram" || platform === "discord";
 
   const totalPrice = (parseFloat(pricePerEpisode) * episodes).toFixed(4);
 
   const handlePurchase = async () => {
+    const trimmedToken = botToken.trim();
     if (!agentName.trim() || !agentContext.trim()) return;
-    if ((platform === "telegram" || platform === "discord") && !botToken.trim()) return;
+    if (needsToken && !trimmedToken) return;
 
     const paymentHeader = await buildAndSignPaymentHeader(totalPrice);
     if (!paymentHeader) return;
@@ -82,8 +100,17 @@ function PurchaseForm({
       agent_name: agentName,
       agent_context: agentContext,
     };
-    if (platform === "telegram") payload.telegram_bot_token = botToken;
-    if (platform === "discord") payload.discord_bot_token = botToken;
+    if (agentUsername.trim()) payload.agent_username = agentUsername.trim();
+    if (timezone.trim()) payload.timezone = timezone.trim();
+    if (reportingChatId.trim()) {
+      payload.reporting_config = {
+        chat_id: reportingChatId.trim(),
+        ...(reportingTopicId.trim() ? { topic_id: reportingTopicId.trim() } : {}),
+        process_reporting_messages: processReportingMessages,
+      };
+    }
+    if (platform === "telegram") payload.telegram_bot_token = trimmedToken;
+    if (platform === "discord") payload.discord_bot_token = trimmedToken;
 
     purchaseAgent.mutate(
       { bonfireId, data: payload },
@@ -91,6 +118,16 @@ function PurchaseForm({
         onSuccess: (result) => setPurchaseResult(result),
       }
     );
+  };
+
+  const handleValidateToken = async () => {
+    const token = botToken.trim();
+    if (!token || !needsToken) return;
+    const result = await validateToken.mutateAsync({
+      platform,
+      token,
+    });
+    setTokenValidation(result);
   };
 
   const handleRevealApiKey = useCallback(async () => {
@@ -214,6 +251,26 @@ function PurchaseForm({
             Your bot will be online within 2 minutes.
           </div>
         )}
+
+        <div className="border-t border-base-content/10 pt-3 space-y-2">
+          <p className="text-sm text-base-content/70">
+            Need tools, MCP configuration, chat policies, or feature flags?
+          </p>
+          <button
+            className="btn btn-outline btn-sm w-full"
+            onClick={() => setIsAdvancedConfigOpen(true)}
+          >
+            Configure Advanced Settings
+          </button>
+        </div>
+
+        <AgentDeployWizard
+          bonfireId={bonfireId}
+          bonfireName={bonfireName}
+          isOpen={isAdvancedConfigOpen}
+          onClose={() => setIsAdvancedConfigOpen(false)}
+          editAgentId={purchaseResult.agent_id}
+        />
       </div>
     );
   }
@@ -230,7 +287,10 @@ function PurchaseForm({
             <button
               key={p}
               className={`btn btn-sm flex-1 ${platform === p ? "btn-primary" : "btn-outline"}`}
-              onClick={() => setPlatform(p)}
+              onClick={() => {
+                setPlatform(p);
+                setTokenValidation(null);
+              }}
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
@@ -267,20 +327,110 @@ function PurchaseForm({
       </div>
 
       {/* Bot token (conditional) */}
-      {(platform === "telegram" || platform === "discord") && (
+      {needsToken && (
         <div>
           <label className="label">
             <span className="label-text">
               {platform === "telegram" ? "Telegram" : "Discord"} Bot Token
             </span>
           </label>
-          <input
-            type="password"
-            className="input input-bordered w-full"
-            placeholder={`Enter your ${platform} bot token`}
-            value={botToken}
-            onChange={(e) => setBotToken(e.target.value)}
-          />
+          <div className="flex gap-2">
+            <input
+              type="password"
+              className="input input-bordered w-full"
+              placeholder={`Enter your ${platform} bot token`}
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+            />
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              onClick={handleValidateToken}
+              disabled={!botToken.trim() || validateToken.isPending}
+            >
+              {validateToken.isPending ? "Validating..." : "Validate"}
+            </button>
+          </div>
+          {tokenValidation && (
+            <p className={`text-xs mt-2 ${tokenValidation.valid ? "text-success" : "text-error"}`}>
+              {tokenValidation.valid
+                ? `Valid bot: @${tokenValidation.username ?? "verified"}`
+                : `Invalid token: ${tokenValidation.error ?? "validation failed"}`}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Messaging platform configuration */}
+      {needsToken && (
+        <div className="collapse collapse-arrow bg-base-200 rounded-lg">
+          <input type="checkbox" />
+          <div className="collapse-title text-sm font-medium">
+            Telegram/Discord Configuration (optional)
+          </div>
+          <div className="collapse-content space-y-3">
+            <div>
+              <label className="label">
+                <span className="label-text text-sm">Agent Username</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full"
+                placeholder="my_agent_username"
+                value={agentUsername}
+                onChange={(e) =>
+                  setAgentUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+                }
+              />
+            </div>
+            <div>
+              <label className="label">
+                <span className="label-text text-sm">Timezone</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full"
+                placeholder="America/New_York"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">
+                <span className="label-text text-sm">Reporting Chat/Channel ID</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full"
+                placeholder="Where reporting events should be sent"
+                value={reportingChatId}
+                onChange={(e) => setReportingChatId(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">
+                <span className="label-text text-sm">Reporting Topic ID (optional)</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full"
+                placeholder="Topic/thread ID within the reporting chat"
+                value={reportingTopicId}
+                onChange={(e) => setReportingTopicId(e.target.value)}
+              />
+            </div>
+            <label className="label cursor-pointer justify-start gap-2">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm"
+                checked={processReportingMessages}
+                onChange={(e) => setProcessReportingMessages(e.target.checked)}
+              />
+              <span className="label-text text-sm">
+                Process messages from reporting chat (shouldNotIgnore)
+              </span>
+            </label>
+          </div>
         </div>
       )}
 
@@ -317,10 +467,10 @@ function PurchaseForm({
           disabled={
             purchaseAgent.isPending ||
             isSigningPayment ||
+            validateToken.isPending ||
             !agentName.trim() ||
             !agentContext.trim() ||
-            ((platform === "telegram" || platform === "discord") &&
-              !botToken.trim())
+            (needsToken && !botToken.trim())
           }
         >
           {isSigningPayment
@@ -420,6 +570,7 @@ export default function BonfirePage() {
             <h2 className="card-title text-lg">Purchase Agent Slot</h2>
             <PurchaseForm
               bonfireId={id}
+              bonfireName={bonfire.name}
               pricePerEpisode={pricing!.price_per_episode!}
               maxEpisodes={pricing!.max_episodes_per_agent}
             />

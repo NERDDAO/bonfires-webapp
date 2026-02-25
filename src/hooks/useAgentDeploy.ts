@@ -244,6 +244,13 @@ export interface PurchaseAgentPayload {
   episodes_requested: number;
   agent_name: string;
   agent_context: string;
+  agent_username?: string;
+  timezone?: string;
+  reporting_config?: {
+    chat_id: string;
+    topic_id?: string;
+    process_reporting_messages?: boolean;
+  };
   telegram_bot_token?: string;
   discord_bot_token?: string;
 }

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const body = await request.json();
   return handleProxyRequest(`/bonfires/${bonfireId}/purchase-agent`, {
     method: "POST",
-    body: JSON.stringify(body),
+    body,
   });
 }
 

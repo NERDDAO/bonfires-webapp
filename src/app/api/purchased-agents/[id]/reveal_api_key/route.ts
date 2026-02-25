@@ -23,7 +23,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const body = await request.json();
   return handleProxyRequest(`/purchased-agents/${id}/reveal_api_key`, {
     method: "POST",
-    body: JSON.stringify(body),
+    body,
   });
 }
 

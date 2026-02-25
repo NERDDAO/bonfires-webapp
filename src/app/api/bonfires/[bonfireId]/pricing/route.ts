@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   const body = await request.json();
   return handleProxyRequest(`/bonfires/${bonfireId}/pricing`, {
     method: "PUT",
-    body: JSON.stringify(body),
+    body,
   });
 }
 

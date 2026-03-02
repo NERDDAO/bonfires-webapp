@@ -3,18 +3,16 @@
  *
  * Ensures the wiki panel renders node actions correctly.
  */
-import type { WikiMode } from "@/hooks";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import { type WikiNodeData, WikiPanel } from "@/components/graph/WikiPanel";
+import { WikiPanel } from "@/app/(main)/(graph)/graph/_components/wiki/wiki-panel";
+import type { WikiNodeData } from "@/app/(main)/(graph)/graph/_components/wiki/wiki-panel-utils";
 
 const baseNode: WikiNodeData = {
   uuid: "node-123",
   name: "Test Node",
   type: "entity",
 };
-
-const mode: WikiMode = "sidebar";
 
 describe("WikiPanel", () => {
   it("calls onSearchAroundNode when clicking the search action", () => {
@@ -24,13 +22,9 @@ describe("WikiPanel", () => {
       <WikiPanel
         node={baseNode}
         edge={null}
-        edgeSourceNode={null}
-        edgeTargetNode={null}
         nodeRelationships={[]}
         enabled
-        mode={mode}
         onClose={jest.fn()}
-        onToggleMode={jest.fn()}
         onNodeSelect={jest.fn()}
         onSearchAroundNode={onSearchAroundNode}
       />
@@ -47,13 +41,9 @@ describe("WikiPanel", () => {
       <WikiPanel
         node={null}
         edge={null}
-        edgeSourceNode={null}
-        edgeTargetNode={null}
         nodeRelationships={[]}
         enabled
-        mode={mode}
         onClose={jest.fn()}
-        onToggleMode={jest.fn()}
         onNodeSelect={jest.fn()}
         onSearchAroundNode={jest.fn()}
       />

@@ -35,7 +35,6 @@ const eslintConfig = [
         {
           "argsIgnorePattern": "^_",
           "varsIgnorePattern": "^_",
-          "enableAutofixRemoval": { "imports": true },
         },
       ],
 

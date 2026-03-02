@@ -15,6 +15,7 @@ import React, {
 } from "react";
 
 import type { PanelMode } from "@/hooks";
+import { MOBILE_BREAKPOINT_PX } from "@/hooks/useMediaQuery";
 import type { GraphStatePayload } from "@/types";
 import { useSendChatMessage } from "@/hooks";
 import { toast } from "@/components/common";
@@ -69,8 +70,18 @@ export function ChatProvider({
   onReady,
 }: ChatProviderProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const chatMutation = useSendChatMessage();
+
+  // Open chat by default on desktop only (closed on mobile/overlays)
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.innerWidth >= MOBILE_BREAKPOINT_PX
+    ) {
+      setIsOpen(true);
+    }
+  }, []);
 
   const mode: PanelMode = isOpen ? "chat" : "none";
   const error = chatMutation.error?.message ?? null;

@@ -14,7 +14,6 @@ import StaticGraph from "./ui/static-graph";
 export default function KnowledgeGraph() {
   const isMobile = useIsMobile();
   const sectionRef = useRef<HTMLDivElement>(null);
-  const spacerRef = useRef<HTMLDivElement>(null);
   const { title, subtitle, description, paragraphs, cta, ctaHref } =
     knowledgeGraphSectionCopy;
 

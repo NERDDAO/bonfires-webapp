@@ -3,7 +3,7 @@
 import Image from "next/image";
 
 import {
-  SignInButton,
+  
   useAuth,
   useClerk,
   useOrganization,

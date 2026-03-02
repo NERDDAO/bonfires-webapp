@@ -20,7 +20,6 @@ export default function DataroomFeed() {
 
   const {
     data,
-    isLoading,
     isError,
     error,
     fetchNextPage,

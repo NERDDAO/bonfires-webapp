@@ -25,6 +25,7 @@ const isProtectedRoute = createRouteMatcher([
  * Note: Bonfire-specific routes are NOT listed here - their access control
  * happens at the API route level based on the bonfire's is_public flag.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",

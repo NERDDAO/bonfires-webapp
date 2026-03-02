@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 
 import type { AgentLatestEpisodesResponse } from "@/types";
 
-import EpisodesList from "@/components/graph-explorer/select-panel/episodes-list";
-import type { EpisodeTimelineItem } from "@/components/graph-explorer/select-panel/panel-types";
+import EpisodesList from "@/app/(main)/(graph)/graph/_components/select-panel/episodes-list";
+import type { EpisodeTimelineItem } from "@/app/(main)/(graph)/graph/_components/select-panel/panel-types";
 
 import { apiClient } from "@/lib/api/client";
 

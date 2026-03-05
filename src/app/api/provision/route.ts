@@ -25,6 +25,7 @@ interface ProvisionRequestBody {
   agent_name?: string;
   description?: string;
   capabilities?: string[];
+  slug?: string;
 }
 
 interface BackendProvisionResponse {
@@ -35,6 +36,8 @@ interface BackendProvisionResponse {
   ipfs_uri: string;
   api_key_last4: string;
   agent_name: string;
+  clerk_org_id: string;
+  slug: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -64,15 +67,20 @@ export async function POST(request: NextRequest) {
     return createErrorResponse("Provisioning is not configured", 500);
   }
 
+  const proxyBody: Record<string, unknown> = {
+    tx_hash: body.tx_hash.trim(),
+    wallet_address: body.wallet_address.trim(),
+    agent_name: body.agent_name.trim(),
+    description: body.description.trim(),
+    capabilities: body.capabilities ?? [],
+  };
+  if (body.slug?.trim()) {
+    proxyBody["slug"] = body.slug.trim();
+  }
+
   const result = await proxyToBackend<BackendProvisionResponse>("/provision", {
     method: "POST",
-    body: {
-      tx_hash: body.tx_hash.trim(),
-      wallet_address: body.wallet_address.trim(),
-      agent_name: body.agent_name.trim(),
-      description: body.description.trim(),
-      capabilities: body.capabilities ?? [],
-    },
+    body: proxyBody,
     headers: { Authorization: `Bearer ${apiKey}` },
     includeAuth: false,
   });
@@ -92,6 +100,8 @@ export async function POST(request: NextRequest) {
     erc8004BonfireId: data.erc8004_bonfire_id,
     apiKeyLast4: data.api_key_last4,
     ipfsUri: data.ipfs_uri,
+    clerkOrgId: data.clerk_org_id,
+    slug: data.slug,
   };
 
   return createSuccessResponse(response);

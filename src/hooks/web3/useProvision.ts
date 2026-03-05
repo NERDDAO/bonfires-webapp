@@ -190,17 +190,22 @@ export function useProvision(): UseProvisionReturn {
       // ── Sub-step 4: POST /api/provision ───────────────────────────────
       setState({ step: "backend", txHash });
 
+      const provisionBody: Record<string, unknown> = {
+        tx_hash: txHash,
+        wallet_address: address,
+        agent_name: formData.agentName,
+        description: formData.description,
+        capabilities: formData.capabilities,
+        image: formData.image,
+      };
+      if (formData.slug) {
+        provisionBody["slug"] = formData.slug;
+      }
+
       const provisionResponse = await fetch("/api/provision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tx_hash: txHash,
-          wallet_address: address,
-          agent_name: formData.agentName,
-          description: formData.description,
-          capabilities: formData.capabilities,
-          image: formData.image,
-        }),
+        body: JSON.stringify(provisionBody),
       });
 
       if (!provisionResponse.ok) {
@@ -219,6 +224,8 @@ export function useProvision(): UseProvisionReturn {
         erc8004_bonfire_id: number;
         api_key_last4: string;
         ipfs_uri: string;
+        clerk_org_id: string;
+        slug: string;
       };
 
       setState({ step: "done", txHash });
@@ -229,6 +236,8 @@ export function useProvision(): UseProvisionReturn {
         erc8004BonfireId: result.erc8004_bonfire_id,
         apiKeyLast4: result.api_key_last4,
         ipfsUri: result.ipfs_uri,
+        clerkOrgId: result.clerk_org_id,
+        slug: result.slug,
       };
     },
     [address, isApproved, publicClient, writeApproval, writeProvision]

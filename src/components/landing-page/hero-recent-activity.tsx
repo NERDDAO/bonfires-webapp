@@ -48,7 +48,10 @@ export function HeroRecentActivity({
               uuid: String(r["uuid"] ?? r["id"] ?? ""),
               name: (r["name"] ?? r["title"]) as string | undefined,
               valid_at: r["valid_at"] as string | undefined,
-              content: (r["summary"] ?? r["content"]) as string | undefined,
+              content: (r["summary"] ?? r["content"]) as
+                | string
+                | Record<string, unknown>
+                | undefined,
             };
           }
         );

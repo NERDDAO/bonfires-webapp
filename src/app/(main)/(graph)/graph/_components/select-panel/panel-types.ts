@@ -8,7 +8,7 @@ export interface EpisodeTimelineItem {
   uuid: string;
   name?: string;
   valid_at?: string;
-  content?: string;
+  content?: string | Record<string, unknown>;
 }
 
 export interface GraphExplorerPanelProps {

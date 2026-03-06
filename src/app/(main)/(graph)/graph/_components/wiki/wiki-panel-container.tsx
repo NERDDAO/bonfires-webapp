@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 
 import { border } from "../select-panel/select-panel-constants";
 import { WikiPanel, type WikiPanelProps } from "./wiki-panel";
+import { safeString } from "./wiki-panel-utils";
 import type { WikiEdgeData, WikiNodeData } from "./wiki-panel-utils";
 
 /**
@@ -158,14 +159,16 @@ export function WikiPanelContainer({
       )}
     >
       <span className="text-sm font-medium truncate flex-1 min-w-0">
-        {wikiPanelProps.edge
-          ? wikiPanelProps.edge.label ||
-            wikiPanelProps.edge.relation_type ||
-            "Relationship"
-          : wikiPanelProps.node?.name ||
-            wikiPanelProps.node?.label ||
-            wikiPanelProps.node?.uuid?.slice(0, 8) ||
-            "Node"}
+        {safeString(
+          wikiPanelProps.edge
+            ? wikiPanelProps.edge.label ||
+              wikiPanelProps.edge.relation_type ||
+              "Relationship"
+            : wikiPanelProps.node?.name ||
+              wikiPanelProps.node?.label ||
+              wikiPanelProps.node?.uuid?.slice(0, 8) ||
+              "Node"
+        )}
       </span>
       <div className="flex items-center gap-0.5 shrink-0">
         {!isMobile && (

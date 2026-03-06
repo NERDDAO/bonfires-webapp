@@ -1,7 +1,7 @@
 "use client";
 
 import type { WikiEpisodeContent } from "./wiki-panel-utils";
-import { formatDate } from "./wiki-panel-utils";
+import { formatDate, safeString } from "./wiki-panel-utils";
 
 /**
  * Displays wiki content for an episode node.
@@ -13,7 +13,7 @@ export function EpisodeContent({ episode }: { episode: WikiEpisodeContent }) {
       {episode.name && (
         <section>
           <h3 className="font-medium mb-2">Title</h3>
-          <p className="text-sm leading-relaxed">{episode.name}</p>
+          <p className="text-sm leading-relaxed">{safeString(episode.name)}</p>
         </section>
       )}
 
@@ -21,7 +21,7 @@ export function EpisodeContent({ episode }: { episode: WikiEpisodeContent }) {
       {episode.name && (
         <section>
           <h3 className="font-medium mb-2">Summary</h3>
-          <p className="text-sm leading-relaxed">{episode.content}</p>
+          <p className="text-sm leading-relaxed">{safeString(episode.content)}</p>
         </section>
       )}
 

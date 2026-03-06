@@ -15,7 +15,7 @@ export interface RawGraphElementData {
   rel_strength?: number;
   fact?: string;
   summary?: string;
-  content?: string;
+  content?: string | Record<string, unknown>;
   valid_at?: string;
   attributes?: Record<string, unknown>;
 }
@@ -27,7 +27,7 @@ export interface WikiNodeData {
   type?: "episode" | "entity";
   node_type?: "episode" | "entity";
   summary?: string;
-  content?: string;
+  content?: string | Record<string, unknown>;
   valid_at?: string;
   attributes?: Record<string, unknown>;
   labels?: string[];
@@ -54,6 +54,24 @@ export interface WikiEpisodeContent {
         attributes: Record<string, unknown>;
       }[]
     | null;
+}
+
+/**
+ * Safely extract a display string from a value that may be an object.
+ * Prevents React error #31 ("Objects are not valid as React children").
+ */
+export function safeString(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj["content"] === "string") return obj["content"];
+    if (typeof obj["summary"] === "string") return obj["summary"];
+    if (typeof obj["name"] === "string") return obj["name"];
+    try { return JSON.stringify(value); } catch { return String(value); }
+  }
+  return String(value);
 }
 
 /**
@@ -100,12 +118,22 @@ export function formatAttributeValue(value: unknown): string {
 }
 
 export function parseEpisodeContent(node?: WikiNodeData): WikiEpisodeContent {
+  const raw = node?.content;
+  // Content may already be an object (TnT returns parsed JSON instead of a JSON string)
+  if (typeof raw === "object" && raw !== null) {
+    const obj = raw as Record<string, unknown>;
+    return {
+      name: (obj["name"] as string) ?? node?.name ?? "",
+      content: (obj["content"] as string) ?? "No summary available",
+      updates: obj["updates"] as WikiEpisodeContent["updates"],
+    };
+  }
   try {
-    return JSON.parse(node?.content ?? "");
+    return JSON.parse(raw ?? "");
   } catch {
     return {
       name: node?.name ?? "",
-      content: node?.content ?? "No summary available",
+      content: (raw as string) ?? "No summary available",
     };
   }
 }

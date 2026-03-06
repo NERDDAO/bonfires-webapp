@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-import { parseEpisodeContent } from "../wiki/wiki-panel-utils";
+import { parseEpisodeContent, safeString } from "../wiki/wiki-panel-utils";
 import { useGraphExplorerPanelOptional } from "./panel-context";
 import { labelClass, panelContainerClass } from "./select-panel-constants";
 
@@ -38,7 +38,7 @@ export interface EpisodeTimelineItem {
   uuid: string;
   name?: string;
   valid_at?: string;
-  content?: string;
+  content?: string | Record<string, unknown>;
 }
 
 export default function EpisodesList({
@@ -149,7 +149,7 @@ export default function EpisodesList({
                     )}
                   >
                     <div className="flex flex-col min-w-0 flex-1">
-                      <div className="font-medium truncate mb-1">{label}</div>
+                      <div className="font-medium truncate mb-1">{safeString(label)}</div>
                       {timestamp && (
                         <span className="text-xs text-base-content/60">
                           {timestamp}
@@ -157,7 +157,7 @@ export default function EpisodesList({
                       )}
                       {episode.content && (
                         <div className="line-clamp-3 mt-3 text-sm">
-                          {episode.content}
+                          {safeString(episode.content)}
                         </div>
                       )}
                     </div>

@@ -318,7 +318,11 @@ export function PaidDelveInterface({
                   <div className="card-body p-4">
                     <div className="badge badge-secondary">Episode</div>
                     <p className="text-sm">
-                      {episode.content || episode.summary || ""}
+                      {typeof episode.content === "string"
+                        ? episode.content
+                        : typeof episode.summary === "string"
+                          ? episode.summary
+                          : ""}
                     </p>
                   </div>
                 </div>

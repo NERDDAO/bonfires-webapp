@@ -276,6 +276,7 @@ export function parseHydrationResponse(
       valid_at: episodeRecord["valid_at"] as string | undefined,
       content: (episodeRecord["summary"] ?? episodeRecord["content"]) as
         | string
+        | Record<string, unknown>
         | undefined,
     };
   });
@@ -290,7 +291,10 @@ export function parseHydrationResponse(
         uuid: node.uuid as string,
         name: node.name,
         valid_at: node.properties?.["valid_at"] as string | undefined,
-        content: node.properties?.["summary"] as string | undefined,
+        content: (node.properties?.["summary"] ?? node.properties?.["content"]) as
+          | string
+          | Record<string, unknown>
+          | undefined,
       }));
   }
 
@@ -336,6 +340,7 @@ export function extractEpisodesFromGraphNodes(
           | undefined,
         content: (properties["content"] ?? nodeRecord["content"]) as
           | string
+          | Record<string, unknown>
           | undefined,
       };
     });

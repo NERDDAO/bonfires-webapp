@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 
 import Attributes from "./attributes";
 import type { WikiEdgeData, WikiNodeData } from "./wiki-panel-utils";
-import { formatLabel } from "./wiki-panel-utils";
+import { formatLabel, safeString } from "./wiki-panel-utils";
 
 /**
  * Displays wiki content for an entity node.
@@ -25,7 +25,7 @@ export function EntityContent({
       {/* Name */}
       <section>
         <h3 className="font-medium mb-2">Title</h3>
-        <p className="text-sm leading-relaxed">{node.name}</p>
+        <p className="text-sm leading-relaxed">{safeString(node.name)}</p>
       </section>
 
       {/* Description */}
@@ -33,7 +33,7 @@ export function EntityContent({
         <section>
           <h3 className="font-medium mb-2">Description</h3>
           <p className="text-sm leading-relaxed">
-            {node.summary || node.content}
+            {safeString(node.summary || node.content)}
           </p>
         </section>
       )}

@@ -135,7 +135,7 @@ export function useLatestEpisodesGraph({
       );
 
       const rawNodes = [
-        ...(response.nodes ?? []),
+        ...(response.episodes ?? []),
         ...(response.entities ?? []),
       ];
       const nodes = rawNodes

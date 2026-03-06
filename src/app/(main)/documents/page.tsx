@@ -20,7 +20,6 @@ import { toast } from "@/components/common";
 import {
   DocumentSummaryCards,
   DocumentUpload,
-  DocumentsTable,
   TaxonomyLabelsPanel,
 } from "@/components/documents";
 import { useBonfireSelection } from "@/components/shared/BonfireSelector";

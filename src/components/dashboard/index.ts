@@ -15,3 +15,5 @@ export { DataRoomsSection } from "./DataRoomsSection";
 export { HyperBlogsSection } from "./HyperBlogsSection";
 export { PaymentHistorySection } from "./PaymentHistorySection";
 export { WalletInfoSection } from "./WalletInfoSection";
+export { MyBonfiresSection } from "./MyBonfiresSection";
+export { AgentDeployWizard } from "./AgentDeployWizard";

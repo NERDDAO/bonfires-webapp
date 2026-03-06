@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { Check } from "lucide-react";
+import { useState } from "react";
 
 import {
-  SignInButton,
   useAuth,
   useClerk,
   useOrganization,
@@ -19,15 +20,46 @@ import { cn } from "@/lib/cn";
 
 import Dropdown from "../ui/dropdown";
 
+/**
+ * Note: 
+ * clerk?.openCreateOrganization(); to open the clerk create bonfire option.
+ * Clerk UserOrganizationInvitation has accept() only; no reject/decline API for the invited user.
+ */
+
 export default function Signin() {
   const isMobile = useIsMobile();
   const { isLoaded, isSignedIn, signOut, orgId } = useAuth();
   const { isLoaded: orgLoaded } = useOrganization();
   const { user } = useUser();
   const clerk = useClerk();
-  const { setActive, userMemberships } = useOrganizationList({
+  const { setActive, userMemberships, userInvitations } = useOrganizationList({
     userMemberships: { infinite: true },
+    userInvitations: { infinite: true },
   });
+
+  const [acceptingInvitationId, setAcceptingInvitationId] = useState<
+    string | null
+  >(null);
+
+  const handleAcceptInvitation = async (inv: {
+    id: string;
+    publicOrganizationData: { id: string; name: string };
+    accept: () => Promise<unknown>;
+  }) => {
+    setAcceptingInvitationId(inv.id);
+    try {
+      await inv.accept();
+      await setActive?.({ organization: inv.publicOrganizationData.id });
+      await Promise.all([
+        userMemberships.revalidate?.(),
+        userInvitations.revalidate?.(),
+      ]);
+    } catch (error) {
+      console.error("Error accepting invitation", error);
+    } finally {
+      setAcceptingInvitationId(null);
+    }
+  };
 
   const profilePicture = user?.imageUrl;
   const email = user?.emailAddresses.find(
@@ -91,18 +123,8 @@ export default function Signin() {
         >
           <div className="text-xs text-dark-s-0/50 flex items-center gap-1">
             <span className="flex-1">Bonfires</span>
-            <button
-              type="button"
-              className="cursor-pointer text-[1rem] block text-dark-s-0/60 hover:text-dark-s-0 transition-colors duration-200"
-              onClick={() => {
-                clerk?.openCreateOrganization();
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              +
-            </button>
           </div>
-          {userMemberships?.data && userMemberships.data.length > 1 && (
+          {userMemberships?.data && userMemberships.data.length > 0 ? (
             <ul className="mt-1 space-y-0.5 max-h-32 overflow-y-auto">
               {userMemberships.data.map((mem) => (
                 <li key={mem.organization.id}>
@@ -127,8 +149,58 @@ export default function Signin() {
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="mt-1 text-xs text-dark-s-0/50">No bonfires available</p>
           )}
         </li>
+
+        {userInvitations?.data && userInvitations.data.length > 0 && (
+          <li
+            role="menuitem"
+            className="text-sm block px-4 py-2 text-dark-s-0"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="text-xs text-dark-s-0/50 flex items-center gap-1">
+              <span className="flex-1">Invitations</span>
+            </div>
+            
+            <ul className="mt-1 space-y-0.5 max-h-32 overflow-y-auto">
+              {userInvitations.data.map((inv) => (
+                <li key={inv.id} className="flex items-center gap-1 group">
+                  <div
+                    className={cn(
+                      "flex-1 text-left text-xs py-1.5 px-2 rounded transition-colors duration-200",
+                      "text-dark-s-0/70 hover:text-dark-s-0 hover:bg-dark-s-900/50 cursor-pointer"
+                    )}
+                  >
+                    {inv.publicOrganizationData.name}
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Accept invitation"
+                    className={cn(
+                      "shrink-0 p-1 rounded transition-colors duration-200",
+                      "text-dark-s-0/50 hover:text-green-500 hover:bg-dark-s-900/50 cursor-pointer",
+                      "disabled:opacity-50 disabled:cursor-not-allowed"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleAcceptInvitation(inv);
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    disabled={!orgLoaded || acceptingInvitationId === inv.id}
+                  >
+                    {acceptingInvitationId === inv.id ? (
+                      <span className="inline-block w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </li>
+        )}
 
         <div className="flex mt-2 justify-center mx-auto border-t border-[#3B1517] gap-4 py-2 bg-[#1A1C1F] rounded-b-lg">
           {[

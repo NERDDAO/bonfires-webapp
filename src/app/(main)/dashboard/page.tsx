@@ -15,6 +15,7 @@ import { useDashboardData } from "@/hooks";
 import {
   DataRoomsSection,
   HyperBlogsSection,
+  MyBonfiresSection,
   PaymentHistorySection,
   RecentChatsSection,
   WalletInfoSection,
@@ -70,6 +71,9 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Recent Chats - No wallet required */}
             <RecentChatsSection data={dashboardData.recentChats} />
+
+            {/* My Bonfires */}
+            <MyBonfiresSection />
 
             {/* My Data Rooms */}
             <DataRoomsSection

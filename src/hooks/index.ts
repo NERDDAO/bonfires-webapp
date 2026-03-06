@@ -18,12 +18,6 @@ export {
   setStorageValue,
 } from "./useLocalStorage";
 export {
-  useWikiNavigation,
-  type WikiNavState,
-  type WikiBreadcrumb,
-  type WikiContentType,
-} from "./useWikiNavigation";
-export {
   useGraphExplorerState,
   getNodeFromElements,
   getEdgeFromElements,
@@ -32,6 +26,8 @@ export {
   type SelectionState,
   type PanelState,
   type TimelineState,
+  type SelectionAction,
+  type PanelAction,
   SelectionActionType,
   PanelActionType,
   TimelineActionType,

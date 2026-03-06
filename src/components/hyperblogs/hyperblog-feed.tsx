@@ -27,7 +27,6 @@ export default function HyperblogFeed({ dataroomId }: { dataroomId?: string }) {
     data,
     isLoading,
     isError,
-    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,

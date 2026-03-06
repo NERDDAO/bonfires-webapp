@@ -71,10 +71,18 @@ function extractGraphData(
   }
 
   if ("nodes" in response && "edges" in response) {
-    const nodes = [
-      ...(response.nodes as GraphData["nodes"]),
-      ...((response as { entities?: GraphData["nodes"] }).entities ?? []),
-    ];
+    // Prefer separate episodes + entities (avoids duplication with legacy nodes field)
+    const resp = response as unknown as {
+      episodes?: GraphData["nodes"] | null;
+      entities?: GraphData["nodes"] | null;
+    };
+    const hasTypedLists = Array.isArray(resp.episodes);
+    const nodes = hasTypedLists
+      ? [
+          ...(resp.episodes ?? []),
+          ...(Array.isArray(resp.entities) ? resp.entities : []),
+        ]
+      : [...(response.nodes as GraphData["nodes"])];
     return {
       nodes,
       edges: response.edges as GraphData["edges"],

@@ -23,6 +23,7 @@ import Dropdown from "../ui/dropdown";
 /**
  * Note: 
  * clerk?.openCreateOrganization(); to open the clerk create bonfire option.
+ * Clerk UserOrganizationInvitation has accept() only; no reject/decline API for the invited user.
  */
 
 export default function Signin() {
@@ -53,6 +54,8 @@ export default function Signin() {
         userMemberships.revalidate?.(),
         userInvitations.revalidate?.(),
       ]);
+    } catch (error) {
+      console.error("Error accepting invitation", error);
     } finally {
       setAcceptingInvitationId(null);
     }
@@ -160,23 +163,18 @@ export default function Signin() {
             <div className="text-xs text-dark-s-0/50 flex items-center gap-1">
               <span className="flex-1">Invitations</span>
             </div>
+            
             <ul className="mt-1 space-y-0.5 max-h-32 overflow-y-auto">
               {userInvitations.data.map((inv) => (
                 <li key={inv.id} className="flex items-center gap-1 group">
-                  <button
-                    type="button"
+                  <div
                     className={cn(
                       "flex-1 text-left text-xs py-1.5 px-2 rounded transition-colors duration-200",
                       "text-dark-s-0/70 hover:text-dark-s-0 hover:bg-dark-s-900/50 cursor-pointer"
                     )}
-                    onClick={() => {
-                      void handleAcceptInvitation(inv);
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    disabled={!orgLoaded || acceptingInvitationId === inv.id}
                   >
                     {inv.publicOrganizationData.name}
-                  </button>
+                  </div>
                   <button
                     type="button"
                     aria-label="Accept invitation"

@@ -242,7 +242,7 @@ export function parseHydrationResponse(
   latestEpisodeUuids: string[]
 ): HydrationResult {
   const rawNodes = [
-    ...(response.nodes ?? []),
+    ...(response.episodes ?? []),
     ...(response.entities ?? []),
   ];
   const nodes = rawNodes

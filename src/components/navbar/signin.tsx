@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   useAuth,

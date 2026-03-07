@@ -16,7 +16,7 @@ import { buildSubdomainUrl } from "@/lib/utils/subdomain";
  * completing sign-in/sign-up. Clerk auto-activates the invited org,
  * so we read the active org, resolve its bonfire subdomain, and redirect.
  *
- * Falls back to /dashboard if no bonfire mapping is found.
+ * Falls back to / if no bonfire mapping is found.
  */
 export default function AcceptInvitationPage() {
   const { isLoaded: authLoaded, isSignedIn, orgId } = useAuth();
@@ -33,9 +33,9 @@ export default function AcceptInvitationPage() {
       return;
     }
 
-    // No active org — redirect to dashboard
+    // No active org — redirect to home
     if (!orgId) {
-      router.replace("/dashboard");
+      router.replace("/");
       return;
     }
 
@@ -45,7 +45,7 @@ export default function AcceptInvitationPage() {
 
     resolveOrgBonfireMapping(orgId).then((mapping) => {
       if (!mapping || !mapping.bonfire_id) {
-        router.replace("/dashboard");
+        router.replace("/");
         return;
       }
 

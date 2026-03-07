@@ -65,7 +65,7 @@ export default function Signin() {
       if (mapping?.bonfire_id) {
         const subdomain = mapping.slug ?? mapping.bonfire_id;
         window.location.href = buildSubdomainUrl(subdomain);
-        return; // Don't clear loading state — page is navigating away
+        return;
       }
     } catch (error) {
       console.error("Error accepting invitation", error);

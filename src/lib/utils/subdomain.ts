@@ -96,21 +96,21 @@ export function getSubdomainLabel(hostname: string): string | null {
  * Must be called client-side (uses `window.location`).
  */
 export function buildSubdomainUrl(slug: string): string {
-  const { protocol, host } = window.location;
-  const hostname = host.split(":")[0] ?? host;
-  const port = host.includes(":") ? `:${host.split(":")[1]}` : "";
+  const { protocol, hostname, port } = window.location;
+  const hostWithPort = port ? `${hostname}:${port}` : hostname;
 
   if (hostname.endsWith(".vercel.app")) {
-    return `${protocol}//${host}/?subdomain=${encodeURIComponent(slug)}`;
+    return `${protocol}//${hostWithPort}/?subdomain=${encodeURIComponent(slug)}`;
   }
 
   const appRoots = config.subdomain.appRoots;
   for (const root of appRoots) {
     const suffix = `.${root}`;
     if (hostname.endsWith(suffix) || hostname === root) {
-      return `${protocol}//${slug}${suffix}${port}/`;
+      const portSuffix = port ? `:${port}` : "";
+      return `${protocol}//${slug}${suffix}${portSuffix}/`;
     }
   }
 
-  return `${protocol}//${host}/?subdomain=${encodeURIComponent(slug)}`;
+  return `${protocol}//${hostWithPort}/?subdomain=${encodeURIComponent(slug)}`;
 }

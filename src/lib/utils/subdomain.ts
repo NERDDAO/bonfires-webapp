@@ -85,3 +85,32 @@ export function getSubdomainLabel(hostname: string): string | null {
 
   return null;
 }
+
+/**
+ * Build a full URL for a bonfire subdomain.
+ *
+ * - Production / real subdomains: replaces the subdomain label in the hostname.
+ * - Vercel preview URLs: appends ?subdomain= query parameter.
+ * - Falls back to ?subdomain= if no app root matches.
+ *
+ * Must be called client-side (uses `window.location`).
+ */
+export function buildSubdomainUrl(slug: string): string {
+  const { protocol, hostname, port } = window.location;
+  const hostWithPort = port ? `${hostname}:${port}` : hostname;
+
+  if (hostname.endsWith(".vercel.app")) {
+    return `${protocol}//${hostWithPort}/?subdomain=${encodeURIComponent(slug)}`;
+  }
+
+  const appRoots = config.subdomain.appRoots;
+  for (const root of appRoots) {
+    const suffix = `.${root}`;
+    if (hostname.endsWith(suffix) || hostname === root) {
+      const portSuffix = port ? `:${port}` : "";
+      return `${protocol}//${slug}${suffix}${portSuffix}/`;
+    }
+  }
+
+  return `${protocol}//${hostWithPort}/?subdomain=${encodeURIComponent(slug)}`;
+}

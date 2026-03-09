@@ -42,7 +42,10 @@ export function useWalletOrgLink(): void {
       body: JSON.stringify({ wallet_address: walletAddress }),
     })
       .then(async (res) => {
-        if (!res.ok) return;
+        if (!res.ok) {
+          linkedRef.current = false;
+          return;
+        }
         const data = (await res.json()) as { orgs_joined: WalletOrgLinkResult[] };
         if (data.orgs_joined.length > 0) {
           user?.reload();

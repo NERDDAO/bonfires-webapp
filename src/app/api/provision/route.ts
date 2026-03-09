@@ -26,6 +26,7 @@ interface ProvisionRequestBody {
   description?: string;
   capabilities?: string[];
   slug?: string;
+  image?: string;
 }
 
 interface BackendProvisionResponse {
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
     agent_name: body.agent_name.trim(),
     description: body.description.trim(),
     capabilities: body.capabilities ?? [],
+    image: body.image?.trim() ?? "",
   };
   if (body.slug?.trim()) {
     proxyBody["slug"] = body.slug.trim();

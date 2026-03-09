@@ -14,7 +14,6 @@ import {
 } from "@/lib/api/bonfire-access";
 import {
   createErrorResponse,
-  createSuccessResponse,
   extractQueryParams,
   handleCorsOptions,
   handleProxyRequest,

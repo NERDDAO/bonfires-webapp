@@ -19,7 +19,8 @@ import { useAuth, useClerk, useOrganization } from "@clerk/nextjs";
 
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 
-import { config as appConfig } from "@/lib/config";
+import { resolveOrgBonfireMapping } from "@/lib/utils/resolve-org-bonfire";
+import { buildSubdomainUrl } from "@/lib/utils/subdomain";
 
 export type AccessStatus = "ok" | "sign_in_required" | "no_access" | "loading";
 
@@ -28,65 +29,6 @@ interface AutoOrgSwitchState {
   isOrgSwitching: boolean;
   /** Current access status for the OrgSwitchGuard to render on */
   accessStatus: AccessStatus;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Build a URL for a bonfire subdomain.
- *
- * - Production / real subdomains: replaces the subdomain label in the hostname.
- * - Vercel preview URLs: appends ?subdomain= query parameter.
- * - Falls back to ?subdomain= if no app root matches.
- */
-function buildSubdomainUrl(slug: string): string {
-  const { protocol, host } = window.location;
-  const hostname = host.split(":")[0] ?? host;
-  const port = host.includes(":") ? `:${host.split(":")[1]}` : "";
-
-  if (hostname.endsWith(".vercel.app")) {
-    return `${protocol}//${host}/?subdomain=${encodeURIComponent(slug)}`;
-  }
-
-  const appRoots = appConfig.subdomain.appRoots;
-  for (const root of appRoots) {
-    const suffix = `.${root}`;
-    if (hostname.endsWith(suffix) || hostname === root) {
-      return `${protocol}//${slug}${suffix}${port}/`;
-    }
-  }
-
-  return `${protocol}//${host}/?subdomain=${encodeURIComponent(slug)}`;
-}
-
-/**
- * Ask the backend which bonfire a Clerk org maps to (ClerkOrgMapping).
- * Returns bonfire_id, is_admin, and subdomain slug in a single call.
- * Caching is handled server-side by the Next.js API route (Cache-Control).
- */
-async function resolveOrgBonfireMapping(
-  orgId: string
-): Promise<{
-  bonfire_id: string | null;
-  is_admin: boolean;
-  slug: string | null;
-} | null> {
-  try {
-    const res = await fetch(
-      `/api/orgs/${encodeURIComponent(orgId)}/bonfire-mapping`,
-      { method: "GET" }
-    );
-    if (!res.ok) return null;
-    return (await res.json()) as {
-      bonfire_id: string | null;
-      is_admin: boolean;
-      slug: string | null;
-    };
-  } catch {
-    return null;
-  }
 }
 
 // ---------------------------------------------------------------------------

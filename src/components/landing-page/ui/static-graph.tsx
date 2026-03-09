@@ -79,8 +79,8 @@ function floatStep(
 
     const x0 = node.x0 ?? node.x ?? 0;
     const y0 = node.y0 ?? node.y ?? 0;
-    let x = node.x ?? 0;
-    let y = node.y ?? 0;
+    const x = node.x ?? 0;
+    const y = node.y ?? 0;
     let tx = node.tx ?? x0;
     let ty = node.ty ?? y0;
     const speed = node.floatSpeed ?? 1;

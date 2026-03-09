@@ -23,10 +23,8 @@ interface CenterNodeEntity {
 
 function DataroomCardSkeleton({
   className,
-  variant = "default",
 }: {
   className?: string;
-  variant?: "default" | "featured";
 }) {
   return (
     <div
@@ -67,12 +65,10 @@ function DataroomCardSkeleton({
 
 export default function DataroomCard({
   data,
-  variant = "default",
   isLoading,
   className,
 }: {
   data?: DataRoomInfo;
-  variant?: "default" | "featured";
   isLoading?: boolean;
   className?: string;
 }) {
@@ -137,7 +133,7 @@ export default function DataroomCard({
   }, [centerUuid, bonfireId]);
 
   if (isLoading) {
-    return <DataroomCardSkeleton className={className} variant={variant} />;
+    return <DataroomCardSkeleton className={className} />;
   }
 
   const title = data?.description || "";

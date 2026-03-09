@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { heroCopy } from "@/content";
+
 import { footerCopy } from "@/content/landing-page";
 
 import { Button } from "../ui/button";

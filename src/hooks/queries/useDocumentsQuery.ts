@@ -7,7 +7,7 @@
 "use client";
 
 import type {
-  DocumentChunk,
+  
   DocumentInfo,
   LabeledChunksResponse,
 } from "@/types";

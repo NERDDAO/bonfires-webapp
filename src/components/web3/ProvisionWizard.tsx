@@ -174,7 +174,7 @@ export function ProvisionWizard() {
   const { switchChainAsync } = useSwitchChain();
 
   const { balance, isLoading: tokenLoading } = useBonfireToken();
-  const { state: processingState, provision, reset: resetProvision, retry: retryProvision } = useProvision();
+  const { state: processingState, provision, retry: retryProvision } = useProvision();
 
   const [step, setStep] = useState(0);
 

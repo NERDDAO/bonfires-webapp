@@ -28,7 +28,7 @@ export { defaultSiteConfig } from "./default";
 export { rootSiteConfig } from "./root";
 
 import BonfireLanding from "@/components/landing-page/bonfire-landing";
-import { siteCopy } from "@/content/site";
+
 
 import { defaultSiteConfig } from "./default";
 import { rootSiteConfig } from "./root";

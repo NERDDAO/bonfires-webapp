@@ -59,7 +59,7 @@ export interface UseProvisionReturn {
 
 export function useProvision(): UseProvisionReturn {
   const { address } = useAccount();
-  const { isApproved } = useBonfireToken();
+  const { isApproved, refetch: refetchToken } = useBonfireToken();
   const publicClient = usePublicClient({ chainId: mainnet.id });
 
   const [state, setState] = useState<ProcessingState>({ step: "ipfs" });
@@ -68,10 +68,12 @@ export function useProvision(): UseProvisionReturn {
   const { writeContractAsync: writeProvision } = useWriteContract();
 
   const completedIpfsUri = useRef<string | null>(null);
+  const completedApproval = useRef(false);
   const completedTxHash = useRef<`0x${string}` | null>(null);
 
   const reset = useCallback(() => {
     completedIpfsUri.current = null;
+    completedApproval.current = false;
     completedTxHash.current = null;
     setState({ step: "ipfs" });
   }, []);
@@ -129,7 +131,7 @@ export function useProvision(): UseProvisionReturn {
       if (!txHash) {
         setState({ step: "approval" });
 
-        if (!isApproved) {
+        if (!isApproved && !completedApproval.current) {
           try {
             const approvalTx = await writeApproval({
               address: erc1155Address,
@@ -144,6 +146,9 @@ export function useProvision(): UseProvisionReturn {
               confirmations: 1,
               timeout: 300_000,
             });
+
+            completedApproval.current = true;
+            refetchToken();
           } catch (err) {
             const msg =
               err instanceof Error ? err.message : "Wallet approval rejected";
@@ -218,29 +223,13 @@ export function useProvision(): UseProvisionReturn {
         throw new Error(errorMsg);
       }
 
-      const result = (await provisionResponse.json()) as {
-        bonfire_id: string;
-        agent_id: string;
-        erc8004_bonfire_id: number;
-        api_key_last4: string;
-        ipfs_uri: string;
-        clerk_org_id: string;
-        slug: string;
-      };
+      const result = (await provisionResponse.json()) as ProvisionResult;
 
       setState({ step: "done", txHash });
 
-      return {
-        bonfireId: result.bonfire_id,
-        agentId: result.agent_id,
-        erc8004BonfireId: result.erc8004_bonfire_id,
-        apiKeyLast4: result.api_key_last4,
-        ipfsUri: result.ipfs_uri,
-        clerkOrgId: result.clerk_org_id,
-        slug: result.slug,
-      };
+      return result;
     },
-    [address, isApproved, publicClient, writeApproval, writeProvision]
+    [address, isApproved, publicClient, refetchToken, writeApproval, writeProvision]
   );
 
   return { state, provision, reset, retry };

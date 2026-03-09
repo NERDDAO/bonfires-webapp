@@ -1,0 +1,447 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+
+import { apiClient } from "@/lib/api/client";
+import {
+  useApplicantReviewDetail,
+  useApplicantReviewsQuery,
+} from "@/hooks/queries/useApplicantReviewsQuery";
+import type {
+  ApplicantReviewActionResponse,
+  ApplicantReviewBatchImportResponse,
+  ApplicantReviewListItem,
+} from "@/types/applicant-reviews";
+
+const SORT_OPTIONS = [
+  { value: "score", label: "Score" },
+  { value: "confidence", label: "Confidence" },
+  { value: "updated_at", label: "Updated" },
+  { value: "name", label: "Name" },
+] as const;
+
+export default function ApplicantReviewsPage() {
+  const queryClient = useQueryClient();
+  const [bonfireId, setBonfireId] = useState("");
+  const [agentId, setAgentId] = useState("");
+  const [batchId, setBatchId] = useState<string | null>(null);
+  const [tableText, setTableText] = useState("");
+  const [sortBy, setSortBy] = useState("score");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [shortlistOnly, setShortlistOnly] = useState(false);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<
+    string | null
+  >(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
+
+  const reviewsQuery = useApplicantReviewsQuery({
+    bonfireId: bonfireId || null,
+    batchId,
+    sortBy,
+    sortOrder,
+    shortlistOnly,
+  });
+  const detailQuery = useApplicantReviewDetail(selectedApplicationId);
+
+  const applications = reviewsQuery.data?.items ?? [];
+  const selectedApplication = detailQuery.data?.application;
+  const selectedReview = detailQuery.data?.review;
+  const selectedIdentity = detailQuery.data?.identity;
+
+  const hasData = useMemo(() => applications.length > 0, [applications]);
+
+  const refreshData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["applicantReviews"] }),
+      queryClient.invalidateQueries({ queryKey: ["applicantReviewDetail"] }),
+    ]);
+  };
+
+  const runAction = async (
+    applicationId: string,
+    action: () => Promise<ApplicantReviewActionResponse>,
+    successMessage: string,
+  ) => {
+    setActionIds((prev) => ({ ...prev, [applicationId]: true }));
+    try {
+      await action();
+      toast.success(successMessage);
+      await refreshData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Action failed unexpectedly",
+      );
+    } finally {
+      setActionIds((prev) => ({ ...prev, [applicationId]: false }));
+    }
+  };
+
+  const handleImport = async () => {
+    if (!bonfireId.trim() || !tableText.trim()) {
+      toast.error("Bonfire ID and pasted table text are required.");
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const response = await apiClient.post<ApplicantReviewBatchImportResponse>(
+        "/api/applicant-review-batches/import",
+        {
+          bonfire_id: bonfireId.trim(),
+          agent_id: agentId.trim() || undefined,
+          batch_name: `Applicant Batch ${new Date().toISOString()}`,
+          source_name: "manual-paste",
+          table_text: tableText,
+        },
+      );
+      setBatchId(response.batch_id);
+      toast.success(`Imported ${response.imported_count} applicant rows.`);
+      await refreshData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Import failed unexpectedly",
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleShortlistToggle = async (application: ApplicantReviewListItem) => {
+    const shortlisted = application.shortlist_status !== "shortlisted";
+    await runAction(
+      application.id,
+      () =>
+        apiClient.post<ApplicantReviewActionResponse>(
+          `/api/applicant-reviews/${application.id}/shortlist`,
+          { shortlisted },
+        ),
+      shortlisted ? "Applicant shortlisted." : "Applicant removed from shortlist.",
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+        <div className="mb-4">
+          <h1 className="text-2xl font-semibold">Applicant Reviews</h1>
+          <p className="text-sm text-base-content/70">
+            Import a spreadsheet paste, queue applicant research, rank by score,
+            and curate the top 25.
+          </p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <label className="form-control">
+            <span className="label-text text-sm font-medium">Bonfire ID</span>
+            <input
+              className="input input-bordered"
+              value={bonfireId}
+              onChange={(event) => setBonfireId(event.target.value)}
+              placeholder="Mongo ObjectId bonfire identifier"
+            />
+          </label>
+          <label className="form-control">
+            <span className="label-text text-sm font-medium">
+              Review Agent ID
+            </span>
+            <input
+              className="input input-bordered"
+              value={agentId}
+              onChange={(event) => setAgentId(event.target.value)}
+              placeholder="Optional agent for stack / episode writeback"
+            />
+          </label>
+        </div>
+
+        <label className="form-control mt-4">
+          <span className="label-text text-sm font-medium">
+            Paste table text
+          </span>
+          <textarea
+            className="textarea textarea-bordered min-h-48"
+            value={tableText}
+            onChange={(event) => setTableText(event.target.value)}
+            placeholder="Paste TSV copied from Excel or Google Sheets"
+          />
+        </label>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            className="btn btn-primary"
+            onClick={handleImport}
+            disabled={isImporting}
+          >
+            {isImporting ? "Importing..." : "Import Batch"}
+          </button>
+          {batchId && (
+            <span className="text-sm text-base-content/70">
+              Active batch: <span className="font-mono">{batchId}</span>
+            </span>
+          )}
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <label className="form-control">
+              <span className="label-text text-sm font-medium">Sort</span>
+              <select
+                className="select select-bordered"
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="form-control">
+              <span className="label-text text-sm font-medium">Order</span>
+              <select
+                className="select select-bordered"
+                value={sortOrder}
+                onChange={(event) =>
+                  setSortOrder(event.target.value === "asc" ? "asc" : "desc")
+                }
+              >
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </label>
+
+            <label className="label cursor-pointer gap-2 pt-6">
+              <span className="label-text">Shortlist only</span>
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm"
+                checked={shortlistOnly}
+                onChange={(event) => setShortlistOnly(event.target.checked)}
+              />
+            </label>
+          </div>
+
+          {!bonfireId ? (
+            <div className="rounded-xl border border-dashed border-base-300 p-8 text-center text-sm text-base-content/60">
+              Enter a bonfire ID and import a batch to begin reviewing.
+            </div>
+          ) : reviewsQuery.isLoading ? (
+            <div className="p-8 text-center text-sm text-base-content/60">
+              Loading applicants...
+            </div>
+          ) : !hasData ? (
+            <div className="rounded-xl border border-dashed border-base-300 p-8 text-center text-sm text-base-content/60">
+              No applicants found for the current query.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Applicant</th>
+                    <th>Score</th>
+                    <th>Confidence</th>
+                    <th>Status</th>
+                    <th>Shortlist</th>
+                    <th className="w-40">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {applications.map((application) => (
+                    <tr
+                      key={application.id}
+                      className={`cursor-pointer hover ${
+                        selectedApplicationId === application.id
+                          ? "bg-base-200"
+                          : ""
+                      }`}
+                      onClick={() => setSelectedApplicationId(application.id)}
+                    >
+                      <td>
+                        <div className="font-medium">{application.full_name}</div>
+                        <div className="text-xs text-base-content/60">
+                          {application.role_title || "Role not provided"}
+                        </div>
+                      </td>
+                      <td>{application.overall_score?.toFixed(1) ?? "—"}</td>
+                      <td>
+                        {application.confidence_score !== null &&
+                        application.confidence_score !== undefined
+                          ? `${Math.round(application.confidence_score * 100)}%`
+                          : "—"}
+                      </td>
+                      <td>
+                        <div className="text-xs">
+                          <div>{application.research_status}</div>
+                          <div>{application.evaluation_status}</div>
+                        </div>
+                      </td>
+                      <td>{application.shortlist_status}</td>
+                      <td>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            className="btn btn-xs"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleShortlistToggle(application);
+                            }}
+                            disabled={!!actionIds[application.id]}
+                          >
+                            {application.shortlist_status === "shortlisted"
+                              ? "Unshortlist"
+                              : "Shortlist"}
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-xs"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void runAction(
+                                application.id,
+                                () =>
+                                  apiClient.post<ApplicantReviewActionResponse>(
+                                    `/api/applicant-reviews/${application.id}/retry-research`,
+                                    {},
+                                  ),
+                                "Research retriggered.",
+                              );
+                            }}
+                            disabled={!!actionIds[application.id]}
+                          >
+                            Retry
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-xs"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void runAction(
+                                application.id,
+                                () =>
+                                  apiClient.post<ApplicantReviewActionResponse>(
+                                    `/api/applicant-reviews/${application.id}/evaluate`,
+                                    {},
+                                  ),
+                                "Evaluation queued.",
+                              );
+                            }}
+                            disabled={!!actionIds[application.id]}
+                          >
+                            Re-score
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <aside className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+          {!selectedApplicationId ? (
+            <div className="text-sm text-base-content/60">
+              Select an applicant to inspect their normalized profile, evidence,
+              and rubric breakdown.
+            </div>
+          ) : detailQuery.isLoading ? (
+            <div className="text-sm text-base-content/60">
+              Loading applicant detail...
+            </div>
+          ) : selectedApplication ? (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {selectedApplication.full_name}
+                </h2>
+                <p className="text-sm text-base-content/70">
+                  {selectedApplication.role_title || "Role not provided"}
+                </p>
+              </div>
+
+              <div className="space-y-1 text-sm">
+                <div>
+                  <span className="font-medium">Ethereum:</span>{" "}
+                  {selectedIdentity?.ethereum_address ||
+                    selectedApplication.ethereum_address ||
+                    "—"}
+                </div>
+                <div>
+                  <span className="font-medium">GitHub:</span>{" "}
+                  {selectedIdentity?.github_url ||
+                    selectedApplication.github_profile_url ||
+                    "—"}
+                </div>
+                <div>
+                  <span className="font-medium">Twitter/X:</span>{" "}
+                  {selectedIdentity?.twitter_url ||
+                    selectedApplication.twitter_handle ||
+                    "—"}
+                </div>
+                <div>
+                  <span className="font-medium">Telegram:</span>{" "}
+                  {selectedIdentity?.telegram_url || "—"}
+                </div>
+              </div>
+
+              {selectedReview && (
+                <div className="rounded-xl border border-base-300 p-4">
+                  <div className="text-sm font-medium">
+                    Score {selectedReview.weighted_score.toFixed(1)} / 100
+                  </div>
+                  <div className="text-xs text-base-content/60">
+                    {selectedReview.recommendation} · confidence{" "}
+                    {Math.round(selectedReview.confidence_score * 100)}%
+                  </div>
+                  <p className="mt-2 text-sm">{selectedReview.rationale}</p>
+                  <div className="mt-3 space-y-2">
+                    {selectedReview.category_scores.map((category) => (
+                      <div key={category.name}>
+                        <div className="flex items-center justify-between text-xs font-medium">
+                          <span>{category.name}</span>
+                          <span>{category.score}</span>
+                        </div>
+                        <progress
+                          className="progress progress-primary w-full"
+                          value={category.score}
+                          max={100}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="mb-2 text-sm font-semibold">Evidence Links</h3>
+                <ul className="space-y-1 text-sm">
+                  {selectedApplication.public_evidence_links?.length ? (
+                    selectedApplication.public_evidence_links.map((link) => (
+                      <li key={link} className="break-all text-primary">
+                        <a href={link} target="_blank" rel="noreferrer">
+                          {link}
+                        </a>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-base-content/60">No public links listed.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-base-content/60">
+              Unable to load applicant detail.
+            </div>
+          )}
+        </aside>
+      </section>
+    </div>
+  );
+}

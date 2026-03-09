@@ -52,3 +52,7 @@ blob-report/
 
 # clerk configuration (can include secrets)
 /.clerk/
+.gitnexus
+AGENTS.md
+CLAUDE.md
+.claude/

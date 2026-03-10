@@ -42,11 +42,23 @@ export function useApplicationActions() {
     [],
   );
 
+  const startSingleRescore = useCallback(() => {
+    setReevaluateProgress({ completed: 0, total: 1 });
+  }, []);
+
+  const completeSingleRescore = useCallback(() => {
+    setReevaluateProgress({ completed: 1, total: 1 });
+    const t = setTimeout(() => setReevaluateProgress(null), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   const isReevaluating = reevaluateProgress != null;
 
   return {
     reevaluateProgress,
     reevaluateAll,
+    startSingleRescore,
+    completeSingleRescore,
     isReevaluating,
   };
 }

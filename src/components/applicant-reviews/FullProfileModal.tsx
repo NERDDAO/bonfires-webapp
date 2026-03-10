@@ -145,6 +145,20 @@ export function FullProfileModal({
 
         <hr className="border-dark-s-700" />
 
+        {detail?.review != null && (
+          <>
+            <section data-element-id="profile-generated-bio">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
+                Generated bio
+              </h3>
+              <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+                {detail.review.bio || "No generated bio for this review."}
+              </div>
+            </section>
+            <hr className="border-dark-s-700" />
+          </>
+        )}
+
         {narratives.length > 0 && (
           <>
             <section>

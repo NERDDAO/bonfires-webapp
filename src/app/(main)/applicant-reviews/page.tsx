@@ -204,6 +204,37 @@ export default function ApplicantReviewsPage() {
               >
                 View progress
               </button>
+              {applications.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    batchProgress.open(batchId);
+                    void (async () => {
+                      try {
+                        await applicationActions.reevaluateAll(
+                          applications.map((a) => a.id),
+                          batchId ?? undefined,
+                        );
+                        await queryClient.invalidateQueries({
+                          queryKey: ["applicantReviewBatch"],
+                        });
+                        await refreshData();
+                        toast.success("Re-evaluation complete.");
+                      } catch (err) {
+                        toast.error(
+                          err instanceof Error ? err.message : "Re-evaluation failed.",
+                        );
+                      }
+                    })();
+                  }}
+                  disabled={applicationActions.isReevaluating}
+                >
+                  {applicationActions.isReevaluating
+                    ? "Re-evaluating..."
+                    : "Re-evaluate All"}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -380,15 +411,34 @@ export default function ApplicantReviewsPage() {
                             className="btn btn-ghost btn-xs"
                             onClick={(event) => {
                               event.stopPropagation();
-                              void runAction(
-                                application.id,
-                                () =>
-                                  apiClient.post<ApplicantReviewActionResponse>(
+                              batchProgress.open(batchId ?? "");
+                              applicationActions.startSingleRescore();
+                              setActionIds((prev) => ({
+                                ...prev,
+                                [application.id]: true,
+                              }));
+                              void (async () => {
+                                try {
+                                  await apiClient.post<ApplicantReviewActionResponse>(
                                     `/api/applicant-reviews/${application.id}/evaluate`,
                                     {},
-                                  ),
-                                "Evaluation queued.",
-                              );
+                                  );
+                                  toast.success("Evaluation queued.");
+                                  await refreshData();
+                                } catch (error) {
+                                  toast.error(
+                                    error instanceof Error
+                                      ? error.message
+                                      : "Action failed unexpectedly",
+                                  );
+                                } finally {
+                                  setActionIds((prev) => ({
+                                    ...prev,
+                                    [application.id]: false,
+                                  }));
+                                  applicationActions.completeSingleRescore();
+                                }
+                              })();
                             }}
                             disabled={!!actionIds[application.id]}
                           >
@@ -471,12 +521,12 @@ export default function ApplicantReviewsPage() {
                     View Full Profile
                   </button>
 
-                  {selectedReview.bio && (
-                    <div>
-                      <h4 className="text-xs font-semibold">Bio</h4>
-                      <p className="mt-1 text-sm">{selectedReview.bio}</p>
-                    </div>
-                  )}
+                  <div>
+                    <h4 className="text-xs font-semibold">Bio</h4>
+                    <p className="mt-1 text-sm">
+                      {selectedReview.bio || "No generated bio for this review."}
+                    </p>
+                  </div>
 
                   <p className="text-sm">{selectedReview.rationale}</p>
 

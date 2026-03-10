@@ -10,18 +10,18 @@ interface FullProfileModalProps {
 }
 
 function EvidenceItem({ item }: { item: Record<string, unknown> }) {
-  const kind = (item.kind as string) ?? "unknown";
-  const url = (item.url as string) ?? "";
-  const status = (item.status as string) ?? "";
+  const kind = (item["kind"] as string) ?? "unknown";
+  const url = (item["url"] as string) ?? "";
+  const status = (item["status"] as string) ?? "";
   const snippet =
-    (item.extracted_text as string) ?? (item.snippet as string) ?? "";
+    (item["extracted_text"] as string) ?? (item["snippet"] as string) ?? "";
   const isFailed = String(status).toLowerCase() === "failed";
 
   return (
     <div className="rounded-lg bg-dark-s-800 p-3 space-y-1">
       <div className="flex justify-between items-center flex-wrap gap-2">
         <span className="text-sm font-medium text-dark-s-0">
-          {(item.label as string) ?? kind}
+          {(item["label"] as string) ?? kind}
         </span>
         <div className="flex gap-2">
           <span className="rounded px-2 py-0.5 text-xs bg-dark-s-700 text-primary">

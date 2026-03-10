@@ -94,6 +94,8 @@ export interface ApplicantReviewDetailResponse {
     vouches?: string[];
     priority_issues?: string | null;
     referred_by?: string | null;
+    telegram_handle?: string | null;
+    telegram_url?: string | null;
   };
   batch?: ApplicantReviewBatchInfo | null;
   identity?: ApplicantIdentityInfo | null;

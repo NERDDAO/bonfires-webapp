@@ -14,7 +14,7 @@
  * localStorage or forwarded to any analytics/logging service.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Link from "next/link";
 
@@ -304,14 +304,16 @@ function PricingSettings({ bonfireId }: { bonfireId: string }) {
   });
   const [initialized, setInitialized] = useState(false);
 
-  if (pricing && !initialized) {
-    setForm({
-      price_per_episode: pricing.price_per_episode,
-      max_episodes_per_agent: pricing.max_episodes_per_agent,
-      max_agents: pricing.max_agents,
-    });
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (pricing && !initialized) {
+      setForm({
+        price_per_episode: pricing.price_per_episode,
+        max_episodes_per_agent: pricing.max_episodes_per_agent,
+        max_agents: pricing.max_agents,
+      });
+      setInitialized(true);
+    }
+  }, [pricing, initialized]);
 
   const handleSave = () => {
     updatePricing.mutate({ bonfireId, data: form });

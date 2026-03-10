@@ -143,6 +143,13 @@ export default function DashboardPage() {
                     <span>📄</span>
                     Manage Documents
                   </Link>
+                  <Link
+                    href="/applicant-reviews"
+                    className="btn btn-block btn-outline justify-start gap-3"
+                  >
+                    <span>⚖️</span>
+                    Applicant Reviews
+                  </Link>
                 </div>
               </div>
             </div>

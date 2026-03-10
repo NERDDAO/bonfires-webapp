@@ -13,6 +13,7 @@ export const defaultSiteConfig: SiteConfig = {
   navigation: [
     { label: "Hyperblogs", href: "/hyperblogs" },
     { label: "Graph Explorer", href: "/graph" },
+    { label: "Applicant Reviews", href: "/applicant-reviews" },
     { label: "Docs", href: siteCopy.docsUrl },
   ],
 

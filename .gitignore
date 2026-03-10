@@ -24,6 +24,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # IDE
+.cursorignore
 .idea/
 .vscode/
 *.swp

@@ -391,16 +391,19 @@ export default function ApplicantReviewsPage() {
               </div>
 
               {selectedReview && (
-                <div className="rounded-xl border border-base-300 p-4">
-                  <div className="text-sm font-medium">
-                    Score {selectedReview.weighted_score.toFixed(1)} / 100
+                <div className="rounded-xl border border-base-300 p-4 space-y-3">
+                  <div>
+                    <div className="text-sm font-medium">
+                      Score {selectedReview.weighted_score.toFixed(1)} / 100
+                    </div>
+                    <div className="text-xs text-base-content/60">
+                      {selectedReview.recommendation} · confidence{" "}
+                      {Math.round(selectedReview.confidence_score * 100)}%
+                    </div>
+                    <p className="mt-2 text-sm">{selectedReview.rationale}</p>
                   </div>
-                  <div className="text-xs text-base-content/60">
-                    {selectedReview.recommendation} · confidence{" "}
-                    {Math.round(selectedReview.confidence_score * 100)}%
-                  </div>
-                  <p className="mt-2 text-sm">{selectedReview.rationale}</p>
-                  <div className="mt-3 space-y-2">
+
+                  <div className="space-y-2">
                     {selectedReview.category_scores.map((category) => (
                       <div key={category.name}>
                         <div className="flex items-center justify-between text-xs font-medium">
@@ -412,9 +415,40 @@ export default function ApplicantReviewsPage() {
                           value={category.score}
                           max={100}
                         />
+                        {category.reasoning && (
+                          <p className="mt-0.5 text-xs text-base-content/60">
+                            {category.reasoning}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
+
+                  {selectedReview.strengths.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-success">
+                        Strengths
+                      </h4>
+                      <ul className="mt-1 list-disc list-inside text-xs space-y-0.5">
+                        {selectedReview.strengths.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedReview.concerns.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-warning">
+                        Concerns
+                      </h4>
+                      <ul className="mt-1 list-disc list-inside text-xs space-y-0.5">
+                        {selectedReview.concerns.map((c, i) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 

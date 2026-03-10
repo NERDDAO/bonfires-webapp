@@ -74,6 +74,8 @@ export interface ApplicantReviewInfo {
   strengths: string[];
   concerns: string[];
   rationale: string;
+  bio?: string;
+  comparative_reasoning?: string;
   is_shortlisted: boolean;
   override_note?: string | null;
   rubric_version: string;

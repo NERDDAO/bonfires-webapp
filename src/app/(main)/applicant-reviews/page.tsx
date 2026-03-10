@@ -10,6 +10,11 @@ import {
   useApplicantReviewDetail,
   useApplicantReviewsQuery,
 } from "@/hooks/queries/useApplicantReviewsQuery";
+import { useApplicationActions } from "@/hooks/queries/useApplicationActions";
+import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
+import { useProfileModal } from "@/hooks/queries/useProfileModal";
+import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
+import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
 import type {
   ApplicantReviewActionResponse,
   ApplicantReviewBatchImportResponse,
@@ -38,14 +43,23 @@ export default function ApplicantReviewsPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
 
+  const batchProgress = useBatchProgress();
+  const applicationActions = useApplicationActions();
+  const profileModal = useProfileModal();
+  const isActive = batchProgress.isOpen || applicationActions.isReevaluating;
+
   const reviewsQuery = useApplicantReviewsQuery({
     bonfireId: bonfireId || null,
     batchId,
     sortBy,
     sortOrder,
     shortlistOnly,
+    refetchInterval: isActive ? 4000 : 15000,
   });
-  const detailQuery = useApplicantReviewDetail(selectedApplicationId);
+  const detailQuery = useApplicantReviewDetail({
+    applicationId: selectedApplicationId,
+    refetchInterval: isActive ? 4000 : 15000,
+  });
 
   const applications = reviewsQuery.data?.items ?? [];
   const selectedApplication = detailQuery.data?.application;
@@ -99,6 +113,7 @@ export default function ApplicantReviewsPage() {
         },
       );
       setBatchId(response.batch_id);
+      batchProgress.open(response.batch_id);
       toast.success(`Imported ${response.imported_count} applicant rows.`);
       await refreshData();
     } catch (error) {
@@ -178,12 +193,57 @@ export default function ApplicantReviewsPage() {
             {isImporting ? "Importing..." : "Import Batch"}
           </button>
           {batchId && (
-            <span className="text-sm text-base-content/70">
-              Active batch: <span className="font-mono">{batchId}</span>
-            </span>
+            <>
+              <span className="text-sm text-base-content/70">
+                Active batch: <span className="font-mono">{batchId}</span>
+              </span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => batchProgress.open(batchId)}
+              >
+                View progress
+              </button>
+            </>
           )}
         </div>
       </section>
+
+      <BatchProgressModal
+        isOpen={batchProgress.isOpen}
+        onClose={batchProgress.close}
+        batch={batchProgress.batch}
+        reevaluateProgress={applicationActions.reevaluateProgress}
+        onReevaluateAll={
+          batchId && applications.length > 0
+            ? () => {
+                void (async () => {
+                  try {
+                    await applicationActions.reevaluateAll(
+                      applications.map((a) => a.id),
+                      batchId,
+                    );
+                    await queryClient.invalidateQueries({
+                      queryKey: ["applicantReviewBatch"],
+                    });
+                    await refreshData();
+                    toast.success("Re-evaluation complete.");
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error ? err.message : "Re-evaluation failed.",
+                    );
+                  }
+                })();
+              }
+            : undefined
+        }
+      />
+
+      <FullProfileModal
+        isOpen={profileModal.isOpen}
+        onClose={profileModal.close}
+        detail={detailQuery.data}
+      />
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
@@ -400,8 +460,25 @@ export default function ApplicantReviewsPage() {
                       {selectedReview.recommendation} · confidence{" "}
                       {Math.round(selectedReview.confidence_score * 100)}%
                     </div>
-                    <p className="mt-2 text-sm">{selectedReview.rationale}</p>
                   </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm w-full border border-primary text-primary"
+                    onClick={() => profileModal.open()}
+                    data-element-id="view-full-profile"
+                  >
+                    View Full Profile
+                  </button>
+
+                  {selectedReview.bio && (
+                    <div>
+                      <h4 className="text-xs font-semibold">Bio</h4>
+                      <p className="mt-1 text-sm">{selectedReview.bio}</p>
+                    </div>
+                  )}
+
+                  <p className="text-sm">{selectedReview.rationale}</p>
 
                   <div className="space-y-2">
                     {selectedReview.category_scores.map((category) => (
@@ -447,6 +524,17 @@ export default function ApplicantReviewsPage() {
                           <li key={i}>{c}</li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+
+                  {selectedReview.comparative_reasoning && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-info">
+                        Comparative Analysis
+                      </h4>
+                      <p className="mt-1 text-xs">
+                        {selectedReview.comparative_reasoning}
+                      </p>
                     </div>
                   )}
                 </div>

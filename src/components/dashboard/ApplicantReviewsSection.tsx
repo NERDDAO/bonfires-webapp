@@ -15,6 +15,7 @@ import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
 import { useProfileModal } from "@/hooks/queries/useProfileModal";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
 import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
+import { Modal } from "@/components/ui/modal";
 import type {
   ApplicantReviewActionResponse,
   ApplicantReviewBatchImportResponse,
@@ -46,6 +47,7 @@ export function ApplicantReviewsSection({
     string | null
   >(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
 
   const batchProgress = useBatchProgress();
@@ -120,6 +122,8 @@ export function ApplicantReviewsSection({
         );
       setBatchId(response.batch_id);
       batchProgress.open(response.batch_id);
+      setIsImportModalOpen(false);
+      setTableText("");
       toast.success(`Imported ${response.imported_count} applicant rows.`);
       await refreshData();
     } catch (error) {
@@ -150,51 +154,61 @@ export function ApplicantReviewsSection({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold">Applicant Reviews</h2>
-          <p className="text-sm text-base-content/70">
-            Import a spreadsheet paste, queue applicant research, rank by score,
-            and curate the top 25.
-          </p>
-        </div>
+      <section className="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="mr-auto">
+            <h2 className="text-xl font-semibold">Applicant Reviews</h2>
+            <p className="text-sm text-base-content/70">
+              Import, rank by score, and curate the top 25.
+            </p>
+          </div>
 
-        <label className="form-control">
-          <span className="label-text text-sm font-medium">
-            Review Agent ID
-          </span>
-          <input
-            className="input input-bordered"
-            value={agentId}
-            onChange={(event) => setAgentId(event.target.value)}
-            placeholder="Optional agent for stack / episode writeback"
-          />
-        </label>
-
-        <label className="form-control mt-4">
-          <span className="label-text text-sm font-medium">
-            Paste table text
-          </span>
-          <textarea
-            className="textarea textarea-bordered min-h-48"
-            value={tableText}
-            onChange={(event) => setTableText(event.target.value)}
-            placeholder="Paste TSV copied from Excel or Google Sheets"
-          />
-        </label>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
-            className="btn btn-primary"
-            onClick={handleImport}
-            disabled={isImporting}
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => setIsImportModalOpen(true)}
           >
-            {isImporting ? "Importing..." : "Import Batch"}
+            Import Batch
           </button>
+
+          {applications.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                batchProgress.open(batchId ?? "");
+                void (async () => {
+                  try {
+                    await applicationActions.reevaluateAll(
+                      applications.map((a) => a.id),
+                      batchId ?? undefined,
+                    );
+                    await queryClient.invalidateQueries({
+                      queryKey: ["applicantReviewBatch"],
+                    });
+                    await refreshData();
+                    toast.success("Re-evaluation complete.");
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error
+                        ? err.message
+                        : "Re-evaluation failed.",
+                    );
+                  }
+                })();
+              }}
+              disabled={applicationActions.isReevaluating}
+            >
+              {applicationActions.isReevaluating
+                ? "Re-evaluating..."
+                : "Rescore All"}
+            </button>
+          )}
+
           {batchId && (
             <>
               <span className="text-sm text-base-content/70">
-                Active batch: <span className="font-mono">{batchId}</span>
+                Batch: <span className="font-mono">{batchId}</span>
               </span>
               <button
                 type="button"
@@ -203,43 +217,53 @@ export function ApplicantReviewsSection({
               >
                 View progress
               </button>
-              {applications.length > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => {
-                    batchProgress.open(batchId);
-                    void (async () => {
-                      try {
-                        await applicationActions.reevaluateAll(
-                          applications.map((a) => a.id),
-                          batchId ?? undefined,
-                        );
-                        await queryClient.invalidateQueries({
-                          queryKey: ["applicantReviewBatch"],
-                        });
-                        await refreshData();
-                        toast.success("Re-evaluation complete.");
-                      } catch (err) {
-                        toast.error(
-                          err instanceof Error
-                            ? err.message
-                            : "Re-evaluation failed.",
-                        );
-                      }
-                    })();
-                  }}
-                  disabled={applicationActions.isReevaluating}
-                >
-                  {applicationActions.isReevaluating
-                    ? "Re-evaluating..."
-                    : "Re-evaluate All"}
-                </button>
-              )}
             </>
           )}
         </div>
       </section>
+
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Import Applicant Batch"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <label className="form-control">
+            <span className="label-text text-sm font-medium">
+              Review Agent ID
+            </span>
+            <input
+              className="input input-bordered"
+              value={agentId}
+              onChange={(event) => setAgentId(event.target.value)}
+              placeholder="Optional agent for stack / episode writeback"
+            />
+          </label>
+
+          <label className="form-control">
+            <span className="label-text text-sm font-medium">
+              Paste table text
+            </span>
+            <textarea
+              className="textarea textarea-bordered min-h-48"
+              value={tableText}
+              onChange={(event) => setTableText(event.target.value)}
+              placeholder="Paste TSV copied from Excel or Google Sheets"
+            />
+          </label>
+
+          <div className="flex justify-end">
+            <button
+              className="btn btn-primary"
+              onClick={handleImport}
+              disabled={isImporting}
+            >
+              {isImporting ? "Importing..." : "Import Batch"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <BatchProgressModal
         isOpen={batchProgress.isOpen}

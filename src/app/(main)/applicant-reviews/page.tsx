@@ -15,10 +15,12 @@ import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
 import { useProfileModal } from "@/hooks/queries/useProfileModal";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
 import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
+import { DisplayFieldValue } from "@/components/applicant-reviews/DisplayField";
 import type {
   ApplicantReviewActionResponse,
   ApplicantReviewBatchImportResponse,
   ApplicantReviewListItem,
+  DisplaySection,
 } from "@/types/applicant-reviews";
 
 const SORT_OPTIONS = [
@@ -493,30 +495,50 @@ export default function ApplicantReviewsPage() {
                 </p>
               </div>
 
-              <div className="space-y-1 text-sm">
-                <div>
-                  <span className="font-medium">Ethereum:</span>{" "}
-                  {selectedIdentity?.ethereum_address ||
-                    selectedApplication.ethereum_address ||
-                    "—"}
-                </div>
-                <div>
-                  <span className="font-medium">GitHub:</span>{" "}
-                  {selectedIdentity?.github_url ||
-                    selectedApplication.github_profile_url ||
-                    "—"}
-                </div>
-                <div>
-                  <span className="font-medium">Twitter/X:</span>{" "}
-                  {selectedIdentity?.twitter_url ||
-                    selectedApplication.twitter_handle ||
-                    "—"}
-                </div>
-                <div>
-                  <span className="font-medium">Telegram:</span>{" "}
-                  {selectedIdentity?.telegram_url || "—"}
-                </div>
-              </div>
+              {(() => {
+                const identitySection = (detailQuery.data?.display_sections ?? []).find(
+                  (s: DisplaySection) => s.kind === "identity",
+                );
+                if (identitySection && identitySection.fields.length > 0) {
+                  return (
+                    <div className="space-y-1 text-sm">
+                      {identitySection.fields.map((field) => (
+                        <div key={field.key}>
+                          <span className="font-medium">{field.label}:</span>{" "}
+                          <DisplayFieldValue field={field} />
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+                // Fallback to hardcoded fields if display_sections not available
+                return (
+                  <div className="space-y-1 text-sm">
+                    <div>
+                      <span className="font-medium">Ethereum:</span>{" "}
+                      {selectedIdentity?.ethereum_address ||
+                        selectedApplication.ethereum_address ||
+                        "—"}
+                    </div>
+                    <div>
+                      <span className="font-medium">GitHub:</span>{" "}
+                      {selectedIdentity?.github_url ||
+                        selectedApplication.github_profile_url ||
+                        "—"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Twitter/X:</span>{" "}
+                      {selectedIdentity?.twitter_url ||
+                        selectedApplication.twitter_handle ||
+                        "—"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Telegram:</span>{" "}
+                      {selectedIdentity?.telegram_url || "—"}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {selectedReview && (
                 <div className="rounded-xl border border-base-300 p-4 space-y-3">

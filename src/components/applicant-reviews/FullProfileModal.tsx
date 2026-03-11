@@ -1,7 +1,11 @@
 "use client";
 
 import { Modal } from "@/components/ui/modal";
-import type { ApplicantReviewDetailResponse } from "@/types/applicant-reviews";
+import { DisplayFieldValue } from "@/components/applicant-reviews/DisplayField";
+import type {
+  ApplicantReviewDetailResponse,
+  DisplaySection,
+} from "@/types/applicant-reviews";
 
 interface FullProfileModalProps {
   isOpen: boolean;
@@ -59,30 +63,152 @@ function EvidenceItem({ item }: { item: Record<string, unknown> }) {
   );
 }
 
+function IdentitySection({ section }: { section: DisplaySection }) {
+  return (
+    <section data-element-id="profile-identity">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
+        {section.label}
+      </h3>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        {section.fields.map((field) => (
+          <div key={field.key}>
+            <div className="text-xs text-dark-s-200">{field.label}</div>
+            <div className="text-dark-s-0 break-all">
+              <DisplayFieldValue field={field} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function NarrativeSection({ section }: { section: DisplaySection }) {
+  return (
+    <section>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
+        {section.label}
+      </h3>
+      <div className="space-y-3">
+        {section.fields.map((field) => (
+          <div key={field.key}>
+            <div className="text-xs font-semibold text-dark-s-200 mb-1">
+              {field.label}
+            </div>
+            <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+              <DisplayFieldValue field={field} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TagsSection({ section }: { section: DisplaySection }) {
+  return (
+    <section>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
+        {section.label}
+      </h3>
+      {section.fields.map((field) => (
+        <DisplayFieldValue key={field.key} field={field} />
+      ))}
+    </section>
+  );
+}
+
+function MetaSection({ section }: { section: DisplaySection }) {
+  return (
+    <section>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
+        {section.label}
+      </h3>
+      <div className="space-y-1 text-sm">
+        {section.fields.map((field) => (
+          <div key={field.key} className="flex gap-2">
+            <span className="text-dark-s-200 font-medium">{field.label}:</span>
+            <span className="text-dark-s-100">
+              <DisplayFieldValue field={field} />
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SectionRenderer({ section }: { section: DisplaySection }) {
+  switch (section.kind) {
+    case "identity":
+      return <IdentitySection section={section} />;
+    case "narrative":
+      return <NarrativeSection section={section} />;
+    case "tags":
+      return <TagsSection section={section} />;
+    case "meta":
+      return <MetaSection section={section} />;
+  }
+}
+
+/**
+ * Fallback: render normalized_fields as a simple dump when display_sections
+ * is not available (e.g. older backend).
+ */
+function NormalizedFieldsFallback({ fields }: { fields: Record<string, unknown> }) {
+  const SKIP = new Set([
+    "full_name", "organizations", "role_title", "submitted_at_raw",
+    "submitted_at", "token", "validation_errors", "public_evidence_links",
+  ]);
+
+  const entries = Object.entries(fields).filter(
+    ([key, val]) => !SKIP.has(key) && val != null && String(val).trim() !== "",
+  );
+
+  if (entries.length === 0) return null;
+
+  return (
+    <section>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
+        Application Fields
+      </h3>
+      <div className="space-y-3">
+        {entries.map(([key, val]) => (
+          <div key={key}>
+            <div className="text-xs font-semibold text-dark-s-200 mb-1">
+              {key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+            </div>
+            <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+              {typeof val === "string"
+                ? val
+                : Array.isArray(val)
+                  ? val.join(", ")
+                  : JSON.stringify(val)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function FullProfileModal({
   isOpen,
   onClose,
   detail,
 }: FullProfileModalProps) {
   const app = detail?.application;
-  const identity = detail?.identity;
-  const name = app?.full_name ?? identity?.full_name ?? "—";
-  const role = app?.role_title ?? identity?.role_title ?? "";
+  const name = app?.full_name ?? detail?.identity?.full_name ?? "—";
+  const role = app?.role_title ?? detail?.identity?.role_title ?? "";
   const orgs = app?.organizations?.length
     ? app.organizations.join(", ")
-    : identity?.organizations?.join(", ") ?? "";
+    : detail?.identity?.organizations?.join(", ") ?? "";
 
-  const narratives = [
-    { label: "Primary Contribution", value: app?.primary_contribution },
-    { label: "Top Researcher Claim", value: app?.top_researcher_claim },
-    { label: "Other Security Areas", value: app?.other_security_areas },
-    { label: "Priority Issues", value: app?.priority_issues },
-  ].filter((n) => n.value);
-
-  const vouches = app?.vouches ?? [];
+  const sections = detail?.display_sections ?? [];
   const evidence = (app?.evidence ?? []) as Array<Record<string, unknown>>;
-
   const subtitle = [role, orgs].filter(Boolean).join(" · ") || "—";
+
+  const hasSections = sections.length > 0;
 
   return (
     <Modal
@@ -95,55 +221,20 @@ export function FullProfileModal({
       className="max-w-[640px] max-h-[85vh] overflow-y-auto"
     >
       <div className="space-y-5 pt-2">
-        <section data-element-id="profile-identity">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-            Identity
-          </h3>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            {[
-              {
-                label: "Ethereum",
-                value:
-                  identity?.ethereum_address ?? app?.ethereum_address ?? "—",
-              },
-              {
-                label: "GitHub",
-                value: identity?.github_url ?? app?.github_profile_url ?? "—",
-                link: identity?.github_url ?? app?.github_profile_url,
-              },
-              {
-                label: "Twitter/X",
-                value: identity?.twitter_url ?? app?.twitter_handle ?? "—",
-                link: identity?.twitter_url,
-              },
-              {
-                label: "Telegram",
-                value: identity?.telegram_url ?? app?.telegram_handle ?? "—",
-                link: identity?.telegram_url,
-              },
-            ].map(({ label, value, link }) => (
-              <div key={label}>
-                <div className="text-xs text-dark-s-200">{label}</div>
-                <div className="text-dark-s-0 break-all">
-                  {link ? (
-                    <a
-                      href={link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      {value}
-                    </a>
-                  ) : (
-                    value
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {hasSections ? (
+          sections.map((section, i) => (
+            <div key={section.key}>
+              <SectionRenderer section={section} />
+              {i < sections.length - 1 && <hr className="border-dark-s-700 mt-5" />}
+            </div>
+          ))
+        ) : (
+          app?.normalized_fields && (
+            <NormalizedFieldsFallback fields={app.normalized_fields} />
+          )
+        )}
 
-        <hr className="border-dark-s-700" />
+        {hasSections && <hr className="border-dark-s-700" />}
 
         {detail?.review != null && (
           <>
@@ -153,50 +244,6 @@ export function FullProfileModal({
               </h3>
               <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
                 {detail.review.bio || "No generated bio for this review."}
-              </div>
-            </section>
-            <hr className="border-dark-s-700" />
-          </>
-        )}
-
-        {narratives.length > 0 && (
-          <>
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-                Narrative Answers
-              </h3>
-              <div className="space-y-3">
-                {narratives.map(({ label, value }) => (
-                  <div key={label}>
-                    <div className="text-xs font-semibold text-dark-s-200 mb-1">
-                      {label}
-                    </div>
-                    <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
-                      {value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-            <hr className="border-dark-s-700" />
-          </>
-        )}
-
-        {vouches.length > 0 && (
-          <>
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-                Vouches
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {vouches.map((v) => (
-                  <span
-                    key={v}
-                    className="rounded border border-dark-s-600 px-2 py-1 text-xs text-dark-s-100 bg-dark-s-800"
-                  >
-                    {v}
-                  </span>
-                ))}
               </div>
             </section>
             <hr className="border-dark-s-700" />

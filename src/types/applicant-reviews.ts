@@ -81,25 +81,34 @@ export interface ApplicantReviewInfo {
   rubric_version: string;
 }
 
+export interface DisplayField {
+  key: string;
+  label: string;
+  value: unknown;
+  format: "text" | "url" | "address" | "handle" | "tags";
+  resolved_url?: string;
+}
+
+export interface DisplaySection {
+  key: string;
+  label: string;
+  kind: "identity" | "narrative" | "tags" | "meta";
+  fields: DisplayField[];
+}
+
 export interface ApplicantReviewDetailResponse {
   application: ApplicantReviewListItem & {
+    /** All normalized submission fields — keys vary by rubric/form. */
     normalized_fields?: Record<string, unknown>;
     raw_row?: Record<string, unknown>;
     evidence?: Array<Record<string, unknown>>;
-    top_researcher_claim?: string | null;
-    primary_contribution?: string | null;
-    other_security_areas?: string | null;
-    verification_post_url?: string | null;
-    heard_about_program?: string | null;
-    vouches?: string[];
-    priority_issues?: string | null;
-    referred_by?: string | null;
     telegram_handle?: string | null;
     telegram_url?: string | null;
   };
   batch?: ApplicantReviewBatchInfo | null;
   identity?: ApplicantIdentityInfo | null;
   review?: ApplicantReviewInfo | null;
+  display_sections?: DisplaySection[];
 }
 
 export interface ApplicantReviewActionResponse {

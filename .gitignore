@@ -24,6 +24,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # IDE
+.cursorignore
 .idea/
 .vscode/
 *.swp
@@ -52,3 +53,7 @@ blob-report/
 
 # clerk configuration (can include secrets)
 /.clerk/
+.gitnexus
+AGENTS.md
+CLAUDE.md
+.claude/

@@ -14,6 +14,7 @@ export const rootSiteConfig: SiteConfig = {
     { label: "Home", href: "/" },
     { label: "Hyperblogs", href: "/hyperblogs" },
     { label: "Explore Bonfires", href: "/explore" },
+    { label: "Applicant Reviews", href: "/applicant-reviews" },
     { label: "Docs", href: siteCopy.docsUrl },
   ],
 

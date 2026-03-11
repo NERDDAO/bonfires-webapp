@@ -195,17 +195,22 @@ export function useProvision(): UseProvisionReturn {
       // ── Sub-step 4: POST /api/provision ───────────────────────────────
       setState({ step: "backend", txHash });
 
+      const provisionBody: Record<string, unknown> = {
+        tx_hash: txHash,
+        wallet_address: address,
+        agent_name: formData.agentName,
+        description: formData.description,
+        capabilities: formData.capabilities,
+        image: formData.image,
+      };
+      if (formData.slug) {
+        provisionBody["slug"] = formData.slug;
+      }
+
       const provisionResponse = await fetch("/api/provision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tx_hash: txHash,
-          wallet_address: address,
-          agent_name: formData.agentName,
-          description: formData.description,
-          capabilities: formData.capabilities,
-          image: formData.image,
-        }),
+        body: JSON.stringify(provisionBody),
       });
 
       if (!provisionResponse.ok) {

@@ -181,6 +181,7 @@ export function ProvisionWizard() {
   // Form state
   const [agentName, setAgentName] = useState("");
   const [description, setDescription] = useState("");
+  const [slug, setSlug] = useState("");
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [capabilityInput, setCapabilityInput] = useState("");
   const [image, setImage] = useState("");
@@ -209,7 +210,18 @@ export function ProvisionWizard() {
   const nameValid = agentName.trim().length >= 1 && agentName.trim().length <= 60;
   const descriptionValid =
     description.trim().length >= 10 && description.trim().length <= 300;
-  const step2Valid = nameValid && descriptionValid;
+  const slugPattern = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+  const slugValid = slug.trim() === "" || (slug.trim().length >= 2 && slug.trim().length <= 63 && slugPattern.test(slug.trim()));
+  const step2Valid = nameValid && descriptionValid && slugValid;
+
+  const autoSlug = agentName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 50) || "bonfire";
 
   // ── Capability tag input ─────────────────────────────────────────────────
 
@@ -316,6 +328,7 @@ export function ProvisionWizard() {
       description: description.trim(),
       capabilities,
       image: image.trim(),
+      slug: slug.trim() || undefined,
     };
 
     provision(formData)
@@ -499,6 +512,38 @@ export function ProvisionWizard() {
                     </span>
                   </label>
                 )}
+              </div>
+
+              {/* Subdomain Slug */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">
+                    Subdomain{" "}
+                    <span className="font-normal text-base-content/50">
+                      (optional)
+                    </span>
+                  </span>
+                  <span className="label-text-alt">
+                    {slug.length} / 63
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  className={`input input-bordered w-full ${
+                    slug.length > 0 && !slugValid ? "input-error" : ""
+                  }`}
+                  placeholder={autoSlug}
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                  maxLength={63}
+                />
+                <label className="label">
+                  <span className={`label-text-alt ${slug.length > 0 && !slugValid ? "text-error" : "text-base-content/50"}`}>
+                    {slug.length > 0 && !slugValid
+                      ? "Must be 2-63 lowercase chars (a-z, 0-9, hyphens)"
+                      : `Your bonfire will be at ${slug.trim() || autoSlug}.app.bonfires.ai`}
+                  </span>
+                </label>
               </div>
 
               {/* Capabilities */}
@@ -789,6 +834,13 @@ export function ProvisionWizard() {
               />
               <CredCard label="Bonfire ID" value={result.bonfireId} />
               <CredCard label="Agent ID" value={result.agentId} />
+              {result.slug && (
+                <CredCard
+                  label="Subdomain"
+                  value={`${result.slug}.app.bonfires.ai`}
+                  link={`https://${result.slug}.app.bonfires.ai`}
+                />
+              )}
             </div>
 
             <div className="alert alert-success text-sm mb-6">

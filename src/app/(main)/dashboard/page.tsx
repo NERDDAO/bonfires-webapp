@@ -13,6 +13,7 @@ import { useSubdomainBonfire } from "@/contexts";
 import { useDashboardData } from "@/hooks";
 
 import {
+  ApplicantReviewsSection,
   DataRoomsSection,
   HyperBlogsSection,
   MyBonfiresSection,
@@ -143,11 +144,25 @@ export default function DashboardPage() {
                     <span>📄</span>
                     Manage Documents
                   </Link>
+                  <a
+                    href="#applicant-reviews"
+                    className="btn btn-block btn-outline justify-start gap-3"
+                  >
+                    <span>⚖️</span>
+                    Applicant Reviews
+                  </a>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Applicant Reviews — uses active bonfire from subdomain */}
+        {bonfireIdOverride && (
+          <div id="applicant-reviews" className="mt-8">
+            <ApplicantReviewsSection bonfireId={bonfireIdOverride} />
+          </div>
+        )}
       </main>
     </div>
   );

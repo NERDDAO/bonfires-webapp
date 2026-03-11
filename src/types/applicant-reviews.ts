@@ -115,3 +115,79 @@ export interface ApplicantReviewBatchImportResponse {
   imported_count: number;
   queued_task_ids: string[];
 }
+
+// --- SSE Streaming Event Types ---
+
+export interface BatchStartEvent {
+  type: "batch:start";
+  seq: number;
+  batch_id: string;
+  total_applicants: number;
+}
+
+export interface ApplicantStartEvent {
+  type: "applicant:start";
+  seq: number;
+  applicant_id: string;
+  applicant_name: string;
+  index: number;
+  total_criteria: number;
+}
+
+export interface CriterionReasoningEvent {
+  type: "criterion:reasoning";
+  seq: number;
+  applicant_id: string;
+  criterion_name: string;
+  chunk: string;
+}
+
+export interface CriterionScoreEvent {
+  type: "criterion:score";
+  seq: number;
+  applicant_id: string;
+  criterion_name: string;
+  score: number;
+  max_score: number;
+  reasoning_summary: string;
+}
+
+export interface ApplicantCompleteEvent {
+  type: "applicant:complete";
+  seq: number;
+  applicant_id: string;
+  overall_score: number;
+  recommendation: string;
+}
+
+export interface BatchCompleteEvent {
+  type: "batch:complete";
+  seq: number;
+  evaluated_count: number;
+  skipped_count: number;
+  duration_seconds: number;
+}
+
+export interface BatchErrorEvent {
+  type: "error";
+  seq: number;
+  applicant_id?: string;
+  message: string;
+  recoverable: boolean;
+}
+
+export interface HeartbeatEvent {
+  type: "heartbeat";
+  seq: number;
+  timestamp: string;
+}
+
+export type BatchSSEEvent =
+  | BatchStartEvent
+  | ApplicantStartEvent
+  | CriterionReasoningEvent
+  | CriterionScoreEvent
+  | ApplicantCompleteEvent
+  | BatchCompleteEvent
+  | BatchErrorEvent
+  | HeartbeatEvent;

@@ -2,7 +2,10 @@
 
 import { useCallback, useState } from "react";
 
-import { apiClient } from "@/lib/api/client";
+import {
+  useBatchEvaluateStream,
+  type BatchStreamState,
+} from "./useBatchEvaluateStream";
 
 export interface ReevaluateProgress {
   completed: number;
@@ -10,37 +13,35 @@ export interface ReevaluateProgress {
 }
 
 export function useApplicationActions() {
-  const [reevaluateProgress, setReevaluateProgress] = useState<ReevaluateProgress | null>(
-    null,
-  );
+  const [reevaluateProgress, setReevaluateProgress] =
+    useState<ReevaluateProgress | null>(null);
+  const { streamState, startStream, cancelStream } =
+    useBatchEvaluateStream();
 
   const reevaluateAll = useCallback(
     async (applicationIds: string[], batchId?: string) => {
       if (applicationIds.length === 0) return;
       setReevaluateProgress({ completed: 0, total: applicationIds.length });
       try {
-        const body: { application_ids: string[]; batch_id?: string } = {
-          application_ids: applicationIds,
-        };
-        if (batchId) {
-          body.batch_id = batchId;
-        }
-        await apiClient.post<{
-          success: boolean;
-          evaluated_count: number;
-          skipped_count: number;
-          process_stack_task_id?: string | null;
-        }>("/api/applicant-reviews/batch-evaluate", body);
-        setReevaluateProgress({
-          completed: applicationIds.length,
-          total: applicationIds.length,
-        });
+        await startStream(applicationIds, batchId);
       } finally {
-        setReevaluateProgress(null);
+        // Keep progress visible briefly after completion
+        if (streamState.status === "complete") {
+          setReevaluateProgress({
+            completed: applicationIds.length,
+            total: applicationIds.length,
+          });
+        }
+        // Don't clear reevaluateProgress here — let the consumer handle it
+        // via onStreamComplete or by checking streamState.status
       }
     },
-    [],
+    [startStream, streamState.status],
   );
+
+  const clearProgress = useCallback(() => {
+    setReevaluateProgress(null);
+  }, []);
 
   const startSingleRescore = useCallback(() => {
     setReevaluateProgress({ completed: 0, total: 1 });
@@ -52,13 +53,33 @@ export function useApplicationActions() {
     return () => clearTimeout(t);
   }, []);
 
-  const isReevaluating = reevaluateProgress != null;
+  // Derive progress from stream state when streaming
+  const derivedProgress: ReevaluateProgress | null =
+    streamState.status === "streaming" || streamState.status === "connecting"
+      ? {
+          completed: streamState.completedApplicants,
+          total: streamState.totalApplicants || reevaluateProgress?.total || 0,
+        }
+      : streamState.status === "complete"
+        ? {
+            completed: streamState.totalApplicants,
+            total: streamState.totalApplicants,
+          }
+        : reevaluateProgress;
+
+  const isReevaluating =
+    derivedProgress != null ||
+    streamState.status === "streaming" ||
+    streamState.status === "connecting";
 
   return {
-    reevaluateProgress,
+    reevaluateProgress: derivedProgress,
     reevaluateAll,
     startSingleRescore,
     completeSingleRescore,
+    clearProgress,
     isReevaluating,
+    streamState,
+    cancelStream,
   };
 }

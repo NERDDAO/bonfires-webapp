@@ -220,6 +220,7 @@ export default function ApplicantReviewsPage() {
                           queryKey: ["applicantReviewBatch"],
                         });
                         await refreshData();
+                        applicationActions.clearProgress();
                         toast.success("Re-evaluation complete.");
                       } catch (err) {
                         toast.error(
@@ -245,6 +246,8 @@ export default function ApplicantReviewsPage() {
         onClose={batchProgress.close}
         batch={batchProgress.batch}
         reevaluateProgress={applicationActions.reevaluateProgress}
+        streamState={applicationActions.streamState}
+        onCancel={applicationActions.cancelStream}
         onReevaluateAll={
           batchId && applications.length > 0
             ? () => {
@@ -258,6 +261,7 @@ export default function ApplicantReviewsPage() {
                       queryKey: ["applicantReviewBatch"],
                     });
                     await refreshData();
+                    applicationActions.clearProgress();
                     toast.success("Re-evaluation complete.");
                   } catch (err) {
                     toast.error(

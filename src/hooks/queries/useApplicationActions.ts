@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   useBatchEvaluateStream,
-  type BatchStreamState,
 } from "./useBatchEvaluateStream";
 
 export interface ReevaluateProgress {
@@ -17,26 +16,31 @@ export function useApplicationActions() {
     useState<ReevaluateProgress | null>(null);
   const { streamState, startStream, cancelStream } =
     useBatchEvaluateStream();
+  const rescoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (rescoreTimeoutRef.current) {
+        clearTimeout(rescoreTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const reevaluateAll = useCallback(
     async (applicationIds: string[], batchId?: string) => {
       if (applicationIds.length === 0) return;
       setReevaluateProgress({ completed: 0, total: applicationIds.length });
-      try {
-        await startStream(applicationIds, batchId);
-      } finally {
-        // Keep progress visible briefly after completion
-        if (streamState.status === "complete") {
-          setReevaluateProgress({
-            completed: applicationIds.length,
-            total: applicationIds.length,
-          });
-        }
-        // Don't clear reevaluateProgress here — let the consumer handle it
-        // via onStreamComplete or by checking streamState.status
+      const completed = await startStream(applicationIds, batchId);
+      if (completed) {
+        setReevaluateProgress({
+          completed: applicationIds.length,
+          total: applicationIds.length,
+        });
       }
+      // Don't clear reevaluateProgress here — let the consumer handle it
+      // via onStreamComplete or by checking streamState.status
     },
-    [startStream, streamState.status],
+    [startStream],
   );
 
   const clearProgress = useCallback(() => {
@@ -49,8 +53,13 @@ export function useApplicationActions() {
 
   const completeSingleRescore = useCallback(() => {
     setReevaluateProgress({ completed: 1, total: 1 });
-    const t = setTimeout(() => setReevaluateProgress(null), 1500);
-    return () => clearTimeout(t);
+    if (rescoreTimeoutRef.current) {
+      clearTimeout(rescoreTimeoutRef.current);
+    }
+    rescoreTimeoutRef.current = setTimeout(() => {
+      setReevaluateProgress(null);
+      rescoreTimeoutRef.current = null;
+    }, 1500);
   }, []);
 
   // Derive progress from stream state when streaming

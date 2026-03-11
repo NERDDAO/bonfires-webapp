@@ -209,17 +209,21 @@ export function useBatchEvaluateStream() {
   const [streamState, dispatch] = useReducer(reducer, initialState);
   const abortRef = useRef<AbortController | null>(null);
   const retryCountRef = useRef(0);
+  const lastSeqRef = useRef(0);
 
   const startStream = useCallback(
-    async (applicationIds: string[], batchId?: string) => {
+    async (applicationIds: string[], batchId?: string): Promise<boolean> => {
       // Cancel any existing stream
       abortRef.current?.abort();
 
       const controller = new AbortController();
       abortRef.current = controller;
       retryCountRef.current = 0;
+      lastSeqRef.current = 0;
 
       dispatch({ type: "CONNECTING" });
+
+      let completed = false;
 
       const connect = async (resumeFromSeq?: number) => {
         try {
@@ -264,6 +268,10 @@ export function useBatchEvaluateStream() {
 
             for (const event of events) {
               dispatch({ type: "SSE_EVENT", event });
+              lastSeqRef.current = event.seq;
+              if (event.type === "batch:complete") {
+                completed = true;
+              }
             }
           }
 
@@ -284,7 +292,7 @@ export function useBatchEvaluateStream() {
             );
             await new Promise((r) => setTimeout(r, delay));
             if (!controller.signal.aborted) {
-              await connect(streamState.lastSeq || undefined);
+              await connect(lastSeqRef.current || undefined);
             }
           } else {
             dispatch({ type: "ERROR", message });
@@ -293,9 +301,8 @@ export function useBatchEvaluateStream() {
       };
 
       await connect();
+      return completed;
     },
-    // streamState.lastSeq is read via ref-like access in the retry path
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 

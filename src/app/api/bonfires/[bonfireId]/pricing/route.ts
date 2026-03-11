@@ -10,6 +10,7 @@ import {
   createErrorResponse,
   handleCorsOptions,
   handleProxyRequest,
+  parseJsonBody,
 } from "@/lib/api/server-utils";
 
 interface RouteParams {
@@ -29,7 +30,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   if (!bonfireId) {
     return createErrorResponse("Bonfire ID is required", 400);
   }
-  const body = await request.json();
+  const { data: body, error: parseError } = await parseJsonBody(request);
+  if (parseError) {
+    return createErrorResponse(parseError, 400);
+  }
   return handleProxyRequest(`/bonfires/${bonfireId}/pricing`, {
     method: "PUT",
     body,

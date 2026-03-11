@@ -42,11 +42,11 @@ import { useAuth } from "@/hooks/useAuth";
 export default function DocumentsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { hasRole, isSignedIn, isLoaded: authLoaded } = useAuth();
+  const { hasRole, isSignedIn } = useAuth();
   const canReview = hasRole("org:bonfire_admin") || hasRole("org:bonfire_manager");
 
   const tab = searchParams.get("tab") || "documents";
-  const activeTab = tab === "reviews" && !canReview && authLoaded ? "documents" : tab;
+  const activeTab = tab;
 
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const {

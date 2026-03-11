@@ -212,8 +212,15 @@ export default function ApplicantReviewsPage() {
                     batchProgress.open(batchId);
                     void (async () => {
                       try {
+                        const needsEvaluation = applications.filter(
+                          (a) => a.evaluation_status !== "completed",
+                        );
+                        if (needsEvaluation.length === 0) {
+                          toast.success("All applications already evaluated.");
+                          return;
+                        }
                         await applicationActions.reevaluateAll(
-                          applications.map((a) => a.id),
+                          needsEvaluation.map((a) => a.id),
                           batchId ?? undefined,
                         );
                         await queryClient.invalidateQueries({
@@ -253,8 +260,15 @@ export default function ApplicantReviewsPage() {
             ? () => {
                 void (async () => {
                   try {
+                    const needsEvaluation = applications.filter(
+                      (a) => a.evaluation_status !== "completed",
+                    );
+                    if (needsEvaluation.length === 0) {
+                      toast.success("All applications already evaluated.");
+                      return;
+                    }
                     await applicationActions.reevaluateAll(
-                      applications.map((a) => a.id),
+                      needsEvaluation.map((a) => a.id),
                       batchId,
                     );
                     await queryClient.invalidateQueries({

@@ -454,7 +454,7 @@ export default function ApplicantReviewsPage() {
           )}
         </div>
 
-        <aside className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+        <aside className="sticky top-20 self-start rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm max-h-[calc(100vh-6rem)] overflow-y-auto">
           {!selectedApplicationId ? (
             <div className="text-sm text-base-content/60">
               Select an applicant to inspect their normalized profile, evidence,

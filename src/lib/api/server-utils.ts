@@ -363,6 +363,76 @@ export async function handleProxyRequest<T = unknown>(
 }
 
 /**
+ * Proxy an SSE (Server-Sent Events) request to the backend.
+ *
+ * Unlike handleProxyRequest, this passes through the ReadableStream body
+ * instead of parsing JSON. Intended for long-running streaming responses.
+ */
+export async function handleProxySSERequest(
+  endpoint: string,
+  options: Omit<ProxyOptions, "timeout"> & { timeout?: number } = {}
+): Promise<Response> {
+  const {
+    method = "POST",
+    body,
+    headers = {},
+    timeout = 600000, // 10 minutes for long-running batch eval
+    queryParams,
+    includeAuth = true,
+  } = options;
+
+  const backendUrl = getBackendUrl();
+  const url = buildUrl(backendUrl, endpoint, queryParams);
+
+  const authHeaders = includeAuth ? await getAuthHeaders() : {};
+
+  console.debug(`[SSE Proxy] ${method} ${url}`);
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders,
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(timeout),
+    });
+
+    if (!response.ok) {
+      const { message } = await parseErrorFromResponse(response);
+      console.error(`[SSE Proxy] Error ${response.status}: ${message}`);
+      return new Response(JSON.stringify({ error: message }), {
+        status: response.status,
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      });
+    }
+
+    return new Response(response.body, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+        ...CORS_HEADERS,
+      },
+    });
+  } catch (error) {
+    console.error("[SSE Proxy] Exception:", error);
+    const message =
+      error instanceof Error && error.name === "TimeoutError"
+        ? "SSE proxy timeout"
+        : "SSE proxy connection error";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 503,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+}
+
+/**
  * Extract query parameters from a Next.js request URL
  */
 export function extractQueryParams(

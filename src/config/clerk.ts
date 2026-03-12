@@ -1,5 +1,12 @@
-// TODO: Add type
-// TODO: Move text to content folder
+/**
+ * Clerk localization overrides.
+ *
+ * SETUP: To enable wallet sign-in, configure Web3 auth in the Clerk Dashboard:
+ *   1. Go to https://dashboard.clerk.com → your app
+ *   2. Navigate to User & Authentication → Web3
+ *   3. Enable MetaMask (and optionally Coinbase Wallet, OKX Wallet)
+ *   4. Save — the <SignIn /> component will automatically render wallet options
+ */
 export const clerkLocalization = {
   organizationSwitcher: {
     action__manageOrganization: "Manage",

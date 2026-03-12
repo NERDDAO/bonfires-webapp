@@ -180,3 +180,115 @@ export function useValidateToken() {
     mutationFn: validateTokenFn,
   });
 }
+
+// ── Bonfire Pricing ──────────────────────────────────────────────────────────
+
+export interface BonfirePricing {
+  price_per_episode: string | null;
+  max_episodes_per_agent: number;
+  max_agents: number;
+}
+
+async function fetchBonfirePricing(bonfireId: string): Promise<BonfirePricing> {
+  const res = await fetch(`/api/bonfires/${bonfireId}/pricing`);
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? "Failed to fetch bonfire pricing");
+  }
+  return res.json() as Promise<BonfirePricing>;
+}
+
+export function useBonfirePricing(bonfireId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["bonfire-pricing", bonfireId],
+    queryFn: () => fetchBonfirePricing(bonfireId!),
+    enabled: enabled && !!bonfireId,
+    staleTime: 30_000,
+  });
+}
+
+async function updateBonfirePricingFn({
+  bonfireId,
+  data,
+}: {
+  bonfireId: string;
+  data: BonfirePricing;
+}): Promise<BonfirePricing> {
+  const res = await fetch(`/api/bonfires/${bonfireId}/pricing`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? "Failed to update pricing");
+  }
+  return res.json() as Promise<BonfirePricing>;
+}
+
+export function useUpdateBonfirePricing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateBonfirePricingFn,
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["bonfire-pricing", variables.bonfireId] });
+    },
+  });
+}
+
+// ── Purchase Agent ───────────────────────────────────────────────────────────
+
+export interface PurchaseAgentPayload {
+  payment_header: string;
+  platform: "web" | "telegram" | "discord";
+  episodes_requested: number;
+  agent_name: string;
+  agent_context: string;
+  agent_username?: string;
+  timezone?: string;
+  reporting_config?: {
+    chat_id: string;
+    topic_id?: string;
+    process_reporting_messages?: boolean;
+  };
+  telegram_bot_token?: string;
+  discord_bot_token?: string;
+}
+
+export interface PurchaseAgentResult {
+  agent_id: string;
+  username: string;
+  platform: string;
+  episodes_purchased: number;
+  api_key_last4: string;
+  purchase_id: string;
+}
+
+async function purchaseAgentFn({
+  bonfireId,
+  data,
+}: {
+  bonfireId: string;
+  data: PurchaseAgentPayload;
+}): Promise<PurchaseAgentResult> {
+  const res = await fetch(`/api/bonfires/${bonfireId}/purchase-agent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `Purchase failed (${res.status})`);
+  }
+  return res.json() as Promise<PurchaseAgentResult>;
+}
+
+export function usePurchaseAgent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: purchaseAgentFn,
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["bonfire-agents", variables.bonfireId] });
+    },
+  });
+}

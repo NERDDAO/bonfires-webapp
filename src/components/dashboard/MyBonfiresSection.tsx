@@ -14,7 +14,7 @@
  * localStorage or forwarded to any analytics/logging service.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Link from "next/link";
 
@@ -24,7 +24,12 @@ import { mainnet } from "viem/chains";
 
 import type { AgentInfo, ProvisionedBonfireRecord } from "@/types";
 
-import { useBonfireAgents } from "@/hooks/useAgentDeploy";
+import {
+  useBonfireAgents,
+  useBonfirePricing,
+  useUpdateBonfirePricing,
+} from "@/hooks/useAgentDeploy";
+import type { BonfirePricing } from "@/hooks/useAgentDeploy";
 
 import { AgentDeployWizard } from "./AgentDeployWizard";
 import { DashboardSection } from "./DashboardSection";
@@ -288,6 +293,128 @@ function DeployedAgentsList({
   );
 }
 
+function PricingSettings({ bonfireId }: { bonfireId: string }) {
+  const { data: pricing, isLoading } = useBonfirePricing(bonfireId);
+  const updatePricing = useUpdateBonfirePricing();
+  const [isOpen, setIsOpen] = useState(false);
+  const [form, setForm] = useState<BonfirePricing>({
+    price_per_episode: null,
+    max_episodes_per_agent: 50,
+    max_agents: 10,
+  });
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (pricing && !initialized) {
+      setForm({
+        price_per_episode: pricing.price_per_episode,
+        max_episodes_per_agent: pricing.max_episodes_per_agent,
+        max_agents: pricing.max_agents,
+      });
+      setInitialized(true);
+    }
+  }, [pricing, initialized]);
+
+  const handleSave = () => {
+    updatePricing.mutate({ bonfireId, data: form });
+  };
+
+  if (isLoading) return null;
+
+  return (
+    <div className="border-t border-base-content/10 pt-2">
+      <button
+        className="btn btn-ghost btn-xs w-full justify-between"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>Agent Marketplace Settings</span>
+        <span className="text-xs">{isOpen ? "▲" : "▼"}</span>
+      </button>
+      {isOpen && (
+        <div className="space-y-2 mt-2 px-1">
+          <div>
+            <label className="label py-0">
+              <span className="label-text text-xs">Price per episode (USD)</span>
+            </label>
+            <input
+              type="text"
+              className="input input-bordered input-xs w-full"
+              placeholder="e.g. 0.01 (empty = not purchasable)"
+              value={form.price_per_episode ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                if (raw === "") {
+                  setForm((prev) => ({ ...prev, price_per_episode: null }));
+                  return;
+                }
+                const normalized = raw.replace(",", ".").replace(/[^0-9.]/g, "");
+                // Ensure at most one decimal point
+                const parts = normalized.split(".");
+                const dedotted =
+                  parts.length > 2
+                    ? parts[0] + "." + parts.slice(1).join("")
+                    : normalized;
+                const parsed = Number.parseFloat(dedotted);
+                if (Number.isNaN(parsed)) {
+                  return;
+                }
+                setForm((prev) => ({ ...prev, price_per_episode: dedotted }));
+              }}
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="label py-0">
+                <span className="label-text text-xs">Max episodes/agent</span>
+              </label>
+              <input
+                type="number"
+                className="input input-bordered input-xs w-full"
+                min={1}
+                max={10000}
+                value={form.max_episodes_per_agent}
+                onChange={(e) =>
+                  setForm({ ...form, max_episodes_per_agent: Number(e.target.value) })
+                }
+              />
+            </div>
+            <div className="flex-1">
+              <label className="label py-0">
+                <span className="label-text text-xs">Max agents</span>
+              </label>
+              <input
+                type="number"
+                className="input input-bordered input-xs w-full"
+                min={1}
+                max={100}
+                value={form.max_agents}
+                onChange={(e) =>
+                  setForm({ ...form, max_agents: Number(e.target.value) })
+                }
+              />
+            </div>
+          </div>
+          <button
+            className="btn btn-primary btn-xs w-full"
+            onClick={handleSave}
+            disabled={updatePricing.isPending}
+          >
+            {updatePricing.isPending ? "Saving..." : "Save Pricing"}
+          </button>
+          {updatePricing.isSuccess && (
+            <p className="text-xs text-success">Pricing saved</p>
+          )}
+          {updatePricing.isError && (
+            <p className="text-xs text-error">
+              {updatePricing.error instanceof Error ? updatePricing.error.message : "Failed"}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BonfireCard({
   record,
   revealState,
@@ -406,6 +533,11 @@ function BonfireCard({
             onEditAgent(agentId, record.bonfire_id!, record.agent_name)
           }
         />
+      )}
+
+      {/* Pricing settings - only for NFT owners */}
+      {record.status === "complete" && isCurrentOwner && record.bonfire_id && (
+        <PricingSettings bonfireId={record.bonfire_id} />
       )}
 
       {/* Deploy Agent button - only for NFT owners of completed bonfires */}

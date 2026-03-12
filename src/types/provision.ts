@@ -10,6 +10,7 @@ export interface ProvisionFormData {
   description: string;
   capabilities: string[];
   image: string;
+  slug?: string;
 }
 
 export type ProcessingStep =
@@ -32,6 +33,8 @@ export interface ProvisionResult {
   erc8004BonfireId: number;
   apiKeyLast4: string;
   ipfsUri: string;
+  clerkOrgId: string;
+  slug: string;
 }
 
 export type ProvisionedBonfireStatus = "pending" | "complete" | "failed";
@@ -51,6 +54,8 @@ export interface ProvisionedBonfireRecord {
   description: string;
   capabilities: string[];
   image: string;
+  clerk_org_id: string | null;
+  slug: string | null;
   created_at: string;
   updated_at: string;
 }

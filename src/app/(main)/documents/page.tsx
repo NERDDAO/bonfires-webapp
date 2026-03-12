@@ -8,6 +8,8 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
+import { useSearchParams, useRouter } from "next/navigation";
+
 import { useSubdomainBonfire } from "@/contexts";
 import {
   useBonfireById,
@@ -17,6 +19,8 @@ import {
 import type { DocumentSummary, TaxonomyLabel } from "@/types";
 
 import { toast } from "@/components/common";
+import { ApplicantReviewsSection } from "@/components/dashboard/ApplicantReviewsSection";
+import { SelfReviewButton } from "@/components/applicant-reviews/SelfReviewButton";
 import {
   DocumentSummaryCards,
   DocumentUpload,
@@ -26,6 +30,7 @@ import { useBonfireSelection } from "@/components/shared/BonfireSelector";
 import { BonfireSelector } from "@/components/shared/BonfireSelector";
 import { Footer } from "@/components/shared/Footer";
 import { Header } from "@/components/shared/Header";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * Documents Page
@@ -35,6 +40,14 @@ import { Header } from "@/components/shared/Header";
  */
 
 export default function DocumentsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { hasRole, isSignedIn } = useAuth();
+  const canReview = hasRole("org:bonfire_admin") || hasRole("org:bonfire_manager");
+
+  const tab = searchParams.get("tab") || "documents";
+  const activeTab = tab;
+
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const {
     selectedBonfireId: selectionBonfireId,
@@ -199,82 +212,112 @@ export default function DocumentsPage() {
         )}
 
         {selectedBonfireId ? (
-          <div className="space-y-8">
-            {/* Summary cards */}
-            <DocumentSummaryCards summary={summary} isLoading={isLoading} />
+          <>
+            {/* Tab bar */}
+            <div className="tabs tabs-boxed mb-8 w-fit">
+              <button
+                className={`tab ${activeTab === "documents" ? "tab-active" : ""}`}
+                onClick={() => router.replace("?tab=documents", { scroll: false })}
+              >
+                Documents
+              </button>
+              {canReview && (
+                <button
+                  className={`tab ${activeTab === "reviews" ? "tab-active" : ""}`}
+                  onClick={() => router.replace("?tab=reviews", { scroll: false })}
+                >
+                  Reviews
+                </button>
+              )}
+            </div>
 
-            {/* Main content grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Left column: Upload and taxonomy */}
-              <div className="lg:col-span-1 space-y-6">
-                {/* Document upload */}
-                <div className="card bg-base-200">
-                  <div className="card-body p-4">
-                    <h2 className="card-title text-lg mb-3">Upload Document</h2>
-                    <DocumentUpload
-                      bonfireId={selectedBonfireId}
-                      onUploadSuccess={handleUploadSuccess}
-                      onUploadError={handleUploadError}
-                    />
-                  </div>
-                </div>
+            {activeTab === "documents" && (
+              <div className="space-y-8">
+                {/* Summary cards */}
+                <DocumentSummaryCards summary={summary} isLoading={isLoading} />
 
-                {/* Taxonomy labels panel */}
-                <TaxonomyLabelsPanel
-                  labels={taxonomyLabels}
-                  selectedLabel={selectedLabel}
-                  onLabelSelect={setSelectedLabel}
-                  onTriggerLabeling={handleTriggerLabeling}
-                  isLabeling={isLabeling}
-                  isLoading={isLoading}
-                />
-              </div>
-
-              {/* Right column: Documents table */}
-              <div className="lg:col-span-3">
-                <div className="card bg-base-200">
-                  <div className="card-body p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="card-title text-lg">
-                        Documents
-                        {selectedLabel && (
-                          <span className="badge badge-primary badge-sm ml-2">
-                            Filtered: {selectedLabel}
-                          </span>
-                        )}
-                      </h2>
-                      <div className="text-sm text-base-content/60">
-                        {visibleDocuments.length} document
-                        {visibleDocuments.length !== 1 ? "s" : ""}
-                        {totalDocuments > visibleDocuments.length &&
-                          ` (${totalDocuments} total)`}
+                {/* Main content grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* Left column: Upload and taxonomy */}
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Document upload */}
+                    <div className="card bg-base-200">
+                      <div className="card-body p-4">
+                        <h2 className="card-title text-lg mb-3">Upload Document</h2>
+                        <DocumentUpload
+                          bonfireId={selectedBonfireId}
+                          onUploadSuccess={handleUploadSuccess}
+                          onUploadError={handleUploadError}
+                        />
                       </div>
                     </div>
-                    <div className="flex items-center justify-end gap-2 mb-4 text-sm text-base-content/60">
-                      <span>
-                        Page {page} of {totalPages}
-                      </span>
-                      <button
-                        className="btn btn-ghost btn-xs"
-                        onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={!canGoPrev}
-                      >
-                        Prev
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-xs"
-                        onClick={() => setPage((prev) => prev + 1)}
-                        disabled={!canGoNext}
-                      >
-                        Next
-                      </button>
+
+                    {/* Taxonomy labels panel */}
+                    <TaxonomyLabelsPanel
+                      labels={taxonomyLabels}
+                      selectedLabel={selectedLabel}
+                      onLabelSelect={setSelectedLabel}
+                      onTriggerLabeling={handleTriggerLabeling}
+                      isLabeling={isLabeling}
+                      isLoading={isLoading}
+                    />
+                  </div>
+
+                  {/* Right column: Documents table */}
+                  <div className="lg:col-span-3">
+                    <div className="card bg-base-200">
+                      <div className="card-body p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h2 className="card-title text-lg">
+                            Documents
+                            {selectedLabel && (
+                              <span className="badge badge-primary badge-sm ml-2">
+                                Filtered: {selectedLabel}
+                              </span>
+                            )}
+                          </h2>
+                          <div className="text-sm text-base-content/60">
+                            {visibleDocuments.length} document
+                            {visibleDocuments.length !== 1 ? "s" : ""}
+                            {totalDocuments > visibleDocuments.length &&
+                              ` (${totalDocuments} total)`}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 mb-4 text-sm text-base-content/60">
+                          <span>
+                            Page {page} of {totalPages}
+                          </span>
+                          <button
+                            className="btn btn-ghost btn-xs"
+                            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                            disabled={!canGoPrev}
+                          >
+                            Prev
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-xs"
+                            onClick={() => setPage((prev) => prev + 1)}
+                            disabled={!canGoNext}
+                          >
+                            Next
+                          </button>
+                        </div>
+                        <DocumentsListTable documents={visibleDocuments} />
+                      </div>
                     </div>
-                    <DocumentsListTable documents={visibleDocuments} />
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            )}
+
+            {activeTab === "reviews" && canReview && (
+              <ApplicantReviewsSection bonfireId={selectedBonfireId} />
+            )}
+
+            {activeTab === "reviews" && !canReview && isSignedIn && (
+              <SelfReviewButton bonfireId={selectedBonfireId} />
+            )}
+          </>
         ) : (
           /* Empty state when no bonfire selected */
           <div className="text-center py-16">

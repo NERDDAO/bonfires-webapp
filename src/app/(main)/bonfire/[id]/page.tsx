@@ -83,12 +83,23 @@ function PurchaseForm({
   const validateToken = useValidateToken();
   const needsToken = platform === "telegram" || platform === "discord";
 
-  const totalPrice = (parseFloat(pricePerEpisode) * episodes).toFixed(4);
+  const pricePerEpisodeNumber = Number.parseFloat(pricePerEpisode);
+  const hasValidPrice = Number.isFinite(pricePerEpisodeNumber);
+  const totalPrice = hasValidPrice
+    ? (pricePerEpisodeNumber * episodes).toFixed(4)
+    : "0.0000";
 
   const handlePurchase = async () => {
     const trimmedToken = botToken.trim();
     if (!agentName.trim() || !agentContext.trim()) return;
     if (needsToken && !trimmedToken) return;
+    if (!hasValidPrice) {
+      setRevealState({
+        status: "error",
+        error: "Invalid pricing configuration. Please try again later.",
+      });
+      return;
+    }
 
     const paymentHeader = await buildAndSignPaymentHeader(totalPrice);
     if (!paymentHeader) return;

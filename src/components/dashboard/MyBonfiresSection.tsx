@@ -341,9 +341,25 @@ function PricingSettings({ bonfireId }: { bonfireId: string }) {
               className="input input-bordered input-xs w-full"
               placeholder="e.g. 0.01 (empty = not purchasable)"
               value={form.price_per_episode ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, price_per_episode: e.target.value || null })
-              }
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                if (raw === "") {
+                  setForm((prev) => ({ ...prev, price_per_episode: null }));
+                  return;
+                }
+                const normalized = raw.replace(",", ".").replace(/[^0-9.]/g, "");
+                // Ensure at most one decimal point
+                const parts = normalized.split(".");
+                const dedotted =
+                  parts.length > 2
+                    ? parts[0] + "." + parts.slice(1).join("")
+                    : normalized;
+                const parsed = Number.parseFloat(dedotted);
+                if (Number.isNaN(parsed)) {
+                  return;
+                }
+                setForm((prev) => ({ ...prev, price_per_episode: dedotted }));
+              }}
             />
           </div>
           <div className="flex gap-2">

@@ -112,7 +112,6 @@ export function ApplicantReviewsSection({
     applicationId: selectedApplicationId,
     rubricId: selectedRubricId,
     refetchInterval: isActive ? 4000 : 15000,
-    rubricId: selectedRubricId,
   });
 
   const applications = reviewsQuery.data?.items ?? [];

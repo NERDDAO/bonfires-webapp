@@ -223,15 +223,17 @@ export function ApplicantReviewsSection({
               onClick={() => {
                 void (async () => {
                   try {
-                    const needsEvaluation = applications.filter(
-                      (a) => a.evaluation_status !== "completed",
-                    );
-                    if (needsEvaluation.length === 0) {
+                    const toEvaluate = selectedRubricId
+                      ? applications
+                      : applications.filter(
+                          (a) => a.evaluation_status !== "completed",
+                        );
+                    if (toEvaluate.length === 0) {
                       toast.success("All applications already evaluated.");
                       return;
                     }
                     await applicationActions.reevaluateAll(
-                      needsEvaluation.map((a) => a.id),
+                      toEvaluate.map((a) => a.id),
                       batchId ?? undefined,
                       selectedRubricId,
                     );

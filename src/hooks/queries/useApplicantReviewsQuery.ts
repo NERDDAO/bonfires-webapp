@@ -17,6 +17,9 @@ interface UseApplicantReviewsParams {
   enabled?: boolean;
   /** Override refetch interval (ms). When active (e.g. batch modal open), use 4000; default 15000. */
   refetchInterval?: number;
+  page?: number;
+  limit?: number;
+  rubricId?: string | null;
 }
 
 export function applicantReviewsQueryKey(params: UseApplicantReviewsParams) {
@@ -28,6 +31,9 @@ export function applicantReviewsQueryKey(params: UseApplicantReviewsParams) {
       sortBy: params.sortBy ?? "score",
       sortOrder: params.sortOrder ?? "desc",
       shortlistOnly: params.shortlistOnly ?? false,
+      page: params.page ?? 0,
+      limit: params.limit ?? 50,
+      rubricId: params.rubricId ?? null,
     },
   ] as const;
 }
@@ -41,21 +47,31 @@ export function useApplicantReviewsQuery(params: UseApplicantReviewsParams) {
     shortlistOnly = false,
     enabled = true,
     refetchInterval = 15000,
+    page = 0,
+    limit: paramLimit,
+    rubricId,
   } = params;
 
   return useQuery({
     queryKey: applicantReviewsQueryKey(params),
     queryFn: async () => {
+      const limit = paramLimit ?? 50;
+      const offset = page * limit;
       const searchParams = new URLSearchParams({
         bonfire_id: bonfireId ?? "",
         sort_by: sortBy,
         sort_order: sortOrder,
       });
+      searchParams.set("limit", String(limit));
+      searchParams.set("offset", String(offset));
       if (batchId) {
         searchParams.set("batch_id", batchId);
       }
       if (shortlistOnly) {
         searchParams.set("shortlist_only", "true");
+      }
+      if (rubricId) {
+        searchParams.set("rubric_id", rubricId);
       }
       return apiClient.get<ApplicantReviewListResponse>(
         `/api/applicant-reviews?${searchParams.toString()}`,

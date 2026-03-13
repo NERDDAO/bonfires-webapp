@@ -85,6 +85,7 @@ export function useApplicantReviewsQuery(params: UseApplicantReviewsParams) {
 
 interface UseApplicantReviewDetailParams {
   applicationId: string | null;
+  rubricId?: string | null;
   refetchInterval?: number;
 }
 
@@ -96,15 +97,18 @@ export function useApplicantReviewDetail(
       ? applicationIdOrParams
       : { applicationId: applicationIdOrParams };
   const applicationId = params.applicationId;
+  const rubricId = params.rubricId ?? null;
   const refetchInterval = params.refetchInterval ?? 15000;
 
+  const searchParams = new URLSearchParams();
+  if (rubricId) searchParams.set("rubric_id", rubricId);
+  const qs = searchParams.toString();
+  const url = `/api/applicant-reviews/${applicationId}${qs ? `?${qs}` : ""}`;
+
   return useQuery({
-    queryKey: ["applicantReviewDetail", applicationId],
+    queryKey: ["applicantReviewDetail", applicationId, rubricId],
     queryFn: () =>
-      apiClient.get<ApplicantReviewDetailResponse>(
-        `/api/applicant-reviews/${applicationId}`,
-        { cache: false },
-      ),
+      apiClient.get<ApplicantReviewDetailResponse>(url, { cache: false }),
     enabled: !!applicationId,
     refetchInterval,
   });

@@ -3,6 +3,7 @@
  *
  * GET /api/agents/[agentId] - Get agent details (with access control)
  * PUT /api/agents/[agentId] - Update agent (with access control)
+ * DELETE /api/agents/[agentId] - Soft-delete agent (deactivate + unregister)
  */
 import { NextRequest } from "next/server";
 
@@ -105,7 +106,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  * Request Body:
  * - name?: string
  * - is_active?: boolean
- * - capabilities?: string[]
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const { agentId } = await params;
@@ -133,6 +133,47 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   return handleProxyRequest(`/agents/${agentId}`, {
     method: "PUT",
     body,
+  });
+}
+
+/**
+ * DELETE /api/agents/[agentId]
+ *
+ * Soft-delete an agent (deactivate + unregister from bonfire).
+ * Does NOT hard-delete — sets is_active=false and clears bonfire_id.
+ */
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const { agentId } = await params;
+
+  if (!agentId) {
+    return createErrorResponse("Agent ID is required", 400);
+  }
+
+  const accessCheck = await checkAgentAccess(agentId);
+  if (!accessCheck.allowed) {
+    if (accessCheck.status === 404) {
+      return createErrorResponse(accessCheck.error ?? "Agent not found", 404);
+    }
+    const denied = createAccessDeniedResponse(accessCheck.reason);
+    return createErrorResponse(denied.error, 403, denied.details, denied.code);
+  }
+
+  const deactivateResult = await proxyToBackend(`/agents/${agentId}`, {
+    method: "PUT",
+    body: { is_active: false, bonfire_id: null },
+  });
+
+  if (!deactivateResult.success) {
+    return createErrorResponse(
+      deactivateResult.error?.error ?? "Failed to deactivate agent",
+      deactivateResult.status ?? 500
+    );
+  }
+
+  return createSuccessResponse({
+    agent_id: agentId,
+    deactivated: true,
+    unregistered: !!accessCheck.agent?.bonfire_id,
   });
 }
 

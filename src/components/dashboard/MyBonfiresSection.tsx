@@ -274,13 +274,22 @@ function DeployedAgentsList({
             )}
           </div>
           {isOwner && (
-            <button
-              className="btn btn-xs btn-ghost"
-              onClick={() => onEditAgent(agent.id)}
-              title="Edit agent configuration"
-            >
-              Edit
-            </button>
+            <div className="flex gap-1">
+              <Link
+                href={`/agent-config?agent=${agent.id}`}
+                className="btn btn-xs btn-ghost"
+                title="Open agent config dashboard"
+              >
+                Configure
+              </Link>
+              <button
+                className="btn btn-xs btn-ghost"
+                onClick={() => onEditAgent(agent.id)}
+                title="Edit agent configuration"
+              >
+                Edit
+              </button>
+            </div>
           )}
         </div>
       ))}

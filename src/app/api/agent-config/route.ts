@@ -55,10 +55,9 @@ export async function POST(request: NextRequest) {
     context: body.agentContext,
     bonfireId: body.bonfireId,
     isActive: body.isActive ?? false,
-    capabilities: body.capabilities,
     timezone: body.timezone,
     deploymentConfiguration: {
-      platform: body.platform ?? "web",
+      platform: body.platform ?? "telegram",
       bonfireId: body.bonfireId,
       ...(body.telegramBotToken ? { telegramBotToken: body.telegramBotToken } : {}),
       ...(body.discordBotToken ? { discordBotToken: body.discordBotToken } : {}),

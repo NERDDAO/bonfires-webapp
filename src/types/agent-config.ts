@@ -41,7 +41,7 @@ export interface ReportingConfig {
   shouldNotIgnore?: boolean;
 }
 
-export type AgentPlatform = "telegram" | "discord" | "web";
+export type AgentPlatform = "telegram" | "discord";
 
 export interface AgentFeatures {
   isImageInputEnabled: boolean;
@@ -67,15 +67,15 @@ export interface AgentDeployFormData {
   discordBotToken: string;
   reportingConfig: ReportingConfig | null;
 
-  // Step 3: Features & Capabilities
-  capabilities: string[];
+  // Step 3: Features
   agentFeatures: AgentFeatures;
 
   // Step 4: Chat Policies
   chatConfig: ChatConfig;
 
-  // Step 5: Tools & Environment
+  // Step 5: Tools, Skills & Environment
   enabledMcpTools: string[];
+  enabledSkills: string[];
   agentEnvVars: Record<string, string>;
 
   // Activation
@@ -99,8 +99,8 @@ export interface AgentDeployRequest {
   chatConfig?: ChatConfig;
   agentFeatures?: AgentFeatures;
   enabledMcpTools?: string[];
+  enabledSkills?: string[];
   agentEnvVars?: Record<string, string>;
-  capabilities?: string[];
 }
 
 export interface AgentDeployResult {
@@ -119,7 +119,6 @@ export interface AgentFullResponse {
   username: string;
   name: string;
   context: string;
-  capabilities: string[];
   metadata: Record<string, unknown>;
   is_active: boolean;
   bonfire_ref: string | null;
@@ -130,10 +129,12 @@ export interface AgentFullResponse {
     bonfireId?: string;
     telegramBotToken?: string;
     discordBotToken?: string;
+    reportingGroupId?: string;
     reportingConfig?: ReportingConfig;
   } | null;
   agentFeatures: AgentFeatures | null;
   enabledMcpTools: string[];
+  enabledSkills: string[];
   timezone: string | null;
   agentEnvVars: Record<string, string> | null;
 }
@@ -141,12 +142,12 @@ export interface AgentFullResponse {
 export interface AgentUpdateRequest {
   name?: string;
   context?: string;
-  capabilities?: string[];
   is_active?: boolean;
   chatConfig?: ChatConfig;
   agentFeatures?: AgentFeatures;
   deploymentConfiguration?: Record<string, unknown>;
   enabledMcpTools?: string[];
+  enabledSkills?: string[];
   timezone?: string;
   agentEnvVars?: Record<string, string>;
 }
@@ -158,6 +159,80 @@ export interface McpTool {
   name: string;
   description?: string;
   group?: string;
+}
+
+// ── Skills ───────────────────────────────────────────────────────────────────
+
+export interface SkillInfo {
+  skillId: string;
+  name: string;
+  description?: string;
+}
+
+export interface SkillsListResponse {
+  skills: SkillInfo[];
+  count: number;
+}
+
+// ── Env Vars ──────────────────────────────────────────────────────────────────
+
+export interface EnvVarEntry {
+  key: string;
+  has_value: boolean;
+}
+
+export interface EnvVarsListResponse {
+  agent_id: string;
+  vars: EnvVarEntry[];
+  count: number;
+}
+
+export interface EnvVarsUpsertResponse {
+  agent_id: string;
+  updated_keys: string[];
+  count: number;
+}
+
+export interface EnvVarDeleteResponse {
+  agent_id: string;
+  key: string;
+  deleted: boolean;
+}
+
+// ── Personality ───────────────────────────────────────────────────────────────
+
+export interface PersonalityTrait {
+  id: string;
+  section: string;
+  content: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PersonalityResponse {
+  agent_id: string;
+  traits: PersonalityTrait[];
+  sections: Record<string, PersonalityTrait[]>;
+  total_traits: number;
+}
+
+export interface PersonalityTraitsModifyResponse {
+  agent_id: string;
+  modified_count: number;
+  traits: PersonalityTrait[];
+}
+
+export interface ToolsListResponse {
+  tools: McpTool[];
+  count: number;
+}
+
+// ── Agent Delete ──────────────────────────────────────────────────────────────
+
+export interface AgentDeleteResponse {
+  agent_id: string;
+  deactivated: boolean;
+  unregistered: boolean;
 }
 
 // ── Token validation ─────────────────────────────────────────────────────────
@@ -200,14 +275,14 @@ export function createDefaultFormData(): AgentDeployFormData {
     agentUsername: "",
     agentContext: "",
     timezone: "",
-    platform: "web",
+    platform: "telegram",
     telegramBotToken: "",
     discordBotToken: "",
     reportingConfig: null,
-    capabilities: [],
     agentFeatures: { ...DEFAULT_AGENT_FEATURES },
     chatConfig: { ...DEFAULT_CHAT_CONFIG },
     enabledMcpTools: [],
+    enabledSkills: [],
     agentEnvVars: {},
     isActive: false,
   };
@@ -215,7 +290,7 @@ export function createDefaultFormData(): AgentDeployFormData {
 
 export function agentResponseToFormData(agent: AgentFullResponse): AgentDeployFormData {
   const deploy = agent.deploymentConfiguration;
-  const platform = (deploy?.platform ?? "web") as AgentPlatform;
+  const platform = (deploy?.platform ?? "telegram") as AgentPlatform;
   return {
     agentName: agent.name,
     agentUsername: agent.username,
@@ -225,7 +300,6 @@ export function agentResponseToFormData(agent: AgentFullResponse): AgentDeployFo
     telegramBotToken: "",
     discordBotToken: "",
     reportingConfig: deploy?.reportingConfig ?? null,
-    capabilities: agent.capabilities ?? [],
     agentFeatures: agent.agentFeatures
       ? { ...DEFAULT_AGENT_FEATURES, ...agent.agentFeatures }
       : { ...DEFAULT_AGENT_FEATURES },
@@ -233,6 +307,7 @@ export function agentResponseToFormData(agent: AgentFullResponse): AgentDeployFo
       ? { ...DEFAULT_CHAT_CONFIG, ...agent.chatConfig }
       : { ...DEFAULT_CHAT_CONFIG },
     enabledMcpTools: agent.enabledMcpTools ?? [],
+    enabledSkills: agent.enabledSkills ?? [],
     agentEnvVars: agent.agentEnvVars ?? {},
     isActive: agent.is_active,
   };

@@ -3,22 +3,21 @@
 /**
  * AgentDeployWizard
  *
- * Modal wizard for deploying a new agent on a bonfire. 6 steps:
+ * Modal wizard for deploying a new agent on a bonfire. 7 steps:
  *   1. Identity       — name, username, system prompt, timezone
  *   2. Deployment     — platform, bot token, reporting config
- *   3. Features       — capability tags, agent feature toggles
- *   4. Chat Policies  — group/DM policies, allowed users, storage
+ *   3. Features       — agent feature toggles
+ *   4. Chat Policies  — group/DM policies, user lists, server configs
  *   5. Tools & Env    — MCP tool selection, environment variables
- *   6. Review & Deploy — summary + creation
+ *   6. Personality    — initial personality traits
+ *   7. Review & Deploy — summary + creation
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   AgentDeployFormData,
   AgentDeployRequest,
-  AgentPlatform,
   AgentUpdateRequest,
-  McpTool,
   TokenValidationResult,
 } from "@/types/agent-config";
 import { agentResponseToFormData, createDefaultFormData } from "@/types/agent-config";
@@ -30,6 +29,12 @@ import {
   useUpdateAgent,
   useValidateToken,
 } from "@/hooks/useAgentDeploy";
+import { useAddPersonalityTraits, useAgentPersonality, useSkillsCatalog } from "@/hooks/useAgentConfig";
+import { IdentitySection } from "@/components/agent-config/sections/IdentitySection";
+import { DeploymentSection } from "@/components/agent-config/sections/DeploymentSection";
+import { FeaturesSection } from "@/components/agent-config/sections/FeaturesSection";
+import { ChatPoliciesSection } from "@/components/agent-config/sections/ChatPoliciesSection";
+import { McpToolsSection } from "@/components/agent-config/sections/McpToolsSection";
 
 // ── Step indicator ───────────────────────────────────────────────────────────
 
@@ -39,6 +44,7 @@ const STEP_LABELS = [
   "Features",
   "Chat Policies",
   "Tools & Env",
+  "Personality",
   "Review",
 ] as const;
 
@@ -86,8 +92,13 @@ export function AgentDeployWizard({
   const createAgent = useCreateAgent();
   const updateAgent = useUpdateAgent();
   const validateToken = useValidateToken();
+  const addPersonalityTraits = useAddPersonalityTraits();
   const { data: mcpTools } = useMcpTools(isOpen);
+  const { data: skillsCatalog } = useSkillsCatalog(isOpen);
   const { data: existingAgent, isLoading: isLoadingAgent } = useAgentDetails(
+    isEditMode ? editAgentId : undefined,
+  );
+  const { data: existingPersonality } = useAgentPersonality(
     isEditMode ? editAgentId : undefined,
   );
 
@@ -100,8 +111,12 @@ export function AgentDeployWizard({
   const [envKey, setEnvKey] = useState("");
   const [envValue, setEnvValue] = useState("");
 
-  // Capability input
-  const [capInput, setCapInput] = useState("");
+  // Personality state (new traits to add)
+  const [initialTraits, setInitialTraits] = useState<Array<{ section: string; content: string }>>(
+    [],
+  );
+  const [newTraitSection, setNewTraitSection] = useState("");
+  const [newTraitContent, setNewTraitContent] = useState("");
 
   // ── Dialog open/close ──────────────────────────────────────────────────
 
@@ -127,6 +142,9 @@ export function AgentDeployWizard({
     setForm(createDefaultFormData());
     setFormInitialized(false);
     setTokenValidation(null);
+    setInitialTraits([]);
+    setNewTraitSection("");
+    setNewTraitContent("");
     createAgent.reset();
     updateAgent.reset();
     onClose();
@@ -141,6 +159,21 @@ export function AgentDeployWizard({
     [],
   );
 
+  // ── Personality helpers ────────────────────────────────────────────────
+
+  const addTrait = useCallback(() => {
+    const section = newTraitSection.trim();
+    const content = newTraitContent.trim();
+    if (!section || !content) return;
+    setInitialTraits((prev) => [...prev, { section, content }]);
+    setNewTraitSection("");
+    setNewTraitContent("");
+  }, [newTraitSection, newTraitContent]);
+
+  const removeTrait = useCallback((index: number) => {
+    setInitialTraits((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   // ── Step 1: Identity ───────────────────────────────────────────────────
 
   const nameValid = form.agentName.trim().length >= 1 && form.agentName.trim().length <= 60;
@@ -150,12 +183,11 @@ export function AgentDeployWizard({
 
   // ── Step 2: Deployment ─────────────────────────────────────────────────
 
-  const needsToken = form.platform === "telegram" || form.platform === "discord";
   const currentToken =
     form.platform === "telegram" ? form.telegramBotToken : form.discordBotToken;
-  const tokenProvided = needsToken ? currentToken.trim().length > 0 : true;
-  const tokenIsValid = needsToken ? tokenValidation?.valid === true : true;
-  const step2Valid = tokenProvided && (!needsToken || tokenIsValid || !currentToken.trim());
+  const tokenProvided = currentToken.trim().length > 0;
+  const tokenIsValid = tokenValidation?.valid === true;
+  const step2Valid = tokenProvided && (!tokenProvided || tokenIsValid || !currentToken.trim());
 
   const handleValidateToken = useCallback(async () => {
     if (!currentToken.trim()) return;
@@ -165,34 +197,6 @@ export function AgentDeployWizard({
     });
     setTokenValidation(result);
   }, [currentToken, form.platform, validateToken]);
-
-  const handlePlatformChange = useCallback(
-    (platform: AgentPlatform) => {
-      update("platform", platform);
-      setTokenValidation(null);
-    },
-    [update],
-  );
-
-  // ── Step 3: Capabilities ───────────────────────────────────────────────
-
-  const addCapability = useCallback(() => {
-    const trimmed = capInput.trim();
-    if (trimmed && form.capabilities.length < 10 && !form.capabilities.includes(trimmed)) {
-      update("capabilities", [...form.capabilities, trimmed]);
-    }
-    setCapInput("");
-  }, [capInput, form.capabilities, update]);
-
-  const removeCapability = useCallback(
-    (tag: string) => {
-      update(
-        "capabilities",
-        form.capabilities.filter((c) => c !== tag),
-      );
-    },
-    [form.capabilities, update],
-  );
 
   // ── Step 5: Env vars ───────────────────────────────────────────────────
 
@@ -215,64 +219,93 @@ export function AgentDeployWizard({
     [form.agentEnvVars, update],
   );
 
-  // ── Step 6: Deploy ─────────────────────────────────────────────────────
+  // ── Step 7: Deploy ─────────────────────────────────────────────────────
 
   const handleDeploy = useCallback(async () => {
-    if (isEditMode && editAgentId) {
-      const payload: AgentUpdateRequest = {
-        name: form.agentName.trim(),
-        context: form.agentContext.trim(),
-        is_active: form.isActive,
-        capabilities: form.capabilities,
-        timezone: form.timezone || undefined,
-        chatConfig: form.chatConfig,
-        agentFeatures: form.agentFeatures,
-        enabledMcpTools: form.enabledMcpTools,
-        agentEnvVars:
-          Object.keys(form.agentEnvVars).length > 0 ? form.agentEnvVars : undefined,
-        deploymentConfiguration: {
-          platform: form.platform,
+    try {
+      if (isEditMode && editAgentId) {
+        const payload: AgentUpdateRequest = {
+          name: form.agentName.trim(),
+          context: form.agentContext.trim(),
+          is_active: form.isActive,
+          timezone: form.timezone || undefined,
+          chatConfig: form.chatConfig,
+          agentFeatures: form.agentFeatures,
+          enabledMcpTools: form.enabledMcpTools,
+          enabledSkills: form.enabledSkills,
+          agentEnvVars:
+            Object.keys(form.agentEnvVars).length > 0 ? form.agentEnvVars : undefined,
+          deploymentConfiguration: {
+            platform: form.platform,
+            bonfireId,
+            ...(form.platform === "telegram" && form.telegramBotToken.trim()
+              ? { telegramBotToken: form.telegramBotToken.trim() }
+              : {}),
+            ...(form.platform === "discord" && form.discordBotToken.trim()
+              ? { discordBotToken: form.discordBotToken.trim() }
+              : {}),
+            ...(form.reportingConfig ? { reportingConfig: form.reportingConfig } : {}),
+          },
+        };
+        await updateAgent.mutateAsync({ agentId: editAgentId, data: payload });
+        if (initialTraits.length > 0) {
+          await addPersonalityTraits.mutateAsync({
+            agentId: editAgentId,
+            traits: initialTraits,
+          });
+        }
+      } else {
+        const payload: AgentDeployRequest = {
+          agentName: form.agentName.trim(),
+          agentUsername: form.agentUsername.trim(),
+          agentContext: form.agentContext.trim(),
           bonfireId,
-          ...(form.platform === "telegram" && form.telegramBotToken.trim()
-            ? { telegramBotToken: form.telegramBotToken.trim() }
-            : {}),
-          ...(form.platform === "discord" && form.discordBotToken.trim()
-            ? { discordBotToken: form.discordBotToken.trim() }
-            : {}),
-          ...(form.reportingConfig ? { reportingConfig: form.reportingConfig } : {}),
-        },
-      };
-      updateAgent.mutate({ agentId: editAgentId, data: payload });
-    } else {
-      const payload: AgentDeployRequest = {
-        agentName: form.agentName.trim(),
-        agentUsername: form.agentUsername.trim(),
-        agentContext: form.agentContext.trim(),
-        bonfireId,
-        platform: form.platform,
-        isActive: form.isActive,
-        capabilities: form.capabilities,
-        timezone: form.timezone || undefined,
-        chatConfig: form.chatConfig,
-        agentFeatures: form.agentFeatures,
-        enabledMcpTools: form.enabledMcpTools.length > 0 ? form.enabledMcpTools : undefined,
-        agentEnvVars:
-          Object.keys(form.agentEnvVars).length > 0 ? form.agentEnvVars : undefined,
-      };
+          platform: form.platform,
+          isActive: form.isActive,
+          timezone: form.timezone || undefined,
+          chatConfig: form.chatConfig,
+          agentFeatures: form.agentFeatures,
+          enabledMcpTools: form.enabledMcpTools.length > 0 ? form.enabledMcpTools : undefined,
+          enabledSkills: form.enabledSkills.length > 0 ? form.enabledSkills : undefined,
+          agentEnvVars:
+            Object.keys(form.agentEnvVars).length > 0 ? form.agentEnvVars : undefined,
+        };
 
-      if (form.platform === "telegram" && form.telegramBotToken.trim()) {
-        payload.telegramBotToken = form.telegramBotToken.trim();
-      }
-      if (form.platform === "discord" && form.discordBotToken.trim()) {
-        payload.discordBotToken = form.discordBotToken.trim();
-      }
-      if (form.reportingConfig) {
-        payload.reportingConfig = form.reportingConfig;
-      }
+        if (form.platform === "telegram" && form.telegramBotToken.trim()) {
+          payload.telegramBotToken = form.telegramBotToken.trim();
+        }
+        if (form.platform === "discord" && form.discordBotToken.trim()) {
+          payload.discordBotToken = form.discordBotToken.trim();
+        }
+        if (form.reportingConfig) {
+          payload.reportingConfig = form.reportingConfig;
+        }
 
-      createAgent.mutate(payload);
+        const result = await createAgent.mutateAsync(payload);
+        if (initialTraits.length > 0 && result?._id) {
+          try {
+            await addPersonalityTraits.mutateAsync({
+              agentId: result._id,
+              traits: initialTraits,
+            });
+          } catch {
+            // Non-fatal: traits can be added later via Personality tab
+          }
+        }
+      }
+    } catch {
+      // Errors captured in activeMutation.isError
     }
-  }, [form, bonfireId, createAgent, updateAgent, isEditMode, editAgentId]);
+  }, [
+    form,
+    bonfireId,
+    createAgent,
+    updateAgent,
+    addPersonalityTraits,
+    isEditMode,
+    editAgentId,
+    initialTraits,
+  ]);
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -306,71 +339,18 @@ export function AgentDeployWizard({
         {/* ── Step 1: Identity ──────────────────────────────────── */}
         {!(isEditMode && isLoadingAgent) && step === 0 && (
           <div className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Agent Name *</span>
-                <span className="label-text-alt">{form.agentName.length}/60</span>
-              </label>
-              <input
-                type="text"
-                className={`input input-bordered w-full ${form.agentName && !nameValid ? "input-error" : ""}`}
-                placeholder="My Research Agent"
-                value={form.agentName}
-                onChange={(e) => update("agentName", e.target.value)}
-                maxLength={60}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Username *</span>
-                <span className="label-text-alt">lowercase, 3-30 chars</span>
-              </label>
-              <input
-                type="text"
-                className={`input input-bordered w-full font-mono ${form.agentUsername && !usernameValid ? "input-error" : ""}`}
-                placeholder="my_research_agent"
-                value={form.agentUsername}
-                onChange={(e) => update("agentUsername", e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                maxLength={30}
-                disabled={isEditMode}
-              />
-              {form.agentUsername && !usernameValid && (
-                <label className="label">
-                  <span className="label-text-alt text-error">
-                    3-30 characters: lowercase letters, numbers, underscores
-                  </span>
-                </label>
-              )}
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">System Prompt *</span>
-                <span className="label-text-alt">min 10 chars</span>
-              </label>
-              <textarea
-                className={`textarea textarea-bordered h-28 w-full ${form.agentContext && !contextValid ? "textarea-error" : ""}`}
-                placeholder="You are a research assistant specializing in..."
-                value={form.agentContext}
-                onChange={(e) => update("agentContext", e.target.value)}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">
-                  Timezone <span className="font-normal text-base-content/50">(optional)</span>
-                </span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered w-full"
-                placeholder="America/New_York"
-                value={form.timezone}
-                onChange={(e) => update("timezone", e.target.value)}
-              />
-            </div>
+            <IdentitySection
+              name={form.agentName}
+              username={form.agentUsername}
+              context={form.agentContext}
+              timezone={form.timezone}
+              disableUsername={isEditMode}
+              onChangeName={(v) => update("agentName", v)}
+              onChangeUsername={(v) => update("agentUsername", v)}
+              onChangeContext={(v) => update("agentContext", v)}
+              onChangeTimezone={(v) => update("timezone", v)}
+              showValidation
+            />
 
             <div className="flex justify-end mt-4">
               <button className="btn btn-primary" disabled={!step1Valid} onClick={() => setStep(1)}>
@@ -383,113 +363,27 @@ export function AgentDeployWizard({
         {/* ── Step 2: Deployment ────────────────────────────────── */}
         {step === 1 && (
           <div className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Platform</span>
-              </label>
-              <div className="flex gap-2">
-                {(["web", "telegram", "discord"] as const).map((p) => (
-                  <button
-                    key={p}
-                    className={`btn btn-sm ${form.platform === p ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => handlePlatformChange(p)}
-                  >
-                    {p === "web" ? "Web (API)" : p.charAt(0).toUpperCase() + p.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {needsToken && (
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">
-                    {form.platform === "telegram" ? "Telegram" : "Discord"} Bot Token
-                  </span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    className="input input-bordered flex-1 font-mono"
-                    placeholder="Paste your bot token..."
-                    value={currentToken}
-                    onChange={(e) =>
-                      update(
-                        form.platform === "telegram" ? "telegramBotToken" : "discordBotToken",
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <button
-                    className="btn btn-outline btn-sm self-center"
-                    disabled={!currentToken.trim() || validateToken.isPending}
-                    onClick={handleValidateToken}
-                  >
-                    {validateToken.isPending ? (
-                      <span className="loading loading-spinner loading-xs" />
-                    ) : (
-                      "Validate"
-                    )}
-                  </button>
-                </div>
-                {tokenValidation && (
-                  <div className={`mt-2 text-sm ${tokenValidation.valid ? "text-success" : "text-error"}`}>
-                    {tokenValidation.valid
-                      ? `Valid bot: @${tokenValidation.username}`
-                      : `Invalid: ${tokenValidation.error}`}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="collapse collapse-arrow bg-base-200 rounded-lg">
-              <input type="checkbox" />
-              <div className="collapse-title text-sm font-semibold">Reporting Config (optional)</div>
-              <div className="collapse-content space-y-3">
-                <div className="form-control">
-                  <label className="label py-1">
-                    <span className="label-text text-sm">Chat ID</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered input-sm w-full"
-                    placeholder="Telegram chat ID or Discord channel ID"
-                    value={form.reportingConfig?.chatId ?? ""}
-                    onChange={(e) => {
-                      const chatId = e.target.value;
-                      if (!chatId) {
-                        update("reportingConfig", null);
-                      } else {
-                        update("reportingConfig", {
-                          chatId,
-                          topicId: form.reportingConfig?.topicId,
-                          shouldNotIgnore: form.reportingConfig?.shouldNotIgnore,
-                        });
-                      }
-                    }}
-                  />
-                </div>
-                <div className="form-control">
-                  <label className="label py-1">
-                    <span className="label-text text-sm">Topic ID (optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered input-sm w-full"
-                    placeholder="Topic ID within the chat"
-                    value={form.reportingConfig?.topicId ?? ""}
-                    onChange={(e) => {
-                      if (form.reportingConfig) {
-                        update("reportingConfig", {
-                          ...form.reportingConfig,
-                          topicId: e.target.value || undefined,
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+            <DeploymentSection
+              platform={form.platform}
+              telegramBotToken={form.telegramBotToken}
+              discordBotToken={form.discordBotToken}
+              reportingConfig={form.reportingConfig}
+              tokenValidation={tokenValidation}
+              onValidate={handleValidateToken}
+              isValidating={validateToken.isPending}
+              onChange={(patch) => {
+                if (patch.platform !== undefined) {
+                  update("platform", patch.platform);
+                  setTokenValidation(null);
+                }
+                if (patch.telegramBotToken !== undefined)
+                  update("telegramBotToken", patch.telegramBotToken);
+                if (patch.discordBotToken !== undefined)
+                  update("discordBotToken", patch.discordBotToken);
+                if ("reportingConfig" in patch)
+                  update("reportingConfig", patch.reportingConfig ?? null);
+              }}
+            />
 
             <div className="flex justify-between mt-4">
               <button className="btn btn-outline" onClick={() => setStep(0)}>
@@ -502,78 +396,13 @@ export function AgentDeployWizard({
           </div>
         )}
 
-        {/* ── Step 3: Features & Capabilities ──────────────────── */}
+        {/* ── Step 3: Features ──────────────────────────────────── */}
         {step === 2 && (
           <div className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">
-                  Capabilities <span className="font-normal text-base-content/50">(optional)</span>
-                </span>
-                <span className="label-text-alt">{form.capabilities.length}/10</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  className="input input-bordered flex-1"
-                  placeholder="Type and press Enter..."
-                  value={capInput}
-                  onChange={(e) => setCapInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addCapability();
-                    }
-                  }}
-                  disabled={form.capabilities.length >= 10}
-                />
-                <button className="btn btn-outline btn-sm self-center" onClick={addCapability} disabled={!capInput.trim()}>
-                  Add
-                </button>
-              </div>
-              {form.capabilities.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {form.capabilities.map((cap) => (
-                    <span key={cap} className="badge badge-outline gap-1">
-                      {cap}
-                      <button
-                        className="text-base-content/50 hover:text-base-content leading-none"
-                        onClick={() => removeCapability(cap)}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="divider text-xs">Agent Features</div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {([
-                ["isImageInputEnabled", "Image Input"],
-                ["isAudioInputEnabled", "Audio Input"],
-                ["isDocumentInputEnabled", "Document Input"],
-                ["isImageGenerationEnabled", "Image Generation"],
-                ["allowScheduling", "Task Scheduling"],
-              ] as const).map(([key, label]) => (
-                <label key={key} className="label cursor-pointer justify-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-primary toggle-sm"
-                    checked={form.agentFeatures[key]}
-                    onChange={(e) =>
-                      update("agentFeatures", {
-                        ...form.agentFeatures,
-                        [key]: e.target.checked,
-                      })
-                    }
-                  />
-                  <span className="label-text">{label}</span>
-                </label>
-              ))}
-            </div>
+            <FeaturesSection
+              features={form.agentFeatures}
+              onChange={(f) => update("agentFeatures", f)}
+            />
 
             <div className="flex justify-between mt-4">
               <button className="btn btn-outline" onClick={() => setStep(1)}>
@@ -589,92 +418,10 @@ export function AgentDeployWizard({
         {/* ── Step 4: Chat Policies ─────────────────────────────── */}
         {step === 3 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Group Policy</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={form.chatConfig.groupPolicy ?? "open"}
-                  onChange={(e) =>
-                    update("chatConfig", {
-                      ...form.chatConfig,
-                      groupPolicy: e.target.value as "open" | "restricted",
-                    })
-                  }
-                >
-                  <option value="open">Open</option>
-                  <option value="restricted">Restricted</option>
-                </select>
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">DM Policy</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={form.chatConfig.dmPolicy ?? "open"}
-                  onChange={(e) =>
-                    update("chatConfig", {
-                      ...form.chatConfig,
-                      dmPolicy: e.target.value as "open" | "restricted" | "disabled",
-                    })
-                  }
-                >
-                  <option value="open">Open</option>
-                  <option value="restricted">Restricted</option>
-                  <option value="disabled">Disabled</option>
-                </select>
-              </div>
-            </div>
-
-            <label className="label cursor-pointer justify-start gap-3">
-              <input
-                type="checkbox"
-                className="toggle toggle-sm"
-                checked={form.chatConfig.silentMode ?? false}
-                onChange={(e) =>
-                  update("chatConfig", { ...form.chatConfig, silentMode: e.target.checked })
-                }
-              />
-              <span className="label-text">Silent Mode</span>
-            </label>
-
-            <div className="divider text-xs">Storage Settings</div>
-
-            <div className="space-y-2">
-              <label className="label cursor-pointer justify-start gap-3">
-                <input
-                  type="checkbox"
-                  className="toggle toggle-sm"
-                  checked={form.chatConfig.disableStoringGroups ?? false}
-                  onChange={(e) =>
-                    update("chatConfig", {
-                      ...form.chatConfig,
-                      disableStoringGroups: e.target.checked,
-                    })
-                  }
-                />
-                <span className="label-text">Disable storing group messages</span>
-              </label>
-
-              <label className="label cursor-pointer justify-start gap-3">
-                <input
-                  type="checkbox"
-                  className="toggle toggle-sm"
-                  checked={form.chatConfig.disableStoringDMs ?? false}
-                  onChange={(e) =>
-                    update("chatConfig", {
-                      ...form.chatConfig,
-                      disableStoringDMs: e.target.checked,
-                    })
-                  }
-                />
-                <span className="label-text">Disable storing DM messages</span>
-              </label>
-            </div>
+            <ChatPoliciesSection
+              config={form.chatConfig}
+              onChange={(c) => update("chatConfig", c)}
+            />
 
             <div className="flex justify-between mt-4">
               <button className="btn btn-outline" onClick={() => setStep(2)}>
@@ -694,34 +441,49 @@ export function AgentDeployWizard({
               <label className="label">
                 <span className="label-text font-semibold">MCP Tools</span>
               </label>
-              {mcpTools && mcpTools.length > 0 ? (
-                <div className="space-y-2">
-                  {mcpTools.map((tool: McpTool) => (
-                    <label key={tool.id} className="label cursor-pointer justify-start gap-3 bg-base-200 rounded-lg px-3">
+              <McpToolsSection
+                tools={mcpTools ?? []}
+                enabledTools={form.enabledMcpTools}
+                onChange={(t) => update("enabledMcpTools", t)}
+              />
+            </div>
+
+            {/* Skills */}
+            {skillsCatalog && skillsCatalog.skills.length > 0 && (
+              <div>
+                <label className="label">
+                  <span className="label-text font-semibold">
+                    Skills ({form.enabledSkills.length} enabled)
+                  </span>
+                </label>
+                <div className="grid grid-cols-1 gap-1">
+                  {skillsCatalog.skills.map((skill) => (
+                    <label
+                      key={skill.skillId}
+                      className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-base-300"
+                    >
                       <input
                         type="checkbox"
-                        className="checkbox checkbox-primary checkbox-sm"
-                        checked={form.enabledMcpTools.includes(tool.id)}
+                        className="checkbox checkbox-sm checkbox-primary mt-0.5"
+                        checked={form.enabledSkills.includes(skill.skillId)}
                         onChange={(e) => {
                           const next = e.target.checked
-                            ? [...form.enabledMcpTools, tool.id]
-                            : form.enabledMcpTools.filter((id) => id !== tool.id);
-                          update("enabledMcpTools", next);
+                            ? [...form.enabledSkills, skill.skillId]
+                            : form.enabledSkills.filter((id) => id !== skill.skillId);
+                          update("enabledSkills", next);
                         }}
                       />
                       <div>
-                        <span className="label-text font-medium">{tool.name}</span>
-                        {tool.description && (
-                          <p className="text-xs text-base-content/50">{tool.description}</p>
+                        <span className="text-sm font-medium">{skill.name}</span>
+                        {skill.description && (
+                          <p className="text-xs text-base-content/50">{skill.description}</p>
                         )}
                       </div>
                     </label>
                   ))}
                 </div>
-              ) : (
-                <p className="text-sm text-base-content/50">No tools available</p>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="divider text-xs">Environment Variables</div>
 
@@ -731,7 +493,9 @@ export function AgentDeployWizard({
                 className="input input-bordered input-sm flex-1 font-mono"
                 placeholder="KEY"
                 value={envKey}
-                onChange={(e) => setEnvKey(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))}
+                onChange={(e) =>
+                  setEnvKey(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))
+                }
               />
               <input
                 type="text"
@@ -752,7 +516,10 @@ export function AgentDeployWizard({
             {Object.keys(form.agentEnvVars).length > 0 && (
               <div className="space-y-1">
                 {Object.entries(form.agentEnvVars).map(([k, v]) => (
-                  <div key={k} className="flex items-center gap-2 bg-base-200 rounded px-3 py-1.5 text-sm">
+                  <div
+                    key={k}
+                    className="flex items-center gap-2 bg-base-200 rounded px-3 py-1.5 text-sm"
+                  >
                     <span className="font-mono font-semibold">{k}</span>
                     <span className="text-base-content/40">=</span>
                     <span className="font-mono flex-1 truncate text-base-content/70">
@@ -780,8 +547,100 @@ export function AgentDeployWizard({
           </div>
         )}
 
-        {/* ── Step 6: Review & Deploy ──────────────────────────── */}
-        {step === 5 && !activeMutation.isSuccess && (
+        {/* ── Step 6: Personality ───────────────────────────────── */}
+        {step === 5 && (
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-semibold mb-1">Personality Traits</h4>
+              <p className="text-xs text-base-content/50 mb-3">
+                Add initial personality traits. More can be added later via the Personality tab.
+              </p>
+            </div>
+
+            {/* Existing traits (edit mode) */}
+            {isEditMode && existingPersonality && existingPersonality.total_traits > 0 && (
+              <div className="border border-base-300 rounded-lg p-3">
+                <p className="text-xs font-medium text-base-content/60 mb-2">
+                  Existing traits ({existingPersonality.total_traits})
+                </p>
+                {Object.entries(existingPersonality.sections).map(([section, traits]) => (
+                  <div key={section} className="mb-2">
+                    <span className="text-xs font-medium text-primary">{section}</span>
+                    {traits.map((t) => (
+                      <p key={t.id} className="text-xs text-base-content/60 ml-2 mt-0.5">
+                        {t.content}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* New traits to add */}
+            {initialTraits.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium">Traits to add ({initialTraits.length}):</p>
+                {initialTraits.map((t, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 bg-base-200 rounded p-2 text-sm"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className="text-primary text-xs font-medium">{t.section}</span>
+                      <p className="text-xs text-base-content/70 mt-0.5 whitespace-pre-wrap">
+                        {t.content}
+                      </p>
+                    </div>
+                    <button
+                      className="btn btn-xs btn-ghost text-base-content/50 shrink-0"
+                      onClick={() => removeTrait(i)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add trait form */}
+            <div className="border border-base-300 rounded-lg p-3 space-y-2">
+              <h4 className="text-xs font-medium">Add Trait</h4>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full"
+                placeholder="Section (e.g. core_identity, communication_style)"
+                value={newTraitSection}
+                onChange={(e) => setNewTraitSection(e.target.value)}
+              />
+              <textarea
+                className="textarea textarea-bordered w-full text-sm"
+                placeholder="Trait content..."
+                value={newTraitContent}
+                onChange={(e) => setNewTraitContent(e.target.value)}
+                rows={3}
+              />
+              <button
+                className="btn btn-sm btn-outline"
+                onClick={addTrait}
+                disabled={!newTraitSection.trim() || !newTraitContent.trim()}
+              >
+                Add Trait
+              </button>
+            </div>
+
+            <div className="flex justify-between mt-4">
+              <button className="btn btn-outline" onClick={() => setStep(4)}>
+                Back
+              </button>
+              <button className="btn btn-primary" onClick={() => setStep(6)}>
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 7: Review & Deploy ──────────────────────────── */}
+        {step === 6 && !activeMutation.isSuccess && (
           <div className="space-y-4">
             <div className="border border-base-300 rounded-lg divide-y divide-base-300">
               <ReviewRow label="Name" value={form.agentName} />
@@ -790,18 +649,28 @@ export function AgentDeployWizard({
               <ReviewRow label="Bonfire" value={bonfireName} />
               <ReviewRow
                 label="System Prompt"
-                value={form.agentContext.length > 80 ? form.agentContext.slice(0, 80) + "..." : form.agentContext}
+                value={
+                  form.agentContext.length > 80
+                    ? form.agentContext.slice(0, 80) + "..."
+                    : form.agentContext
+                }
               />
-              {form.capabilities.length > 0 && (
-                <ReviewRow label="Capabilities" value={form.capabilities.join(", ")} />
-              )}
               {form.enabledMcpTools.length > 0 && (
                 <ReviewRow label="MCP Tools" value={form.enabledMcpTools.join(", ")} />
+              )}
+              {form.enabledSkills.length > 0 && (
+                <ReviewRow label="Skills" value={`${form.enabledSkills.length} skill(s)`} />
               )}
               {Object.keys(form.agentEnvVars).length > 0 && (
                 <ReviewRow
                   label="Env Vars"
                   value={`${Object.keys(form.agentEnvVars).length} variable(s)`}
+                />
+              )}
+              {initialTraits.length > 0 && (
+                <ReviewRow
+                  label="Personality Traits"
+                  value={`${initialTraits.length} trait(s) to add`}
                 />
               )}
               <ReviewRow label="Active" value={form.isActive ? "Yes" : "No (draft)"} />
@@ -819,12 +688,19 @@ export function AgentDeployWizard({
 
             {activeMutation.isError && (
               <div className="alert alert-error text-sm">
-                <span>{activeMutation.error?.message ?? `Failed to ${isEditMode ? "update" : "create"} agent`}</span>
+                <span>
+                  {activeMutation.error?.message ??
+                    `Failed to ${isEditMode ? "update" : "create"} agent`}
+                </span>
               </div>
             )}
 
             <div className="flex justify-between mt-4">
-              <button className="btn btn-outline" onClick={() => setStep(4)} disabled={activeMutation.isPending}>
+              <button
+                className="btn btn-outline"
+                onClick={() => setStep(5)}
+                disabled={activeMutation.isPending}
+              >
                 Back
               </button>
               <button
@@ -861,7 +737,10 @@ export function AgentDeployWizard({
             <div className="border border-base-300 rounded-lg divide-y divide-base-300 text-left">
               <ReviewRow label="Agent ID" value={createAgent.data._id} mono />
               <ReviewRow label="Username" value={`@${createAgent.data.username}`} mono />
-              <ReviewRow label="Platform" value={createAgent.data.deploymentConfiguration.platform} />
+              <ReviewRow
+                label="Platform"
+                value={createAgent.data.deploymentConfiguration.platform}
+              />
             </div>
 
             <button className="btn btn-primary mt-4" onClick={handleClose}>

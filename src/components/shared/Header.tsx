@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 import ConnectWallet from "../navbar/connect-wallet";
 
-type NavSection = "graph" | "web3" | "documents" | "dashboard" | null;
+type NavSection = "graph" | "web3" | "documents" | "dashboard" | "agent-config" | null;
 
 interface HeaderProps {
   /** Custom class name */
@@ -78,6 +78,9 @@ export function Header({ className = "" }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<NavSection>(null);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { orgRole } = useAuth();
+  const isAdminOrManager =
+    orgRole === "org:bonfire_admin" || orgRole === "org:bonfire_manager";
 
   // Determine active section from pathname
   const getActiveSection = (): NavSection => {
@@ -96,6 +99,9 @@ export function Header({ className = "" }: HeaderProps) {
     }
     if (pathname.startsWith("/dashboard")) {
       return "dashboard";
+    }
+    if (pathname.startsWith("/agent-config")) {
+      return "agent-config";
     }
     return null;
   };
@@ -199,6 +205,11 @@ export function Header({ className = "" }: HeaderProps) {
               <li>
                 <Link href="/dashboard">Dashboard</Link>
               </li>
+              {isAdminOrManager && (
+                <li>
+                  <Link href="/agent-config">Agent Config</Link>
+                </li>
+              )}
             </ul>
           )}
         </div>
@@ -308,6 +319,18 @@ export function Header({ className = "" }: HeaderProps) {
               Dashboard
             </Link>
           </li>
+
+          {/* Agent Config link (admin/manager only) */}
+          {isAdminOrManager && (
+            <li>
+              <Link
+                href="/agent-config"
+                className={activeSection === "agent-config" ? "active" : ""}
+              >
+                Agent Config
+              </Link>
+            </li>
+          )}
         </ul>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -13,6 +13,10 @@ import {
 import { useApplicationActions } from "@/hooks/queries/useApplicationActions";
 import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
 import { useProfileModal } from "@/hooks/queries/useProfileModal";
+import {
+  useRubricListQuery,
+  useStructuredRubricQuery,
+} from "@/hooks/queries/useRubricQuery";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
 import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
 import { Modal } from "@/components/ui/modal";
@@ -49,11 +53,25 @@ export function ApplicantReviewsSection({
   const [isImporting, setIsImporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
+  const [selectedRubricDocId, setSelectedRubricDocId] = useState<string | null>(null);
+  const [selectedRubricId, setSelectedRubricId] = useState<string | null>(null);
 
   const batchProgress = useBatchProgress();
   const applicationActions = useApplicationActions();
   const profileModal = useProfileModal();
   const isActive = batchProgress.isOpen || applicationActions.isReevaluating;
+
+  const rubricListQuery = useRubricListQuery(bonfireId);
+  const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId);
+
+  useEffect(() => {
+    if (structuredRubricQuery.data) {
+      setSelectedRubricId(structuredRubricQuery.data.id);
+      setPage(0);
+    }
+  }, [structuredRubricQuery.data]);
 
   const reviewsQuery = useApplicantReviewsQuery({
     bonfireId,
@@ -62,6 +80,9 @@ export function ApplicantReviewsSection({
     sortOrder,
     shortlistOnly,
     refetchInterval: isActive ? 4000 : 15000,
+    page,
+    limit: PAGE_SIZE,
+    rubricId: selectedRubricId,
   });
   const detailQuery = useApplicantReviewDetail({
     applicationId: selectedApplicationId,
@@ -179,15 +200,24 @@ export function ApplicantReviewsSection({
                 batchProgress.open(batchId ?? "");
                 void (async () => {
                   try {
+                    const needsEvaluation = applications.filter(
+                      (a) => a.evaluation_status !== "completed",
+                    );
+                    if (needsEvaluation.length === 0) {
+                      toast.success("All applications already evaluated.");
+                      return;
+                    }
                     await applicationActions.reevaluateAll(
-                      applications.map((a) => a.id),
+                      needsEvaluation.map((a) => a.id),
                       batchId ?? undefined,
+                      selectedRubricId,
                     );
                     await queryClient.invalidateQueries({
                       queryKey: ["applicantReviewBatch"],
                     });
                     await refreshData();
                     applicationActions.clearProgress();
+                    applicationActions.cancelStream();
                     toast.success("Re-evaluation complete.");
                   } catch (err) {
                     toast.error(
@@ -278,15 +308,24 @@ export function ApplicantReviewsSection({
             ? () => {
                 void (async () => {
                   try {
+                    const needsEvaluation = applications.filter(
+                      (a) => a.evaluation_status !== "completed",
+                    );
+                    if (needsEvaluation.length === 0) {
+                      toast.success("All applications already evaluated.");
+                      return;
+                    }
                     await applicationActions.reevaluateAll(
-                      applications.map((a) => a.id),
+                      needsEvaluation.map((a) => a.id),
                       batchId,
+                      selectedRubricId,
                     );
                     await queryClient.invalidateQueries({
                       queryKey: ["applicantReviewBatch"],
                     });
                     await refreshData();
                     applicationActions.clearProgress();
+                    applicationActions.cancelStream();
                     toast.success("Re-evaluation complete.");
                   } catch (err) {
                     toast.error(
@@ -315,7 +354,7 @@ export function ApplicantReviewsSection({
               <select
                 className="select select-bordered"
                 value={sortBy}
-                onChange={(event) => setSortBy(event.target.value)}
+                onChange={(event) => { setSortBy(event.target.value); setPage(0); }}
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -330,9 +369,10 @@ export function ApplicantReviewsSection({
               <select
                 className="select select-bordered"
                 value={sortOrder}
-                onChange={(event) =>
-                  setSortOrder(event.target.value === "asc" ? "asc" : "desc")
-                }
+                onChange={(event) => {
+                  setSortOrder(event.target.value === "asc" ? "asc" : "desc");
+                  setPage(0);
+                }}
               >
                 <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
@@ -345,9 +385,58 @@ export function ApplicantReviewsSection({
                 type="checkbox"
                 className="checkbox checkbox-sm"
                 checked={shortlistOnly}
-                onChange={(event) => setShortlistOnly(event.target.checked)}
+                onChange={(event) => {
+                  setShortlistOnly(event.target.checked);
+                  setPage(0);
+                }}
               />
             </label>
+
+            {rubricListQuery.data && rubricListQuery.data.items.length > 0 && (
+              <label className="form-control">
+                <span className="label-text text-sm font-medium">Rubric</span>
+                <select
+                  className="select select-bordered"
+                  value={selectedRubricDocId ?? "default"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "default") {
+                      setSelectedRubricDocId(null);
+                      setSelectedRubricId(null);
+                    } else {
+                      setSelectedRubricDocId(val);
+                    }
+                    setPage(0);
+                  }}
+                >
+                  <option value="default">Default (v1)</option>
+                  {rubricListQuery.data.items.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} {r.version ? `(${r.version})` : ""} {r.is_active ? " [active]" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <button
+              onClick={async () => {
+                const params = new URLSearchParams({ bonfire_id: bonfireId });
+                if (batchId) params.set("batch_id", batchId);
+                if (selectedRubricId) params.set("rubric_id", selectedRubricId);
+                const res = await fetch(`/api/applicant-reviews-export?${params}`);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "applicant_reviews.csv";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="btn btn-ghost btn-sm mt-auto"
+            >
+              Export CSV
+            </button>
           </div>
 
           {reviewsQuery.isLoading ? (
@@ -450,7 +539,7 @@ export function ApplicantReviewsSection({
                                 try {
                                   await apiClient.post<ApplicantReviewActionResponse>(
                                     `/api/applicant-reviews/${application.id}/evaluate`,
-                                    {},
+                                    { rubric_id: selectedRubricId ?? undefined },
                                   );
                                   toast.success("Evaluation queued.");
                                   await refreshData();
@@ -479,6 +568,30 @@ export function ApplicantReviewsSection({
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {reviewsQuery.data && reviewsQuery.data.total > 0 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-base-300">
+              <span className="text-sm text-base-content/60">
+                Showing {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, reviewsQuery.data.total)} of {reviewsQuery.data.total}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="btn btn-sm btn-ghost disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={(page + 1) * PAGE_SIZE >= reviewsQuery.data.total}
+                  className="btn btn-sm btn-ghost disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -11,13 +11,11 @@ import {
   useApplicantReviewsQuery,
 } from "@/hooks/queries/useApplicantReviewsQuery";
 import { useApplicationActions } from "@/hooks/queries/useApplicationActions";
-import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
 import { useProfileModal } from "@/hooks/queries/useProfileModal";
 import {
   useRubricListQuery,
   useStructuredRubricQuery,
 } from "@/hooks/queries/useRubricQuery";
-import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
 import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
 import { Modal } from "@/components/ui/modal";
 import type {
@@ -58,10 +56,26 @@ export function ApplicantReviewsSection({
   const [selectedRubricDocId, setSelectedRubricDocId] = useState<string | null>(null);
   const [selectedRubricId, setSelectedRubricId] = useState<string | null>(null);
 
-  const batchProgress = useBatchProgress();
   const applicationActions = useApplicationActions();
   const profileModal = useProfileModal();
-  const isActive = batchProgress.isOpen || applicationActions.isReevaluating;
+  const isActive = applicationActions.isReevaluating;
+  const toastIdRef = useRef<string | null>(null);
+
+  // Track reevaluation progress via toast
+  useEffect(() => {
+    const progress = applicationActions.reevaluateProgress;
+    if (progress && progress.total > 0) {
+      const msg = `Evaluating applicants... (${progress.completed}/${progress.total})`;
+      if (toastIdRef.current) {
+        toast.loading(msg, { id: toastIdRef.current });
+      } else {
+        toastIdRef.current = toast.loading(msg);
+      }
+    } else if (toastIdRef.current && !isActive) {
+      toast.success("Evaluation complete", { id: toastIdRef.current });
+      toastIdRef.current = null;
+    }
+  }, [applicationActions.reevaluateProgress, isActive]);
 
   const rubricListQuery = useRubricListQuery(bonfireId);
   const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId);
@@ -96,6 +110,7 @@ export function ApplicantReviewsSection({
   });
   const detailQuery = useApplicantReviewDetail({
     applicationId: selectedApplicationId,
+    rubricId: selectedRubricId,
     refetchInterval: isActive ? 4000 : 15000,
     rubricId: selectedRubricId,
   });
@@ -153,7 +168,6 @@ export function ApplicantReviewsSection({
           },
         );
       setBatchId(response.batch_id);
-      batchProgress.open(response.batch_id);
       setIsImportModalOpen(false);
       setTableText("");
       toast.success(`Imported ${response.imported_count} applicant rows.`);
@@ -208,7 +222,6 @@ export function ApplicantReviewsSection({
               type="button"
               className="btn btn-primary btn-sm"
               onClick={() => {
-                batchProgress.open(batchId ?? "");
                 void (async () => {
                   try {
                     const needsEvaluation = applications.filter(
@@ -223,13 +236,9 @@ export function ApplicantReviewsSection({
                       batchId ?? undefined,
                       selectedRubricId,
                     );
-                    await queryClient.invalidateQueries({
-                      queryKey: ["applicantReviewBatch"],
-                    });
                     await refreshData();
                     applicationActions.clearProgress();
                     applicationActions.cancelStream();
-                    toast.success("Re-evaluation complete.");
                   } catch (err) {
                     toast.error(
                       err instanceof Error
@@ -248,18 +257,9 @@ export function ApplicantReviewsSection({
           )}
 
           {batchId && (
-            <>
-              <span className="text-sm text-base-content/70">
-                Batch: <span className="font-mono">{batchId}</span>
-              </span>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => batchProgress.open(batchId)}
-              >
-                View progress
-              </button>
-            </>
+            <span className="text-sm text-base-content/70">
+              Batch: <span className="font-mono">{batchId}</span>
+            </span>
           )}
         </div>
       </section>
@@ -306,50 +306,6 @@ export function ApplicantReviewsSection({
           </div>
         </div>
       </Modal>
-
-      <BatchProgressModal
-        isOpen={batchProgress.isOpen}
-        onClose={batchProgress.close}
-        batch={batchProgress.batch}
-        reevaluateProgress={applicationActions.reevaluateProgress}
-        streamState={applicationActions.streamState}
-        onCancel={applicationActions.cancelStream}
-        onReevaluateAll={
-          batchId && applications.length > 0
-            ? () => {
-                void (async () => {
-                  try {
-                    const needsEvaluation = applications.filter(
-                      (a) => a.evaluation_status !== "completed",
-                    );
-                    if (needsEvaluation.length === 0) {
-                      toast.success("All applications already evaluated.");
-                      return;
-                    }
-                    await applicationActions.reevaluateAll(
-                      needsEvaluation.map((a) => a.id),
-                      batchId,
-                      selectedRubricId,
-                    );
-                    await queryClient.invalidateQueries({
-                      queryKey: ["applicantReviewBatch"],
-                    });
-                    await refreshData();
-                    applicationActions.clearProgress();
-                    applicationActions.cancelStream();
-                    toast.success("Re-evaluation complete.");
-                  } catch (err) {
-                    toast.error(
-                      err instanceof Error
-                        ? err.message
-                        : "Re-evaluation failed.",
-                    );
-                  }
-                })();
-              }
-            : undefined
-        }
-      />
 
       <FullProfileModal
         isOpen={profileModal.isOpen}
@@ -570,7 +526,6 @@ export function ApplicantReviewsSection({
                             className="btn btn-ghost btn-xs"
                             onClick={(event) => {
                               event.stopPropagation();
-                              batchProgress.open(batchId ?? "");
                               applicationActions.startSingleRescore();
                               setActionIds((prev) => ({
                                 ...prev,

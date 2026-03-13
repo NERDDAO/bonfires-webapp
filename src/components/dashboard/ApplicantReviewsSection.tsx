@@ -649,7 +649,6 @@ export function ApplicantReviewsSection({
                     onClick={(event) => {
                       event.stopPropagation();
                       if (!selectedApplicationId) return;
-                      batchProgress.open(batchId ?? "");
                       applicationActions.startSingleRescore();
                       setActionIds((prev) => ({ ...prev, [selectedApplicationId]: true }));
                       void (async () => {

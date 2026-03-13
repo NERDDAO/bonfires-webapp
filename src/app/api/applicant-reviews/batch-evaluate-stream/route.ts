@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       application_ids: body.application_ids,
       batch_id: body.batch_id ?? null,
       resume_from_seq: body.resume_from_seq ?? null,
+      rubric_id: body.rubric_id ?? null,
     },
   });
 }

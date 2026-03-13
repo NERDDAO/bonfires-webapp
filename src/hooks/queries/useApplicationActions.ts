@@ -27,18 +27,19 @@ export function useApplicationActions() {
   }, []);
 
   const reevaluateAll = useCallback(
-    async (applicationIds: string[], batchId?: string) => {
+    async (applicationIds: string[], batchId?: string, rubricId?: string | null) => {
       if (applicationIds.length === 0) return;
       setReevaluateProgress({ completed: 0, total: applicationIds.length });
-      const completed = await startStream(applicationIds, batchId);
-      if (completed) {
-        setReevaluateProgress({
-          completed: applicationIds.length,
-          total: applicationIds.length,
-        });
+      try {
+        await startStream(applicationIds, batchId, rubricId);
+      } finally {
+        if (streamState.status === "complete") {
+          setReevaluateProgress({
+            completed: applicationIds.length,
+            total: applicationIds.length,
+          });
+        }
       }
-      // Don't clear reevaluateProgress here — let the consumer handle it
-      // via onStreamComplete or by checking streamState.status
     },
     [startStream],
   );

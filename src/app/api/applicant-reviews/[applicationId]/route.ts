@@ -12,6 +12,16 @@ export async function GET(
   });
 }
 
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ applicationId: string }> },
+) {
+  const { applicationId } = await context.params;
+  return handleProxyRequest(`/applicant-reviews/${applicationId}`, {
+    method: "DELETE",
+  });
+}
+
 export function OPTIONS() {
   return handleCorsOptions();
 }

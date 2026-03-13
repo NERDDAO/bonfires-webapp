@@ -11,12 +11,6 @@ export async function GET(request: NextRequest) {
   const params = extractQueryParams(request, [
     "bonfire_id",
     "batch_id",
-    "status",
-    "shortlist_only",
-    "sort_by",
-    "sort_order",
-    "limit",
-    "offset",
     "rubric_id",
   ]);
 
@@ -24,7 +18,7 @@ export async function GET(request: NextRequest) {
     return createErrorResponse("bonfire_id is required", 400);
   }
 
-  return handleProxyRequest("/applicant-reviews", {
+  return handleProxyRequest("/applicant-reviews-export", {
     method: "GET",
     queryParams: params,
   });

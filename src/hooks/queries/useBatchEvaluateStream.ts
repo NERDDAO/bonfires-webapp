@@ -212,7 +212,7 @@ export function useBatchEvaluateStream() {
   const lastSeqRef = useRef(0);
 
   const startStream = useCallback(
-    async (applicationIds: string[], batchId?: string): Promise<boolean> => {
+    async (applicationIds: string[], batchId?: string, rubricId?: string | null) => {
       // Cancel any existing stream
       abortRef.current?.abort();
 
@@ -231,6 +231,7 @@ export function useBatchEvaluateStream() {
             application_ids: applicationIds,
           };
           if (batchId) body["batch_id"] = batchId;
+          if (rubricId) body["rubric_id"] = rubricId;
           if (resumeFromSeq) body["resume_from_seq"] = resumeFromSeq;
 
           const response = await fetch(

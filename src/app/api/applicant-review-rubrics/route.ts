@@ -8,23 +8,13 @@ import {
 } from "@/lib/api/server-utils";
 
 export async function GET(request: NextRequest) {
-  const params = extractQueryParams(request, [
-    "bonfire_id",
-    "batch_id",
-    "status",
-    "shortlist_only",
-    "sort_by",
-    "sort_order",
-    "limit",
-    "offset",
-    "rubric_id",
-  ]);
+  const params = extractQueryParams(request, ["bonfire_id"]);
 
   if (!params["bonfire_id"]) {
     return createErrorResponse("bonfire_id is required", 400);
   }
 
-  return handleProxyRequest("/applicant-reviews", {
+  return handleProxyRequest("/applicant-review-rubrics", {
     method: "GET",
     queryParams: params,
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -16,6 +16,10 @@ import { useProfileModal } from "@/hooks/queries/useProfileModal";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
 import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
 import { DisplayFieldValue } from "@/components/applicant-reviews/DisplayField";
+import {
+  useRubricListQuery,
+  useStructuredRubricQuery,
+} from "@/hooks/queries/useRubricQuery";
 import type {
   ApplicantReviewActionResponse,
   ApplicantReviewBatchImportResponse,
@@ -44,11 +48,25 @@ export default function ApplicantReviewsPage() {
   >(null);
   const [isImporting, setIsImporting] = useState(false);
   const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
+  const [selectedRubricDocId, setSelectedRubricDocId] = useState<string | null>(null);
+  const [selectedRubricId, setSelectedRubricId] = useState<string | null>(null);
 
   const batchProgress = useBatchProgress();
   const applicationActions = useApplicationActions();
   const profileModal = useProfileModal();
   const isActive = batchProgress.isOpen || applicationActions.isReevaluating;
+
+  const rubricListQuery = useRubricListQuery(bonfireId || null);
+  const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId || null);
+
+  useEffect(() => {
+    if (structuredRubricQuery.data) {
+      setSelectedRubricId(structuredRubricQuery.data.id);
+      setPage(0);
+    }
+  }, [structuredRubricQuery.data]);
 
   const reviewsQuery = useApplicantReviewsQuery({
     bonfireId: bonfireId || null,
@@ -57,6 +75,9 @@ export default function ApplicantReviewsPage() {
     sortOrder,
     shortlistOnly,
     refetchInterval: isActive ? 4000 : 15000,
+    page,
+    limit: PAGE_SIZE,
+    rubricId: selectedRubricId,
   });
   const detailQuery = useApplicantReviewDetail({
     applicationId: selectedApplicationId,
@@ -224,6 +245,7 @@ export default function ApplicantReviewsPage() {
                         await applicationActions.reevaluateAll(
                           needsEvaluation.map((a) => a.id),
                           batchId ?? undefined,
+                          selectedRubricId,
                         );
                         await queryClient.invalidateQueries({
                           queryKey: ["applicantReviewBatch"],
@@ -272,6 +294,7 @@ export default function ApplicantReviewsPage() {
                     await applicationActions.reevaluateAll(
                       needsEvaluation.map((a) => a.id),
                       batchId,
+                      selectedRubricId,
                     );
                     await queryClient.invalidateQueries({
                       queryKey: ["applicantReviewBatch"],
@@ -304,7 +327,7 @@ export default function ApplicantReviewsPage() {
               <select
                 className="select select-bordered"
                 value={sortBy}
-                onChange={(event) => setSortBy(event.target.value)}
+                onChange={(event) => { setSortBy(event.target.value); setPage(0); }}
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -319,9 +342,10 @@ export default function ApplicantReviewsPage() {
               <select
                 className="select select-bordered"
                 value={sortOrder}
-                onChange={(event) =>
-                  setSortOrder(event.target.value === "asc" ? "asc" : "desc")
-                }
+                onChange={(event) => {
+                  setSortOrder(event.target.value === "asc" ? "asc" : "desc");
+                  setPage(0);
+                }}
               >
                 <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
@@ -334,9 +358,59 @@ export default function ApplicantReviewsPage() {
                 type="checkbox"
                 className="checkbox checkbox-sm"
                 checked={shortlistOnly}
-                onChange={(event) => setShortlistOnly(event.target.checked)}
+                onChange={(event) => {
+                  setShortlistOnly(event.target.checked);
+                  setPage(0);
+                }}
               />
             </label>
+
+            {rubricListQuery.data && rubricListQuery.data.items.length > 0 && (
+              <label className="form-control">
+                <span className="label-text text-sm font-medium">Rubric</span>
+                <select
+                  className="select select-bordered"
+                  value={selectedRubricDocId ?? "default"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "default") {
+                      setSelectedRubricDocId(null);
+                      setSelectedRubricId(null);
+                    } else {
+                      setSelectedRubricDocId(val);
+                    }
+                    setPage(0);
+                  }}
+                >
+                  <option value="default">Default (v1)</option>
+                  {rubricListQuery.data.items.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} {r.version ? `(${r.version})` : ""} {r.is_active ? " [active]" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <button
+              onClick={async () => {
+                const params = new URLSearchParams({ bonfire_id: bonfireId });
+                if (batchId) params.set("batch_id", batchId);
+                if (selectedRubricId) params.set("rubric_id", selectedRubricId);
+                const res = await fetch(`/api/applicant-reviews-export?${params}`);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "applicant_reviews.csv";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              disabled={!bonfireId}
+              className="btn btn-ghost btn-sm mt-auto"
+            >
+              Export CSV
+            </button>
           </div>
 
           {!bonfireId ? (
@@ -357,11 +431,12 @@ export default function ApplicantReviewsPage() {
                 <thead>
                   <tr>
                     <th>Applicant</th>
+                    <th>Org</th>
                     <th>Score</th>
                     <th>Confidence</th>
                     <th>Status</th>
                     <th>Shortlist</th>
-                    <th className="w-40">Actions</th>
+                    <th className="w-48">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -380,6 +455,9 @@ export default function ApplicantReviewsPage() {
                         <div className="text-xs text-base-content/60">
                           {application.role_title || "Role not provided"}
                         </div>
+                      </td>
+                      <td className="text-sm text-base-content/70 truncate max-w-[150px]">
+                        {application.organizations?.join(", ") || "\u2014"}
                       </td>
                       <td>{application.overall_score?.toFixed(1) ?? "—"}</td>
                       <td>
@@ -441,7 +519,7 @@ export default function ApplicantReviewsPage() {
                                 try {
                                   await apiClient.post<ApplicantReviewActionResponse>(
                                     `/api/applicant-reviews/${application.id}/evaluate`,
-                                    {},
+                                    { rubric_id: selectedRubricId ?? undefined },
                                   );
                                   toast.success("Evaluation queued.");
                                   await refreshData();
@@ -464,12 +542,59 @@ export default function ApplicantReviewsPage() {
                           >
                             Re-score
                           </button>
+                          <button
+                            className="btn btn-ghost btn-xs text-error"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (!confirm(`Delete submission for ${application.full_name}?`)) return;
+                              setActionIds((prev) => ({ ...prev, [application.id]: true }));
+                              void (async () => {
+                                try {
+                                  await apiClient.delete(`/api/applicant-reviews/${application.id}`);
+                                  toast.success("Submission deleted");
+                                  await refreshData();
+                                } catch {
+                                  toast.error("Failed to delete");
+                                } finally {
+                                  setActionIds((prev) => ({ ...prev, [application.id]: false }));
+                                }
+                              })();
+                            }}
+                            disabled={!!actionIds[application.id]}
+                            title="Delete submission"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {reviewsQuery.data && reviewsQuery.data.total > 0 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-base-300">
+              <span className="text-sm text-base-content/60">
+                Showing {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, reviewsQuery.data.total)} of {reviewsQuery.data.total}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="btn btn-sm btn-ghost disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={(page + 1) * PAGE_SIZE >= reviewsQuery.data.total}
+                  className="btn btn-sm btn-ghost disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>

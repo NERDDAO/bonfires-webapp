@@ -125,6 +125,43 @@ export interface ApplicantReviewBatchImportResponse {
   queued_task_ids: string[];
 }
 
+// --- Rubric Types ---
+
+export interface RubricListItem {
+  id: string;
+  name: string;
+  version?: string | null;
+  description?: string | null;
+  is_active: boolean;
+  updated_at?: string | null;
+}
+
+export interface RubricListResponse {
+  items: RubricListItem[];
+  default_rubric_version: string;
+}
+
+export interface StructuredRubricCategory {
+  name: string;
+  display_name: string;
+  description: string;
+  weight: number;
+  criteria: string[];
+}
+
+export interface StructuredRubricResponse {
+  id: string;
+  source_document_id: string;
+  version: string;
+  name: string;
+  description: string;
+  context: string;
+  categories: StructuredRubricCategory[];
+  passing_threshold: number;
+  top25_threshold: number;
+  tie_break_guidance: string[];
+}
+
 // --- SSE Streaming Event Types ---
 
 export interface BatchStartEvent {

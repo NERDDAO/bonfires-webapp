@@ -1,14 +1,20 @@
 import { NextRequest } from "next/server";
 
-import { handleCorsOptions, handleProxyRequest } from "@/lib/api/server-utils";
+import {
+  extractQueryParams,
+  handleCorsOptions,
+  handleProxyRequest,
+} from "@/lib/api/server-utils";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ applicationId: string }> },
 ) {
   const { applicationId } = await context.params;
+  const queryParams = extractQueryParams(request, ["rubric_id"]);
   return handleProxyRequest(`/applicant-reviews/${applicationId}`, {
     method: "GET",
+    queryParams,
   });
 }
 

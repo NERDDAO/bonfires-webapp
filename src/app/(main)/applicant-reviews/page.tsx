@@ -61,6 +61,16 @@ export default function ApplicantReviewsPage() {
   const rubricListQuery = useRubricListQuery(bonfireId || null);
   const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId || null);
 
+  // Auto-select active/latest rubric on load
+  useEffect(() => {
+    if (rubricListQuery.data?.items.length && !selectedRubricDocId) {
+      const active = rubricListQuery.data.items.find(r => r.is_active);
+      const latest = rubricListQuery.data.items[0];
+      const selected = active ?? latest;
+      if (selected) setSelectedRubricDocId(selected.id);
+    }
+  }, [rubricListQuery.data, selectedRubricDocId]);
+
   useEffect(() => {
     if (structuredRubricQuery.data) {
       setSelectedRubricId(structuredRubricQuery.data.id);
@@ -82,6 +92,7 @@ export default function ApplicantReviewsPage() {
   const detailQuery = useApplicantReviewDetail({
     applicationId: selectedApplicationId,
     refetchInterval: isActive ? 4000 : 15000,
+    rubricId: selectedRubricId,
   });
 
   const applications = reviewsQuery.data?.items ?? [];
@@ -413,6 +424,36 @@ export default function ApplicantReviewsPage() {
             </button>
           </div>
 
+          {structuredRubricQuery.data && (
+            <div className="collapse collapse-arrow border border-base-300 rounded-xl mb-4">
+              <input type="checkbox" />
+              <div className="collapse-title text-sm font-medium">
+                {structuredRubricQuery.data.name} {structuredRubricQuery.data.version ? `(${structuredRubricQuery.data.version})` : ""}
+              </div>
+              <div className="collapse-content text-xs space-y-2">
+                {structuredRubricQuery.data.categories.map((cat) => (
+                  <div key={cat.name} className="border-b border-base-200 pb-2">
+                    <div className="flex justify-between font-medium">
+                      <span>{cat.name}</span>
+                      <span>Weight: {cat.weight}%</span>
+                    </div>
+                    <ul className="ml-4 mt-1 list-disc list-inside text-base-content/70">
+                      {cat.criteria.map((c) => (
+                        <li key={c}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                {(structuredRubricQuery.data.passing_threshold != null || structuredRubricQuery.data.top25_threshold != null) && (
+                  <div className="text-base-content/60 pt-1">
+                    {structuredRubricQuery.data.passing_threshold != null && <span>Passing: {structuredRubricQuery.data.passing_threshold}</span>}
+                    {structuredRubricQuery.data.top25_threshold != null && <span className="ml-3">Top 25: {structuredRubricQuery.data.top25_threshold}</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {!bonfireId ? (
             <div className="rounded-xl border border-dashed border-base-300 p-8 text-center text-sm text-base-content/60">
               Enter a bonfire ID and import a batch to begin reviewing.
@@ -664,6 +705,44 @@ export default function ApplicantReviewsPage() {
                   </div>
                 );
               })()}
+
+              {!selectedReview && selectedRubricId && (
+                <div className="rounded-xl border border-dashed border-base-300 p-4 text-center space-y-3">
+                  <p className="text-sm text-base-content/60">
+                    Not yet evaluated with this rubric.
+                  </p>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (!selectedApplicationId) return;
+                      batchProgress.open(batchId ?? "");
+                      applicationActions.startSingleRescore();
+                      setActionIds((prev) => ({ ...prev, [selectedApplicationId]: true }));
+                      void (async () => {
+                        try {
+                          await apiClient.post<ApplicantReviewActionResponse>(
+                            `/api/applicant-reviews/${selectedApplicationId}/evaluate`,
+                            { rubric_id: selectedRubricId },
+                          );
+                          toast.success("Evaluation queued.");
+                          await refreshData();
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error ? error.message : "Action failed unexpectedly",
+                          );
+                        } finally {
+                          setActionIds((prev) => ({ ...prev, [selectedApplicationId!]: false }));
+                          applicationActions.completeSingleRescore();
+                        }
+                      })();
+                    }}
+                    disabled={!!actionIds[selectedApplicationId!]}
+                  >
+                    Evaluate with {structuredRubricQuery.data?.name ?? "this rubric"}
+                  </button>
+                </div>
+              )}
 
               {selectedReview && (
                 <div className="rounded-xl border border-base-300 p-4 space-y-3">

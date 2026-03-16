@@ -210,6 +210,7 @@ export function useBatchEvaluateStream() {
   const abortRef = useRef<AbortController | null>(null);
   const retryCountRef = useRef(0);
   const lastSeqRef = useRef(0);
+  const completedIdsRef = useRef<Set<string>>(new Set());
 
   const startStream = useCallback(
     async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean) => {
@@ -220,6 +221,7 @@ export function useBatchEvaluateStream() {
       abortRef.current = controller;
       retryCountRef.current = 0;
       lastSeqRef.current = 0;
+      completedIdsRef.current = new Set();
 
       dispatch({ type: "CONNECTING" });
 
@@ -227,8 +229,19 @@ export function useBatchEvaluateStream() {
 
       const connect = async (resumeFromSeq?: number) => {
         try {
+          // On retry, only send IDs that haven't completed yet to avoid
+          // redundant LLM calls (especially with force=true).
+          const remainingIds = resumeFromSeq
+            ? applicationIds.filter((id) => !completedIdsRef.current.has(id))
+            : applicationIds;
+
+          if (remainingIds.length === 0) {
+            completed = true;
+            return;
+          }
+
           const body: Record<string, unknown> = {
-            application_ids: applicationIds,
+            application_ids: remainingIds,
           };
           if (batchId) body["batch_id"] = batchId;
           if (rubricId) body["rubric_id"] = rubricId;
@@ -271,6 +284,9 @@ export function useBatchEvaluateStream() {
             for (const event of events) {
               dispatch({ type: "SSE_EVENT", event });
               lastSeqRef.current = event.seq;
+              if (event.type === "applicant:complete") {
+                completedIdsRef.current.add(event.applicant_id);
+              }
               if (event.type === "batch:complete") {
                 completed = true;
               }

@@ -50,12 +50,16 @@ type Action =
   | { type: "CONNECTING" }
   | { type: "SSE_EVENT"; event: BatchSSEEvent }
   | { type: "ERROR"; message: string }
+  | { type: "COMPLETE" }
   | { type: "RESET" };
 
 function reducer(state: BatchStreamState, action: Action): BatchStreamState {
   switch (action.type) {
     case "CONNECTING":
       return { ...initialState, status: "connecting", applicants: new Map() };
+
+    case "COMPLETE":
+      return { ...state, status: "complete", currentApplicantId: null };
 
     case "RESET":
       return { ...initialState, applicants: new Map() };
@@ -210,9 +214,10 @@ export function useBatchEvaluateStream() {
   const abortRef = useRef<AbortController | null>(null);
   const retryCountRef = useRef(0);
   const lastSeqRef = useRef(0);
+  const completedIdsRef = useRef<Set<string>>(new Set());
 
   const startStream = useCallback(
-    async (applicationIds: string[], batchId?: string, rubricId?: string | null) => {
+    async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean) => {
       // Cancel any existing stream
       abortRef.current?.abort();
 
@@ -220,6 +225,7 @@ export function useBatchEvaluateStream() {
       abortRef.current = controller;
       retryCountRef.current = 0;
       lastSeqRef.current = 0;
+      completedIdsRef.current = new Set();
 
       dispatch({ type: "CONNECTING" });
 
@@ -227,11 +233,24 @@ export function useBatchEvaluateStream() {
 
       const connect = async (resumeFromSeq?: number) => {
         try {
+          // On retry, only send IDs that haven't completed yet to avoid
+          // redundant LLM calls (especially with force=true).
+          const remainingIds = resumeFromSeq
+            ? applicationIds.filter((id) => !completedIdsRef.current.has(id))
+            : applicationIds;
+
+          if (remainingIds.length === 0) {
+            completed = true;
+            dispatch({ type: "COMPLETE" });
+            return;
+          }
+
           const body: Record<string, unknown> = {
-            application_ids: applicationIds,
+            application_ids: remainingIds,
           };
           if (batchId) body["batch_id"] = batchId;
           if (rubricId) body["rubric_id"] = rubricId;
+          if (force) body["force"] = true;
           if (resumeFromSeq) body["resume_from_seq"] = resumeFromSeq;
 
           const response = await fetch(
@@ -270,13 +289,37 @@ export function useBatchEvaluateStream() {
             for (const event of events) {
               dispatch({ type: "SSE_EVENT", event });
               lastSeqRef.current = event.seq;
+              if (event.type === "applicant:complete") {
+                completedIdsRef.current.add(event.applicant_id);
+              }
               if (event.type === "batch:complete") {
                 completed = true;
               }
             }
           }
 
-          // Stream ended normally — if we didn't get batch:complete, it may have been interrupted
+          // Stream ended without batch:complete — connection was interrupted
+          // (proxy timeout, ALB idle timeout, etc). Retry with resume.
+          if (!completed && !controller.signal.aborted) {
+            if (retryCountRef.current < MAX_RETRIES) {
+              retryCountRef.current++;
+              const delay =
+                RETRY_BASE_DELAY * Math.pow(2, retryCountRef.current - 1);
+              console.warn(
+                `[SSE] Stream ended without batch:complete. Retry ${retryCountRef.current}/${MAX_RETRIES} in ${delay}ms`
+              );
+              await new Promise((r) => setTimeout(r, delay));
+              if (!controller.signal.aborted) {
+                await connect(lastSeqRef.current || undefined);
+              }
+            } else {
+              dispatch({
+                type: "ERROR",
+                message:
+                  "Stream ended before completion after maximum retries",
+              });
+            }
+          }
         } catch (error) {
           if (controller.signal.aborted) return;
 

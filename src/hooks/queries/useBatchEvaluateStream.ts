@@ -206,7 +206,7 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
   }
 }
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 const RETRY_BASE_DELAY = 2000;
 
 export function useBatchEvaluateStream() {
@@ -214,7 +214,7 @@ export function useBatchEvaluateStream() {
   const abortRef = useRef<AbortController | null>(null);
   const retryCountRef = useRef(0);
   const lastSeqRef = useRef(0);
-  const completedIdsRef = useRef<Set<string>>(new Set());
+  const runIdRef = useRef<string | null>(null);
 
   const startStream = useCallback(
     async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean) => {
@@ -225,48 +225,78 @@ export function useBatchEvaluateStream() {
       abortRef.current = controller;
       retryCountRef.current = 0;
       lastSeqRef.current = 0;
-      completedIdsRef.current = new Set();
+      runIdRef.current = null;
 
       dispatch({ type: "CONNECTING" });
 
       let completed = false;
 
-      const connect = async (resumeFromSeq?: number) => {
-        try {
-          // On retry, only send IDs that haven't completed yet to avoid
-          // redundant LLM calls (especially with force=true).
-          const remainingIds = resumeFromSeq
-            ? applicationIds.filter((id) => !completedIdsRef.current.has(id))
-            : applicationIds;
+      // Step 1: Create a batch eval run (server-side state)
+      try {
+        const createBody: Record<string, unknown> = {
+          application_ids: applicationIds,
+        };
+        if (rubricId) createBody["rubric_id"] = rubricId;
+        if (force) createBody["force"] = true;
+        if (batchId) createBody["batch_id"] = batchId;
 
-          if (remainingIds.length === 0) {
-            completed = true;
-            dispatch({ type: "COMPLETE" });
-            return;
+        const createResponse = await fetch(
+          "/api/applicant-reviews/batch-eval-runs",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(createBody),
+            signal: controller.signal,
           }
+        );
 
-          const body: Record<string, unknown> = {
-            application_ids: remainingIds,
-          };
-          if (batchId) body["batch_id"] = batchId;
-          if (rubricId) body["rubric_id"] = rubricId;
-          if (force) body["force"] = true;
-          if (resumeFromSeq) body["resume_from_seq"] = resumeFromSeq;
-
-          const response = await fetch(
-            "/api/applicant-reviews/batch-evaluate-stream",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
-              signal: controller.signal,
-            }
+        if (!createResponse.ok) {
+          const errorData = await createResponse.json().catch(() => ({}));
+          throw new Error(
+            (errorData as { error?: string; detail?: string }).detail ??
+              (errorData as { error?: string }).error ??
+              `HTTP ${createResponse.status}`
           );
+        }
+
+        const runData = (await createResponse.json()) as {
+          run_id: string;
+          total_count: number;
+        };
+        runIdRef.current = runData.run_id;
+
+        if (!runData.run_id || runData.total_count === 0) {
+          completed = true;
+          dispatch({ type: "COMPLETE" });
+          return completed;
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return false;
+        const message =
+          error instanceof Error ? error.message : "Failed to create batch eval run";
+        dispatch({ type: "ERROR", message });
+        return false;
+      }
+
+      // Step 2: Open read-only GET SSE stream with run_id
+      const connectStream = async (resumeFromSeq?: number) => {
+        try {
+          const params = new URLSearchParams();
+          if (resumeFromSeq) params.set("resume_from_seq", String(resumeFromSeq));
+
+          const streamUrl = `/api/applicant-reviews/batch-eval-runs/${runIdRef.current}/stream${
+            params.toString() ? `?${params.toString()}` : ""
+          }`;
+
+          const response = await fetch(streamUrl, {
+            signal: controller.signal,
+          });
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(
-              (errorData as { error?: string }).error ??
+              (errorData as { error?: string; detail?: string }).detail ??
+                (errorData as { error?: string }).error ??
                 `HTTP ${response.status}`
             );
           }
@@ -289,28 +319,24 @@ export function useBatchEvaluateStream() {
             for (const event of events) {
               dispatch({ type: "SSE_EVENT", event });
               lastSeqRef.current = event.seq;
-              if (event.type === "applicant:complete") {
-                completedIdsRef.current.add(event.applicant_id);
-              }
               if (event.type === "batch:complete") {
                 completed = true;
               }
             }
           }
 
-          // Stream ended without batch:complete — connection was interrupted
-          // (proxy timeout, ALB idle timeout, etc). Retry with resume.
+          // Stream ended without batch:complete — reconnect with resume
           if (!completed && !controller.signal.aborted) {
             if (retryCountRef.current < MAX_RETRIES) {
               retryCountRef.current++;
               const delay =
                 RETRY_BASE_DELAY * Math.pow(2, retryCountRef.current - 1);
               console.warn(
-                `[SSE] Stream ended without batch:complete. Retry ${retryCountRef.current}/${MAX_RETRIES} in ${delay}ms`
+                `[SSE] Stream ended without batch:complete. Retry ${retryCountRef.current}/${MAX_RETRIES} in ${delay}ms (run_id: ${runIdRef.current})`
               );
               await new Promise((r) => setTimeout(r, delay));
               if (!controller.signal.aborted) {
-                await connect(lastSeqRef.current || undefined);
+                await connectStream(lastSeqRef.current || undefined);
               }
             } else {
               dispatch({
@@ -326,17 +352,17 @@ export function useBatchEvaluateStream() {
           const message =
             error instanceof Error ? error.message : "Stream connection failed";
 
-          // Retry with exponential backoff
+          // Retry with exponential backoff — just re-open the GET stream
           if (retryCountRef.current < MAX_RETRIES) {
             retryCountRef.current++;
             const delay =
               RETRY_BASE_DELAY * Math.pow(2, retryCountRef.current - 1);
             console.warn(
-              `[SSE] Retry ${retryCountRef.current}/${MAX_RETRIES} in ${delay}ms: ${message}`
+              `[SSE] Retry ${retryCountRef.current}/${MAX_RETRIES} in ${delay}ms: ${message} (run_id: ${runIdRef.current})`
             );
             await new Promise((r) => setTimeout(r, delay));
             if (!controller.signal.aborted) {
-              await connect(lastSeqRef.current || undefined);
+              await connectStream(lastSeqRef.current || undefined);
             }
           } else {
             dispatch({ type: "ERROR", message });
@@ -344,7 +370,7 @@ export function useBatchEvaluateStream() {
         }
       };
 
-      await connect();
+      await connectStream();
       return completed;
     },
     []

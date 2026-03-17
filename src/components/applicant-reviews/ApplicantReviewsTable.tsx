@@ -1,3 +1,5 @@
+"use client";
+
 import type { ApplicantReviewListItem } from "@/types/applicant-reviews";
 
 interface ApplicantReviewsTableProps {
@@ -49,7 +51,7 @@ export function ApplicantReviewsTable({
               <td>
                 <div className="font-medium">{application.full_name}</div>
                 <div className="text-xs text-base-content/60">
-                  {application.organizations?.join(", ") || "No organization"}
+                  {application.role_title || "Role not provided"}
                 </div>
               </td>
               {showOrgColumn && (

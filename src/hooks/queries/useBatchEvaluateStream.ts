@@ -50,12 +50,16 @@ type Action =
   | { type: "CONNECTING" }
   | { type: "SSE_EVENT"; event: BatchSSEEvent }
   | { type: "ERROR"; message: string }
+  | { type: "COMPLETE" }
   | { type: "RESET" };
 
 function reducer(state: BatchStreamState, action: Action): BatchStreamState {
   switch (action.type) {
     case "CONNECTING":
       return { ...initialState, status: "connecting", applicants: new Map() };
+
+    case "COMPLETE":
+      return { ...state, status: "complete", currentApplicantId: null };
 
     case "RESET":
       return { ...initialState, applicants: new Map() };
@@ -237,6 +241,7 @@ export function useBatchEvaluateStream() {
 
           if (remainingIds.length === 0) {
             completed = true;
+            dispatch({ type: "COMPLETE" });
             return;
           }
 

@@ -1,3 +1,5 @@
+"use client";
+
 import type {
   ApplicantReviewDetailResponse,
   DisplaySection,
@@ -61,7 +63,7 @@ export function ApplicantDetailSidebar({
           {selectedApplication.full_name}
         </h2>
         <p className="text-sm text-base-content/70">
-          {selectedApplication.organizations?.join(", ") || "No organization"}
+          {selectedApplication.role_title || "Role not provided"}
         </p>
       </div>
 

@@ -27,6 +27,8 @@ interface UseHyperBlogsQueryParams {
   authorWallet?: string | null;
   /** Filter by public status */
   isPublic?: boolean;
+  /** Sort field: 'created_at' or 'upvotes' */
+  sortBy?: "created_at" | "upvotes";
   /** Pagination limit */
   limit?: number;
   /** Pagination offset */
@@ -46,6 +48,7 @@ export function hyperBlogsQueryKey(params: UseHyperBlogsQueryParams = {}) {
       bonfireId: params.bonfireId ?? null,
       authorWallet: params.authorWallet ?? null,
       isPublic: params.isPublic ?? null,
+      sortBy: params.sortBy ?? null,
       limit: params.limit ?? 20,
       offset: params.offset ?? 0,
     },
@@ -75,6 +78,9 @@ function buildQueryString(params: UseHyperBlogsQueryParams): string {
   }
   if (params.offset) {
     searchParams.set("offset", String(params.offset));
+  }
+  if (params.sortBy) {
+    searchParams.set("sort_by", params.sortBy);
   }
 
   const queryString = searchParams.toString();
@@ -186,6 +192,54 @@ export function useDataRoomHyperBlogsInfiniteQuery({
       return lastPage.offset + received;
     },
     enabled: !!dataroomId && enabled,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+interface UsePublicHyperBlogsInfiniteQueryParams {
+  bonfireId?: string | null;
+  sortBy?: "created_at" | "upvotes";
+  pageSize?: number;
+  enabled?: boolean;
+}
+
+/**
+ * Infinite query for public hyperblogs across all datarooms.
+ * Supports sorting by upvotes or created_at.
+ */
+export function usePublicHyperBlogsInfiniteQuery({
+  bonfireId,
+  sortBy,
+  pageSize = DEFAULT_HYPERBLOGS_PAGE_SIZE,
+  enabled = true,
+}: UsePublicHyperBlogsInfiniteQueryParams = {}) {
+  return useInfiniteQuery({
+    queryKey: [
+      "hyperblogs",
+      "infinite",
+      "public",
+      { bonfireId: bonfireId ?? null, sortBy: sortBy ?? null, pageSize },
+    ],
+    queryFn: async ({ pageParam }) => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("limit", String(pageSize));
+      searchParams.set("offset", String(pageParam));
+      searchParams.set("is_public", "true");
+      if (bonfireId) searchParams.set("bonfire_id", bonfireId);
+      if (sortBy) searchParams.set("sort_by", sortBy);
+      const queryString = searchParams.toString();
+      return apiClient.get<HyperBlogListResponse>(
+        `/api/hyperblogs?${queryString}`
+      );
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const received = lastPage.hyperblogs.length;
+      const requested = lastPage.limit;
+      if (received < requested) return undefined;
+      return lastPage.offset + received;
+    },
+    enabled,
     staleTime: 2 * 60 * 1000,
   });
 }

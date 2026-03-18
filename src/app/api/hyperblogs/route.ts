@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     "bonfire_id",
     "status",
     "generation_mode",
+    "sort_by",
   ]);
 
   // Parse and validate limit
@@ -93,6 +94,18 @@ export async function GET(request: NextRequest) {
   }
   if (params["generation_mode"]) {
     queryParams["generation_mode"] = params["generation_mode"];
+  }
+
+  // Validate and forward sort_by
+  const validSortFields = ["created_at", "upvotes"];
+  if (params["sort_by"]) {
+    if (!validSortFields.includes(params["sort_by"])) {
+      return createErrorResponse(
+        `sort_by must be one of: ${validSortFields.join(", ")}`,
+        400
+      );
+    }
+    queryParams["sort_by"] = params["sort_by"];
   }
 
   return handleProxyRequest("/datarooms/hyperblogs", {

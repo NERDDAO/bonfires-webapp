@@ -21,7 +21,11 @@ function useHyperblogsDescription(): string {
   return hyperblogsCopy.description.replace("{graphLabel}", graphLabel);
 }
 
-export default function HyperBlogsHeader() {
+export default function HyperBlogsHeader({
+  onCreateClick,
+}: {
+  onCreateClick?: () => void;
+}) {
   const { title } = hyperblogsCopy;
   const description = useHyperblogsDescription();
 
@@ -31,8 +35,12 @@ export default function HyperBlogsHeader() {
         <div className="font-montserrat text-2xl lg:text-5xl font-black">
           {title}
         </div>
-        <Button variant="primary" className="sr-only ml-auto hidden lg:block">
-          Create your own
+        <Button
+          variant="primary"
+          className="ml-auto"
+          onClick={onCreateClick}
+        >
+          Create Dataroom
         </Button>
       </div>
 

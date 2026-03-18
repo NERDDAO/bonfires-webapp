@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     "include_inactive",
     "bonfire_id",
     "creator_wallet",
+    "sort_by",
   ]);
 
   const limit = Math.min(parseInt(params["limit"] ?? "50", 10), 100);
@@ -56,6 +57,18 @@ export async function GET(request: NextRequest) {
   }
   if (params["creator_wallet"]) {
     queryParams["creator_wallet"] = params["creator_wallet"];
+  }
+
+  // Validate and forward sort_by
+  const validSortFields = ["created_at", "total_purchases"];
+  if (params["sort_by"]) {
+    if (!validSortFields.includes(params["sort_by"])) {
+      return createErrorResponse(
+        `sort_by must be one of: ${validSortFields.join(", ")}`,
+        400
+      );
+    }
+    queryParams["sort_by"] = params["sort_by"];
   }
 
   return handleProxyRequest("/datarooms", {

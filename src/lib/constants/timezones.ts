@@ -1,0 +1,113 @@
+export interface TimezoneGroup {
+  group: string;
+  zones: { value: string; label: string }[];
+}
+
+export const TIMEZONE_OPTIONS: TimezoneGroup[] = [
+  {
+    group: "Common Zones",
+    zones: [
+      { value: "Europe/London", label: "GMT / BST - Greenwich Mean Time (UTC+0, summer UTC+1)" },
+      { value: "Europe/Paris", label: "CET / CEST - Central European Time (UTC+1, summer UTC+2)" },
+      { value: "Europe/Athens", label: "EET / EEST - Eastern European Time (UTC+2, summer UTC+3)" },
+      { value: "America/New_York", label: "ET - Eastern Time (UTC-5, summer UTC-4)" },
+      { value: "America/Chicago", label: "CT - Central Time (UTC-6, summer UTC-5)" },
+      { value: "America/Denver", label: "MT - Mountain Time (UTC-7, summer UTC-6)" },
+      { value: "America/Los_Angeles", label: "PT - Pacific Time (UTC-8, summer UTC-7)" },
+      { value: "Asia/Kolkata", label: "IST - India Standard Time (UTC+5:30, no DST)" },
+      { value: "Asia/Shanghai", label: "CST - China Standard Time (UTC+8, no DST)" },
+      { value: "Asia/Tokyo", label: "JST - Japan Standard Time (UTC+9, no DST)" },
+      { value: "Asia/Seoul", label: "KST - Korea Standard Time (UTC+9, no DST)" },
+      { value: "Australia/Sydney", label: "AEST / AEDT - Australian Eastern Time (UTC+10, summer UTC+11)" },
+    ],
+  },
+  {
+    group: "Americas",
+    zones: [
+      { value: "Pacific/Honolulu", label: "Hawaii - HST (UTC-10, no DST)" },
+      { value: "America/Anchorage", label: "Alaska - AKST/AKDT (UTC-9, summer UTC-8)" },
+      { value: "America/Los_Angeles", label: "Los Angeles - PST/PDT (UTC-8, summer UTC-7)" },
+      { value: "America/Denver", label: "Denver - MST/MDT (UTC-7, summer UTC-6)" },
+      { value: "America/Phoenix", label: "Phoenix, Arizona - MST (UTC-7, no DST)" },
+      { value: "America/Chicago", label: "Chicago - CST/CDT (UTC-6, summer UTC-5)" },
+      { value: "America/New_York", label: "New York - EST/EDT (UTC-5, summer UTC-4)" },
+      { value: "America/Toronto", label: "Toronto - EST/EDT (UTC-5, summer UTC-4)" },
+      { value: "America/Mexico_City", label: "Mexico City - CST/CDT (UTC-6, summer UTC-5)" },
+      { value: "America/Bogota", label: "Bogota - COT (UTC-5, no DST)" },
+      { value: "America/Lima", label: "Lima - PET (UTC-5, no DST)" },
+      { value: "America/Caracas", label: "Caracas - VET (UTC-4, no DST)" },
+      { value: "America/Santiago", label: "Santiago - CLT/CLST (UTC-4, summer UTC-3)" },
+      { value: "America/Sao_Paulo", label: "Sao Paulo - BRT (UTC-3, no DST)" },
+      { value: "America/Argentina/Buenos_Aires", label: "Buenos Aires - ART (UTC-3, no DST)" },
+    ],
+  },
+  {
+    group: "Europe",
+    zones: [
+      { value: "Atlantic/Reykjavik", label: "Reykjavik - GMT (UTC+0, no DST)" },
+      { value: "Europe/London", label: "London - GMT/BST (UTC+0, summer UTC+1)" },
+      { value: "Europe/Lisbon", label: "Lisbon - WET/WEST (UTC+0, summer UTC+1)" },
+      { value: "Europe/Paris", label: "Paris - CET/CEST (UTC+1, summer UTC+2)" },
+      { value: "Europe/Berlin", label: "Berlin - CET/CEST (UTC+1, summer UTC+2)" },
+      { value: "Europe/Amsterdam", label: "Amsterdam - CET/CEST (UTC+1, summer UTC+2)" },
+      { value: "Europe/Rome", label: "Rome - CET/CEST (UTC+1, summer UTC+2)" },
+      { value: "Europe/Madrid", label: "Madrid - CET/CEST (UTC+1, summer UTC+2)" },
+      { value: "Europe/Zurich", label: "Zurich - CET/CEST (UTC+1, summer UTC+2)" },
+      { value: "Europe/Warsaw", label: "Warsaw - CET/CEST (UTC+1, summer UTC+2)" },
+      { value: "Europe/Athens", label: "Athens - EET/EEST (UTC+2, summer UTC+3)" },
+      { value: "Europe/Bucharest", label: "Bucharest - EET/EEST (UTC+2, summer UTC+3)" },
+      { value: "Europe/Helsinki", label: "Helsinki - EET/EEST (UTC+2, summer UTC+3)" },
+      { value: "Europe/Istanbul", label: "Istanbul - TRT (UTC+3, no DST)" },
+      { value: "Europe/Moscow", label: "Moscow - MSK (UTC+3, no DST)" },
+    ],
+  },
+  {
+    group: "Africa",
+    zones: [
+      { value: "Africa/Casablanca", label: "Casablanca (UTC+0/+1, observes DST)" },
+      { value: "Africa/Lagos", label: "Lagos - WAT (UTC+1, no DST)" },
+      { value: "Africa/Cairo", label: "Cairo - EET (UTC+2, no DST)" },
+      { value: "Africa/Johannesburg", label: "Johannesburg - SAST (UTC+2, no DST)" },
+      { value: "Africa/Nairobi", label: "Nairobi - EAT (UTC+3, no DST)" },
+    ],
+  },
+  {
+    group: "Middle East",
+    zones: [
+      { value: "Asia/Jerusalem", label: "Jerusalem - IST/IDT (UTC+2, summer UTC+3)" },
+      { value: "Asia/Riyadh", label: "Riyadh - AST (UTC+3, no DST)" },
+      { value: "Asia/Tehran", label: "Tehran - IRST/IRDT (UTC+3:30, summer UTC+4:30)" },
+      { value: "Asia/Dubai", label: "Dubai - GST (UTC+4, no DST)" },
+    ],
+  },
+  {
+    group: "Asia",
+    zones: [
+      { value: "Asia/Karachi", label: "Karachi - PKT (UTC+5, no DST)" },
+      { value: "Asia/Kolkata", label: "Kolkata / Mumbai - IST (UTC+5:30, no DST)" },
+      { value: "Asia/Dhaka", label: "Dhaka - BST (UTC+6, no DST)" },
+      { value: "Asia/Bangkok", label: "Bangkok - ICT (UTC+7, no DST)" },
+      { value: "Asia/Jakarta", label: "Jakarta - WIB (UTC+7, no DST)" },
+      { value: "Asia/Ho_Chi_Minh", label: "Ho Chi Minh - ICT (UTC+7, no DST)" },
+      { value: "Asia/Shanghai", label: "Shanghai / Beijing - CST (UTC+8, no DST)" },
+      { value: "Asia/Hong_Kong", label: "Hong Kong - HKT (UTC+8, no DST)" },
+      { value: "Asia/Singapore", label: "Singapore - SGT (UTC+8, no DST)" },
+      { value: "Asia/Taipei", label: "Taipei - CST (UTC+8, no DST)" },
+      { value: "Asia/Manila", label: "Manila - PHT (UTC+8, no DST)" },
+      { value: "Asia/Seoul", label: "Seoul - KST (UTC+9, no DST)" },
+      { value: "Asia/Tokyo", label: "Tokyo - JST (UTC+9, no DST)" },
+    ],
+  },
+  {
+    group: "Oceania",
+    zones: [
+      { value: "Australia/Perth", label: "Perth - AWST (UTC+8, no DST)" },
+      { value: "Australia/Adelaide", label: "Adelaide - ACST/ACDT (UTC+9:30, summer UTC+10:30)" },
+      { value: "Australia/Brisbane", label: "Brisbane - AEST (UTC+10, no DST)" },
+      { value: "Australia/Sydney", label: "Sydney - AEST/AEDT (UTC+10, summer UTC+11)" },
+      { value: "Australia/Melbourne", label: "Melbourne - AEST/AEDT (UTC+10, summer UTC+11)" },
+      { value: "Pacific/Auckland", label: "Auckland - NZST/NZDT (UTC+12, summer UTC+13)" },
+      { value: "Pacific/Fiji", label: "Fiji (UTC+12, observes DST)" },
+    ],
+  },
+];

@@ -45,6 +45,8 @@ interface DataRoomWizardProps {
   onComplete: (config: DataRoomConfig) => void;
   initialBonfireId?: string;
   initialCenterNodeUuid?: string;
+  publicOnly?: boolean;
+  defaultPriceUsd?: number;
 }
 
 export function DataRoomWizard({
@@ -53,6 +55,8 @@ export function DataRoomWizard({
   onComplete,
   initialBonfireId,
   initialCenterNodeUuid,
+  publicOnly,
+  defaultPriceUsd,
 }: DataRoomWizardProps) {
   // State management
   const [currentStep, setCurrentStep] = useState(1);
@@ -61,7 +65,7 @@ export function DataRoomWizard({
   );
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [priceUsd, setPriceUsd] = useState<number>(0.01);
+  const [priceUsd, setPriceUsd] = useState<number>(defaultPriceUsd ?? 0.01);
   const [queryLimit, setQueryLimit] = useState<number>(20);
   const [expirationDays, setExpirationDays] = useState<number>(30);
   const [previewEntities, setPreviewEntities] = useState<PreviewEntity[]>([]);
@@ -90,7 +94,7 @@ export function DataRoomWizard({
       setSelectedBonfire(null);
       setDescription("");
       setSystemPrompt("");
-      setPriceUsd(0.01);
+      setPriceUsd(defaultPriceUsd ?? 0.01);
       setQueryLimit(20);
       setExpirationDays(30);
       setPreviewEntities([]);
@@ -102,7 +106,7 @@ export function DataRoomWizard({
       setImageModel("dev");
       setSelectedTemplate(null);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultPriceUsd]);
 
   // Pre-select bonfire if provided
   useEffect(() => {
@@ -351,25 +355,37 @@ export function DataRoomWizard({
                 <div className="alert alert-error">
                   <span>{agentSelection.error.bonfires}</span>
                 </div>
-              ) : (
-                <select
-                  className="select select-bordered w-full"
-                  value={selectedBonfire?.id || ""}
-                  onChange={(e) => {
-                    const bonfire = agentSelection.availableBonfires.find(
-                      (b) => b.id === e.target.value
-                    );
-                    setSelectedBonfire(bonfire || null);
-                  }}
-                >
-                  <option value="">— Select Bonfire —</option>
-                  {agentSelection.availableBonfires.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+              ) : (() => {
+                const displayBonfires = publicOnly
+                  ? agentSelection.availableBonfires.filter(
+                      (b) => b.is_public !== false
+                    )
+                  : agentSelection.availableBonfires;
+
+                return displayBonfires.length === 0 ? (
+                  <div className="alert alert-warning">
+                    <span>No public bonfires available to create a dataroom.</span>
+                  </div>
+                ) : (
+                  <select
+                    className="select select-bordered w-full"
+                    value={selectedBonfire?.id || ""}
+                    onChange={(e) => {
+                      const bonfire = displayBonfires.find(
+                        (b) => b.id === e.target.value
+                      );
+                      setSelectedBonfire(bonfire || null);
+                    }}
+                  >
+                    <option value="">— Select Bonfire —</option>
+                    {displayBonfires.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                );
+              })()}
             </div>
 
             <div className="modal-action">

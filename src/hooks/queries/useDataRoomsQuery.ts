@@ -105,6 +105,8 @@ interface UseDataRoomsInfiniteQueryParams {
   subscriberWallet?: string | null;
   /** Page size (limit per request) */
   pageSize?: number;
+  /** Sort field: 'created_at' or 'total_purchases' */
+  sortBy?: "created_at" | "total_purchases";
   /** Enable/disable the query */
   enabled?: boolean;
 }
@@ -122,6 +124,7 @@ export function useDataRoomsInfiniteQuery(
     bonfireId,
     creatorWallet,
     subscriberWallet,
+    sortBy,
   } = params;
 
   return useInfiniteQuery({
@@ -132,6 +135,7 @@ export function useDataRoomsInfiniteQuery(
         bonfireId: bonfireId ?? null,
         creatorWallet: creatorWallet ?? null,
         subscriberWallet: subscriberWallet ?? null,
+        sortBy: sortBy ?? null,
         pageSize,
       },
     ],
@@ -143,6 +147,7 @@ export function useDataRoomsInfiniteQuery(
       if (creatorWallet) searchParams.set("creator_wallet", creatorWallet);
       if (subscriberWallet)
         searchParams.set("subscriber_wallet", subscriberWallet);
+      if (sortBy) searchParams.set("sort_by", sortBy);
       const queryString = searchParams.toString();
       return apiClient.get<DataRoomListResponse>(
         `/api/datarooms?${queryString}`

@@ -16,7 +16,7 @@ import DataroomCard from "./dataroom-card";
 
 const PAGE_SIZE = 4;
 
-export default function DataroomFeed() {
+export default function DataroomFeed({ sortBy }: { sortBy?: "created_at" | "total_purchases" } = {}) {
   const searchParams = useSearchParams();
   const createForDataroomId = searchParams.get("dataroomId");
   const autoCreate = searchParams.get("create") === "true";
@@ -31,7 +31,7 @@ export default function DataroomFeed() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId });
+  } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId, sortBy });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { dataroomTitle, dataroomDescription, dataroomTooltipContent } = hyperblogsCopy;

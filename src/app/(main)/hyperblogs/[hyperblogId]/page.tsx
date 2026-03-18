@@ -377,6 +377,15 @@ export default function HyperBlogDetailPage() {
             <span className="w-full lg:w-auto text-center lg:text-left font-bold text-xs rounded-full px-3 py-1 bg-dark-s-700 text-white whitespace-nowrap">
               {blog.author_name ? `by ${blog.author_name}` : formattedAuthor}
             </span>
+            {blog.dataroom_description && blog.dataroom_id && (
+              <Link
+                href={`/hyperblogs?dataroomId=${blog.dataroom_id}&create=true`}
+                className="text-xs text-center lg:text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap hover:border-white/60 transition-colors truncate max-w-48"
+                title={blog.dataroom_description}
+              >
+                {blog.dataroom_description}
+              </Link>
+            )}
             {[
               {
                 value: formattedTimestamp,
@@ -602,6 +611,18 @@ export default function HyperBlogDetailPage() {
               </span>
             </div>
           </div>
+
+          {/* Write Your Own CTA */}
+          {blog.dataroom_id && (
+            <div className="mt-6 pt-4 border-t border-[#333333]">
+              <Link
+                href={`/hyperblogs?dataroomId=${blog.dataroom_id}&create=true`}
+                className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white bg-[#FFFFFF08] border border-[#646464]/50 hover:bg-[#FFFFFF15] hover:border-white/40 transition-colors"
+              >
+                Write Your Own
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </main>

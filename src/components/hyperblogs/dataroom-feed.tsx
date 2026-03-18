@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { useSearchParams } from "next/navigation";
+
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { hyperblogsCopy } from "@/content/hyperblogs";
 import { useDataRoomsInfiniteQuery } from "@/hooks";
@@ -15,6 +17,10 @@ import DataroomCard from "./dataroom-card";
 const PAGE_SIZE = 4;
 
 export default function DataroomFeed() {
+  const searchParams = useSearchParams();
+  const createForDataroomId = searchParams.get("dataroomId");
+  const autoCreate = searchParams.get("create") === "true";
+
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
 
@@ -71,7 +77,11 @@ export default function DataroomFeed() {
         {Array.from({ length: totalCount || PAGE_SIZE }, (_, index) => {
           const dataroom = dataRooms[index];
           return index < dataRooms.length && dataroom ? (
-            <DataroomCard key={dataroom.id} data={dataroom} />
+            <DataroomCard
+              key={dataroom.id}
+              data={dataroom}
+              autoOpenCreate={autoCreate && dataroom.id === createForDataroomId}
+            />
           ) : (
             <DataroomCard key={`skeleton-${index}`} isLoading />
           );

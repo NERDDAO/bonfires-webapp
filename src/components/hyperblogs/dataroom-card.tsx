@@ -67,13 +67,22 @@ export default function DataroomCard({
   data,
   isLoading,
   className,
+  autoOpenCreate,
 }: {
   data?: DataRoomInfo;
   isLoading?: boolean;
   className?: string;
+  autoOpenCreate?: boolean;
 }) {
   const router = useRouter();
   const [createBlogOpen, setCreateBlogOpen] = useState(false);
+
+  // Auto-open create modal when directed by URL params
+  useEffect(() => {
+    if (autoOpenCreate && data?.id) {
+      setCreateBlogOpen(true);
+    }
+  }, [autoOpenCreate, data?.id]);
   const [centerNode, setCenterNode] = useState<CenterNodeEntity | null>(null);
   const [isFetchingEntity, setIsFetchingEntity] = useState(false);
   const centerUuid = data?.center_node_uuid;

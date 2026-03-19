@@ -22,19 +22,42 @@ function EvidenceItem({ item }: { item: Record<string, unknown> }) {
   const isFailed = String(status).toLowerCase() === "failed";
 
   return (
-    <div className="rounded-lg bg-dark-s-800 p-3 space-y-1">
+    <div
+      style={{
+        background: "var(--bf-surface2)",
+        border: "1px solid var(--bf-border)",
+        borderRadius: "var(--bf-radius)",
+        padding: 12,
+      }}
+      className="space-y-1"
+    >
       <div className="flex justify-between items-center flex-wrap gap-2">
-        <span className="text-sm font-medium text-dark-s-0">
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: "var(--bf-text)",
+          }}
+        >
           {(item["label"] as string) ?? kind}
         </span>
         <div className="flex gap-2">
-          <span className="rounded px-2 py-0.5 text-xs bg-dark-s-700 text-primary">
+          <span className="bf-badge-ember" style={{ fontSize: 10 }}>
             {kind}
           </span>
           <span
-            className={`rounded px-2 py-0.5 text-xs ${
-              isFailed ? "bg-red-950/50 text-red-400" : "bg-green-950/30 text-green-400"
-            }`}
+            style={{
+              fontSize: 10,
+              padding: "2px 8px",
+              borderRadius: "var(--bf-radius-pill)",
+              background: isFailed
+                ? "rgba(239, 68, 68, 0.15)"
+                : "rgba(74, 222, 128, 0.1)",
+              color: isFailed ? "#ef4444" : "#4ade80",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              fontWeight: 500,
+            }}
           >
             {status || "—"}
           </span>
@@ -45,16 +68,23 @@ function EvidenceItem({ item }: { item: Record<string, unknown> }) {
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="text-xs text-primary break-all hover:underline"
+          style={{
+            fontSize: 12,
+            color: "var(--bf-ember)",
+            wordBreak: "break-all",
+          }}
+          className="hover:underline block"
         >
           {url}
         </a>
       )}
       {snippet && (
         <p
-          className={`text-xs leading-relaxed ${
-            isFailed ? "text-red-400" : "text-dark-s-200"
-          }`}
+          style={{
+            fontSize: 12,
+            lineHeight: 1.6,
+            color: isFailed ? "#ef4444" : "var(--bf-text-secondary)",
+          }}
         >
           {snippet}
         </p>
@@ -63,17 +93,43 @@ function EvidenceItem({ item }: { item: Record<string, unknown> }) {
   );
 }
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="bf-section-label" style={{ marginBottom: 8 }}>
+      {children}
+    </h3>
+  );
+}
+
+function FieldCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: "var(--bf-surface2)",
+        border: "1px solid var(--bf-border)",
+        borderRadius: "var(--bf-radius)",
+        padding: 12,
+        fontSize: 14,
+        lineHeight: 1.6,
+        color: "var(--bf-text-secondary)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function IdentitySection({ section }: { section: DisplaySection }) {
   return (
-    <section data-element-id="profile-identity">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+    <section>
+      <SectionHeading>{section.label}</SectionHeading>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2" style={{ fontSize: 14 }}>
         {section.fields.map((field) => (
           <div key={field.key}>
-            <div className="text-xs text-dark-s-200">{field.label}</div>
-            <div className="text-dark-s-0 break-all">
+            <div style={{ fontSize: 12, color: "var(--bf-text-dim)" }}>
+              {field.label}
+            </div>
+            <div style={{ color: "var(--bf-text)", wordBreak: "break-all" }}>
               <DisplayFieldValue field={field} />
             </div>
           </div>
@@ -86,18 +142,23 @@ function IdentitySection({ section }: { section: DisplaySection }) {
 function NarrativeSection({ section }: { section: DisplaySection }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
+      <SectionHeading>{section.label}</SectionHeading>
       <div className="space-y-3">
         {section.fields.map((field) => (
           <div key={field.key}>
-            <div className="text-xs font-semibold text-dark-s-200 mb-1">
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--bf-text-secondary)",
+                marginBottom: 4,
+              }}
+            >
               {field.label}
             </div>
-            <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+            <FieldCard>
               <DisplayFieldValue field={field} />
-            </div>
+            </FieldCard>
           </div>
         ))}
       </div>
@@ -108,9 +169,7 @@ function NarrativeSection({ section }: { section: DisplaySection }) {
 function TagsSection({ section }: { section: DisplaySection }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
+      <SectionHeading>{section.label}</SectionHeading>
       {section.fields.map((field) => (
         <DisplayFieldValue key={field.key} field={field} />
       ))}
@@ -121,14 +180,14 @@ function TagsSection({ section }: { section: DisplaySection }) {
 function MetaSection({ section }: { section: DisplaySection }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
-      <div className="space-y-1 text-sm">
+      <SectionHeading>{section.label}</SectionHeading>
+      <div className="space-y-1" style={{ fontSize: 14 }}>
         {section.fields.map((field) => (
           <div key={field.key} className="flex gap-2">
-            <span className="text-dark-s-200 font-medium">{field.label}:</span>
-            <span className="text-dark-s-100">
+            <span style={{ color: "var(--bf-text-secondary)", fontWeight: 500 }}>
+              {field.label}:
+            </span>
+            <span style={{ color: "var(--bf-text)" }}>
               <DisplayFieldValue field={field} />
             </span>
           </div>
@@ -151,10 +210,6 @@ function SectionRenderer({ section }: { section: DisplaySection }) {
   }
 }
 
-/**
- * Fallback: render normalized_fields as a simple dump when display_sections
- * is not available (e.g. older backend).
- */
 function NormalizedFieldsFallback({ fields }: { fields: Record<string, unknown> }) {
   const SKIP = new Set([
     "full_name", "organizations", "role_title", "submitted_at_raw",
@@ -169,22 +224,27 @@ function NormalizedFieldsFallback({ fields }: { fields: Record<string, unknown> 
 
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        Application Fields
-      </h3>
+      <SectionHeading>Application Fields</SectionHeading>
       <div className="space-y-3">
         {entries.map(([key, val]) => (
           <div key={key}>
-            <div className="text-xs font-semibold text-dark-s-200 mb-1">
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--bf-text-secondary)",
+                marginBottom: 4,
+              }}
+            >
               {key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
             </div>
-            <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+            <FieldCard>
               {typeof val === "string"
                 ? val
                 : Array.isArray(val)
                   ? val.join(", ")
                   : JSON.stringify(val)}
-            </div>
+            </FieldCard>
           </div>
         ))}
       </div>
@@ -220,12 +280,14 @@ export function FullProfileModal({
       showCloseButton
       className="max-w-[640px] max-h-[85vh] overflow-y-auto"
     >
-      <div className="space-y-5 pt-2">
+      <div className="space-y-5" style={{ paddingTop: 8 }}>
         {hasSections ? (
           sections.map((section, i) => (
             <div key={section.key}>
               <SectionRenderer section={section} />
-              {i < sections.length - 1 && <hr className="border-dark-s-700 mt-5" />}
+              {i < sections.length - 1 && (
+                <div className="bf-ember-line" style={{ marginTop: 20 }} />
+              )}
             </div>
           ))
         ) : (
@@ -234,27 +296,25 @@ export function FullProfileModal({
           )
         )}
 
-        {hasSections && <hr className="border-dark-s-700" />}
+        {hasSections && <div className="bf-ember-line" />}
 
         {detail?.review != null && (
           <>
-            <section data-element-id="profile-generated-bio">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-                Generated bio
-              </h3>
-              <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+            <section>
+              <SectionHeading>Generated Bio</SectionHeading>
+              <FieldCard>
                 {detail.review.bio || "No generated bio for this review."}
-              </div>
+              </FieldCard>
             </section>
-            <hr className="border-dark-s-700" />
+            <div className="bf-ember-line" />
           </>
         )}
 
         {evidence.length > 0 && (
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
+            <SectionHeading>
               Evidence ({evidence.length} items)
-            </h3>
+            </SectionHeading>
             <div className="space-y-2">
               {evidence.map((item, i) => (
                 <EvidenceItem key={i} item={item} />

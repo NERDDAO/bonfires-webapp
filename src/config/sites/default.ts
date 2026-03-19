@@ -17,10 +17,10 @@ export const defaultSiteConfig: SiteConfig = {
   ],
 
   theme: {
-    brandPrimary: "#b2ff00",
-    brandSecondary: "#81a236",
-    brandBlack: "#121212",
-    brandSkyblue: "#4fc5ff",
+    brandPrimary: "#f5572a",
+    brandSecondary: "#ff8a5c",
+    brandBlack: "#0a1216",
+    brandSkyblue: "#f5572a",
   },
 
   landing: BonfireLanding,

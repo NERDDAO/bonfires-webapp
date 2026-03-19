@@ -394,15 +394,15 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bf-bg);
-  border-bottom: 1px solid transparent;
+  background: #0a1216;
+  border-bottom: 1px solid var(--bf-border);
   transition: background 0.3s, border-color 0.3s, backdrop-filter 0.3s;
 }
 
 .bf-nav.scrolled {
-  background: rgba(13, 31, 38, 0.85);
+  background: rgba(10, 18, 22, 0.92);
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--bf-border);
+  border-bottom: 1px solid var(--bf-border-bright);
 }
 
 .bf-nav-logo {
@@ -428,19 +428,20 @@ body::before {
   font-family: var(--font-dm-sans), "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 500;
-  padding: 6px 14px;
-  border-radius: var(--bf-radius);
-  transition: color 0.2s, background 0.2s;
+  padding: 8px 18px;
+  border-radius: var(--bf-radius) var(--bf-radius) 0 0;
   border-bottom: 2px solid transparent;
+  transition: color 0.2s, background 0.2s;
 }
 
 .bf-nav-link:hover {
   color: var(--bf-text);
-  background: var(--bf-surface);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .bf-nav-link.active {
   color: var(--bf-text);
+  background: rgba(255, 255, 255, 0.08);
   border-bottom-color: var(--bf-ember);
 }
 

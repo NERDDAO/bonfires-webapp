@@ -11,6 +11,7 @@ export interface ApplicantReviewBatchInfo {
   source_name?: string | null;
   created_at: string;
   completed_at?: string | null;
+  slot_config?: Record<string, unknown> | null;
 }
 
 export interface ApplicantReviewListItem {
@@ -33,6 +34,7 @@ export interface ApplicantReviewListItem {
   public_evidence_links: string[];
   evidence_count: number;
   review_summary?: string | null;
+  slot_rank?: number | null;
   updated_at: string;
   created_at: string;
 }
@@ -123,6 +125,17 @@ export interface ApplicantReviewBatchImportResponse {
   batch_id: string;
   imported_count: number;
   queued_task_ids: string[];
+}
+
+export interface FillSlotsResponse {
+  ranked: Array<{
+    application_id: string;
+    full_name: string;
+    overall_score: number | null;
+    slot_rank: number | null;
+    shortlist_status: string;
+  }>;
+  total_slots: number;
 }
 
 // --- Rubric Types ---

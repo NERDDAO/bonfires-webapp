@@ -21,6 +21,7 @@ import {
   useRubricListQuery,
   useStructuredRubricQuery,
 } from "@/hooks/queries/useRubricQuery";
+import { SlotRankingPanel } from "@/components/applicant-reviews/SlotRankingPanel";
 import type {
   ApplicantReviewActionResponse,
   ApplicantReviewBatchImportResponse,
@@ -46,6 +47,10 @@ export default function ApplicantReviewsPage() {
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
   >(null);
+  const [importMode, setImportMode] = useState<"tsv" | "json">("tsv");
+  const [jsonText, setJsonText] = useState("");
+  const [columnMapEnabled, setColumnMapEnabled] = useState(false);
+  const [columnMapText, setColumnMapText] = useState("{}");
   const [isImporting, setIsImporting] = useState(false);
   const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
   const [page, setPage] = useState(0);
@@ -126,22 +131,36 @@ export default function ApplicantReviewsPage() {
   };
 
   const handleImport = async () => {
-    if (!bonfireId.trim() || !tableText.trim()) {
-      toast.error("Bonfire ID and pasted table text are required.");
+    if (!bonfireId.trim()) {
+      toast.error("Bonfire ID is required.");
+      return;
+    }
+    if (importMode === "tsv" && !tableText.trim()) {
+      toast.error("Paste table text is required for TSV import.");
+      return;
+    }
+    if (importMode === "json" && !jsonText.trim()) {
+      toast.error("JSON rows are required for JSON import.");
       return;
     }
 
     setIsImporting(true);
     try {
+      const payload = {
+        bonfire_id: bonfireId.trim(),
+        agent_id: agentId.trim() || undefined,
+        batch_name: `Applicant Batch ${new Date().toISOString()}`,
+        source_name: importMode === "tsv" ? "manual-paste" : "json-import",
+        ...(importMode === "tsv"
+          ? { table_text: tableText }
+          : {
+              rows: JSON.parse(jsonText),
+              column_map: columnMapEnabled ? JSON.parse(columnMapText) : {},
+            }),
+      };
       const response = await apiClient.post<ApplicantReviewBatchImportResponse>(
         "/api/applicant-review-batches/import",
-        {
-          bonfire_id: bonfireId.trim(),
-          agent_id: agentId.trim() || undefined,
-          batch_name: `Applicant Batch ${new Date().toISOString()}`,
-          source_name: "manual-paste",
-          table_text: tableText,
-        },
+        payload,
       );
       setBatchId(response.batch_id);
       batchProgress.open(response.batch_id);
@@ -171,113 +190,172 @@ export default function ApplicantReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
-        <div className="mb-4">
-          <h1 className="text-2xl font-semibold">Applicant Reviews</h1>
-          <p className="text-sm text-base-content/70">
-            Import a spreadsheet paste, queue applicant research, rank by score,
-            and curate the top 25.
-          </p>
-        </div>
+      <section className="bf-review-panel">
+        <div className="bf-import-card">
+          <div className="bf-section-label">IMPORT</div>
+          <h3>Applicant Reviews</h3>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <label className="form-control">
-            <span className="label-text text-sm font-medium">Bonfire ID</span>
-            <input
-              className="input input-bordered"
-              value={bonfireId}
-              onChange={(event) => setBonfireId(event.target.value)}
-              placeholder="Mongo ObjectId bonfire identifier"
-            />
-          </label>
-          <label className="form-control">
-            <span className="label-text text-sm font-medium">
-              Review Agent ID
-            </span>
-            <input
-              className="input input-bordered"
-              value={agentId}
-              onChange={(event) => setAgentId(event.target.value)}
-              placeholder="Optional agent for stack / episode writeback"
-            />
-          </label>
-        </div>
-
-        <label className="form-control mt-4">
-          <span className="label-text text-sm font-medium">
-            Paste table text
-          </span>
-          <textarea
-            className="textarea textarea-bordered min-h-48"
-            value={tableText}
-            onChange={(event) => setTableText(event.target.value)}
-            placeholder="Paste TSV copied from Excel or Google Sheets"
-          />
-        </label>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            className="btn btn-primary"
-            onClick={handleImport}
-            disabled={isImporting}
-          >
-            {isImporting ? "Importing..." : "Import Batch"}
-          </button>
-          {batchId && (
-            <>
-              <span className="text-sm text-base-content/70">
-                Active batch: <span className="font-mono">{batchId}</span>
-              </span>
+          <div style={{ marginBottom: 20 }}>
+            <div className="bf-mode-toggle">
               <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => batchProgress.open(batchId)}
+                className={importMode === "tsv" ? "active" : ""}
+                onClick={() => setImportMode("tsv")}
               >
-                View progress
+                TSV
               </button>
-              {applications.length > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => {
-                    batchProgress.open(batchId);
-                    void (async () => {
-                      try {
-                        const needsEvaluation = applications.filter(
-                          (a) => a.evaluation_status !== "completed",
-                        );
-                        if (needsEvaluation.length === 0) {
-                          toast.success("All applications already evaluated.");
-                          return;
-                        }
-                        await applicationActions.reevaluateAll(
-                          needsEvaluation.map((a) => a.id),
-                          batchId ?? undefined,
-                          selectedRubricId,
-                          true,
-                        );
-                        await queryClient.invalidateQueries({
-                          queryKey: ["applicantReviewBatch"],
-                        });
-                        await refreshData();
-                        applicationActions.clearProgress();
-                        toast.success("Re-evaluation complete.");
-                      } catch (err) {
-                        toast.error(
-                          err instanceof Error ? err.message : "Re-evaluation failed.",
-                        );
-                      }
-                    })();
-                  }}
-                  disabled={applicationActions.isReevaluating}
+              <button
+                className={importMode === "json" ? "active" : ""}
+                onClick={() => setImportMode("json")}
+              >
+                JSON
+              </button>
+            </div>
+          </div>
+
+          <div className="bf-grid-2" style={{ marginBottom: 16 }}>
+            <div>
+              <span className="bf-label">Bonfire ID</span>
+              <input
+                className="bf-input"
+                value={bonfireId}
+                onChange={(event) => setBonfireId(event.target.value)}
+                placeholder="Mongo ObjectId bonfire identifier"
+              />
+            </div>
+            <div>
+              <span className="bf-label">Review Agent ID</span>
+              <input
+                className="bf-input"
+                value={agentId}
+                onChange={(event) => setAgentId(event.target.value)}
+                placeholder="Optional agent for stack / episode writeback"
+              />
+            </div>
+          </div>
+
+          {importMode === "tsv" ? (
+            <div style={{ marginBottom: 16 }}>
+              <span className="bf-label">Paste table text</span>
+              <textarea
+                className="bf-textarea"
+                value={tableText}
+                onChange={(event) => setTableText(event.target.value)}
+                placeholder="Paste TSV copied from Excel or Google Sheets"
+              />
+            </div>
+          ) : (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <span className="bf-label">JSON rows (Artizen export)</span>
+                <textarea
+                  className="bf-textarea"
+                  value={jsonText}
+                  onChange={(event) => setJsonText(event.target.value)}
+                  placeholder='[{"Full Name": "Alice", "Email": "alice@example.com", ...}]'
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div
+                  className="bf-collapsible-header"
+                  onClick={() => setColumnMapEnabled(!columnMapEnabled)}
                 >
-                  {applicationActions.isReevaluating
-                    ? "Re-evaluating..."
-                    : "Re-evaluate All"}
-                </button>
-              )}
+                  <div className="bf-ember-line" />
+                  <span className="bf-label">Column Mapping</span>
+                  <span style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                    {columnMapEnabled ? "Custom" : "Passthrough (auto)"}
+                  </span>
+                </div>
+                {columnMapEnabled && (
+                  <div style={{ marginTop: 8 }}>
+                    <textarea
+                      className="bf-textarea"
+                      style={{ minHeight: 80 }}
+                      value={columnMapText}
+                      onChange={(e) => setColumnMapText(e.target.value)}
+                      placeholder='{"Source Column": "target_field", ...}'
+                    />
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-dim)",
+                        marginTop: 4,
+                        display: "block",
+                      }}
+                    >
+                      Empty {"{}"} = auto snake_case all keys
+                    </span>
+                  </div>
+                )}
+              </div>
             </>
           )}
+
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+            <button
+              className="bf-btn-primary"
+              onClick={() => void handleImport()}
+              disabled={isImporting}
+            >
+              {isImporting ? "Importing..." : "Import Batch"}
+            </button>
+            {batchId && (
+              <>
+                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Active batch:{" "}
+                  <span style={{ fontFamily: "monospace" }}>{batchId}</span>
+                </span>
+                <button
+                  type="button"
+                  className="bf-btn-secondary"
+                  onClick={() => batchProgress.open(batchId)}
+                >
+                  View progress
+                </button>
+                {applications.length > 0 && (
+                  <button
+                    type="button"
+                    className="bf-btn-primary"
+                    onClick={() => {
+                      batchProgress.open(batchId);
+                      void (async () => {
+                        try {
+                          const needsEvaluation = applications.filter(
+                            (a) => a.evaluation_status !== "completed",
+                          );
+                          if (needsEvaluation.length === 0) {
+                            toast.success("All applications already evaluated.");
+                            return;
+                          }
+                          await applicationActions.reevaluateAll(
+                            needsEvaluation.map((a) => a.id),
+                            batchId ?? undefined,
+                            selectedRubricId,
+                            true,
+                          );
+                          await queryClient.invalidateQueries({
+                            queryKey: ["applicantReviewBatch"],
+                          });
+                          await refreshData();
+                          applicationActions.clearProgress();
+                          toast.success("Re-evaluation complete.");
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error ? err.message : "Re-evaluation failed.",
+                          );
+                        }
+                      })();
+                    }}
+                    disabled={applicationActions.isReevaluating}
+                  >
+                    {applicationActions.isReevaluating
+                      ? "Re-evaluating..."
+                      : "Re-evaluate All"}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </section>
 
@@ -522,6 +600,16 @@ export default function ApplicantReviewsPage() {
                 })();
               }}
             />
+          )}
+
+          {batchId && applications.some(a => a.evaluation_status === "completed") && (
+            <div className="bf-review-panel" style={{ marginTop: 24 }}>
+              <SlotRankingPanel
+                batchId={batchId}
+                applications={applications}
+                onSlotsAssigned={() => void refreshData()}
+              />
+            </div>
           )}
 
           {reviewsQuery.data && reviewsQuery.data.total > 0 && (

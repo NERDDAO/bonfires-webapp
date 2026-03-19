@@ -31,6 +31,7 @@ export function ApplicantReviewsTable({
         <thead>
           <tr>
             <th>Applicant</th>
+            <th>Rank</th>
             {showOrgColumn && <th>Org</th>}
             <th>Score</th>
             <th>Confidence</th>
@@ -53,6 +54,13 @@ export function ApplicantReviewsTable({
                 <div className="text-xs text-base-content/60">
                   {application.role_title || "Role not provided"}
                 </div>
+              </td>
+              <td>
+                {application.slot_rank != null ? (
+                  <span className="bf-rank-cell">#{application.slot_rank}</span>
+                ) : (
+                  <span className="text-base-content/40">&mdash;</span>
+                )}
               </td>
               {showOrgColumn && (
                 <td className="text-sm text-base-content/70 truncate max-w-[150px]">

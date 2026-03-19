@@ -5,6 +5,9 @@
  *
  * Multi-step wizard for creating new data rooms.
  * Steps: 1) Select Bonfire, 2) Description & Settings, 3) Center Node Selection
+ *
+ * Styled with the Bonfires design system: deep teal-black surfaces,
+ * ember accent, Montserrat headings, DM Sans body.
  */
 import { useCallback, useEffect, useState } from "react";
 
@@ -48,6 +51,24 @@ interface DataRoomWizardProps {
   publicOnly?: boolean;
   defaultPriceUsd?: number;
 }
+
+/* ── Design System Tokens (inline, scoped to wizard) ── */
+const ds = {
+  bg: "#0d1f26",
+  bg2: "#111c23",
+  surface: "#152530",
+  surface2: "#1a2f3a",
+  ember: "#f5572a",
+  emberDim: "rgba(245, 87, 42, 0.15)",
+  text: "#f3ffff",
+  textSecondary: "#8da8af",
+  textDim: "#3d5a64",
+  border: "rgba(255, 255, 255, 0.07)",
+  borderBright: "rgba(255, 255, 255, 0.14)",
+  radius: "8px",
+} as const;
+
+const STEPS = ["Bonfire", "Configure", "Center Node"] as const;
 
 export function DataRoomWizard({
   isOpen,
@@ -307,444 +328,859 @@ export function DataRoomWizard({
 
   if (!isOpen) return null;
 
+  const displayBonfires = publicOnly
+    ? agentSelection.availableBonfires.filter((b) => b.is_public !== false)
+    : agentSelection.availableBonfires;
+
   return (
-    <div className="modal modal-open" onClick={onClose}>
+    <>
+      {/* ── Backdrop ── */}
       <div
-        className="modal-box relative max-w-4xl"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+        style={{ background: "rgba(6, 14, 18, 0.85)", backdropFilter: "blur(8px)" }}
+        onClick={onClose}
       >
-        <button
-          className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
-          onClick={onClose}
+        {/* ── Modal Panel ── */}
+        <div
+          className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide"
+          style={{
+            background: ds.bg,
+            border: `1px solid ${ds.border}`,
+            borderRadius: ds.radius,
+          }}
+          onClick={(e) => e.stopPropagation()}
         >
-          ✕
-        </button>
+          {/* ── Header ── */}
+          <div
+            className="sticky top-0 z-10 px-8 pt-8 pb-6"
+            style={{
+              background: ds.bg,
+              borderBottom: `1px solid ${ds.border}`,
+            }}
+          >
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <p
+                  className="uppercase tracking-widest mb-2"
+                  style={{
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    color: ds.ember,
+                  }}
+                >
+                  New Data Room
+                </p>
+                <h3
+                  style={{
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontSize: "clamp(20px, 3vw, 28px)",
+                    fontWeight: 800,
+                    color: ds.text,
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {currentStep === 1 && "Choose your Bonfire"}
+                  {currentStep === 2 && "Configure your room"}
+                  {currentStep === 3 && "Pick a center node"}
+                </h3>
+              </div>
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center w-8 h-8 rounded transition-colors cursor-pointer"
+                style={{
+                  color: ds.textSecondary,
+                  border: `1px solid ${ds.border}`,
+                  background: "transparent",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = ds.surface;
+                  e.currentTarget.style.borderColor = ds.borderBright;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.borderColor = ds.border;
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
 
-        <h3 className="font-bold text-2xl mb-6">Create Data Room</h3>
-
-        <ul className="steps w-full mb-6">
-          <li className={`step ${currentStep >= 1 ? "step-primary" : ""}`}>
-            Select Bonfire
-          </li>
-          <li className={`step ${currentStep >= 2 ? "step-primary" : ""}`}>
-            Description
-          </li>
-          <li className={`step ${currentStep >= 3 ? "step-primary" : ""}`}>
-            Center Node
-          </li>
-        </ul>
-
-        {error && (
-          <div className="alert alert-error mb-4">
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Step 1: Bonfire Selection */}
-        {currentStep === 1 && (
-          <div className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">
-                  Select a Bonfire
-                </span>
-              </label>
-              {agentSelection.loading.bonfires ? (
-                <div className="skeleton h-12 w-full"></div>
-              ) : agentSelection.error.bonfires ? (
-                <div className="alert alert-error">
-                  <span>{agentSelection.error.bonfires}</span>
-                </div>
-              ) : (() => {
-                const displayBonfires = publicOnly
-                  ? agentSelection.availableBonfires.filter(
-                      (b) => b.is_public !== false
-                    )
-                  : agentSelection.availableBonfires;
-
-                return displayBonfires.length === 0 ? (
-                  <div className="alert alert-warning">
-                    <span>No public bonfires available to create a dataroom.</span>
+            {/* ── Step Indicator ── */}
+            <div className="flex items-center gap-0">
+              {STEPS.map((label, i) => {
+                const stepNum = i + 1;
+                const isActive = currentStep === stepNum;
+                const isDone = currentStep > stepNum;
+                return (
+                  <div key={label} className="flex items-center flex-1 last:flex-none">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all duration-300"
+                        style={{
+                          fontFamily: "'Montserrat', sans-serif",
+                          background: isActive ? ds.ember : isDone ? ds.emberDim : ds.surface,
+                          color: isActive ? "#fff" : isDone ? ds.ember : ds.textDim,
+                          border: `1px solid ${isActive ? ds.ember : isDone ? "rgba(245,87,42,0.3)" : ds.border}`,
+                          fontSize: "11px",
+                        }}
+                      >
+                        {isDone ? (
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : (
+                          stepNum
+                        )}
+                      </div>
+                      <span
+                        className="hidden sm:block whitespace-nowrap"
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: "13px",
+                          fontWeight: isActive ? 500 : 400,
+                          color: isActive ? ds.text : isDone ? ds.textSecondary : ds.textDim,
+                        }}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                    {i < STEPS.length - 1 && (
+                      <div
+                        className="flex-1 mx-3 h-px"
+                        style={{
+                          background: isDone
+                            ? `linear-gradient(90deg, ${ds.ember}, rgba(245,87,42,0.3))`
+                            : ds.border,
+                        }}
+                      />
+                    )}
                   </div>
-                ) : (
-                  <select
-                    className="select select-bordered w-full"
-                    value={selectedBonfire?.id || ""}
-                    onChange={(e) => {
-                      const bonfire = displayBonfires.find(
-                        (b) => b.id === e.target.value
-                      );
-                      setSelectedBonfire(bonfire || null);
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Body ── */}
+          <div className="px-8 py-6 space-y-5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            {error && (
+              <div
+                className="flex items-start gap-3 p-4 rounded-lg"
+                style={{
+                  background: "rgba(220, 50, 50, 0.08)",
+                  border: "1px solid rgba(220, 50, 50, 0.2)",
+                  color: "#ff6b6b",
+                  fontSize: "14px",
+                }}
+              >
+                <span className="shrink-0 mt-0.5">!</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* ══════════ Step 1: Bonfire Selection ══════════ */}
+            {currentStep === 1 && (
+              <div className="space-y-4">
+                {agentSelection.loading.bonfires ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-0.5 rounded-lg overflow-hidden">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="h-20 animate-pulse"
+                        style={{ background: ds.surface }}
+                      />
+                    ))}
+                  </div>
+                ) : agentSelection.error.bonfires ? (
+                  <div
+                    className="p-4 rounded-lg text-sm"
+                    style={{
+                      background: "rgba(220, 50, 50, 0.08)",
+                      border: "1px solid rgba(220, 50, 50, 0.2)",
+                      color: "#ff6b6b",
                     }}
                   >
-                    <option value="">— Select Bonfire —</option>
-                    {displayBonfires.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                );
-              })()}
-            </div>
-
-            <div className="modal-action">
-              <button className="btn" onClick={onClose}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleNext}
-                disabled={!selectedBonfire}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Description & Settings */}
-        {currentStep === 2 && (
-          <div className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Description *</span>
-                <span className="label-text-alt">
-                  {description.length}/500 (min 10 chars)
-                </span>
-              </label>
-              <textarea
-                className={`textarea textarea-bordered h-24 ${
-                  description.length > 0 && !isStep2Valid
-                    ? "textarea-error"
-                    : ""
-                }`}
-                placeholder="Describe the data room purpose and scope..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={500}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">
-                  System Prompt (optional)
-                </span>
-                <span className="label-text-alt">
-                  {systemPrompt.length}/1000
-                </span>
-              </label>
-              <textarea
-                className={`textarea textarea-bordered h-32 ${!isSystemPromptValid ? "textarea-error" : ""}`}
-                placeholder="Enter a custom system prompt for chat interactions..."
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                maxLength={1000}
-              />
-            </div>
-
-            <div className="divider">Subscription Settings</div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">
-                    Price (USD) *
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  className="input input-bordered w-full"
-                  placeholder="5.00"
-                  value={priceUsd}
-                  onChange={(e) => setPriceUsd(parseFloat(e.target.value) || 0)}
-                  min={0.01}
-                  max={1000}
-                  step={0.01}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">
-                    Query Limit *
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  className="input input-bordered w-full"
-                  placeholder="20"
-                  value={queryLimit}
-                  onChange={(e) => setQueryLimit(parseInt(e.target.value) || 0)}
-                  min={1}
-                  max={1000}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">
-                    Expiration (Days) *
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  className="input input-bordered w-full"
-                  placeholder="30"
-                  value={expirationDays}
-                  onChange={(e) =>
-                    setExpirationDays(parseInt(e.target.value) || 0)
-                  }
-                  min={1}
-                  max={365}
-                />
-              </div>
-            </div>
-
-            <div className="divider">Dynamic Pricing (Optional)</div>
-
-            <div className="form-control">
-              <label className="label cursor-pointer justify-start gap-3">
-                <input
-                  type="checkbox"
-                  className="toggle toggle-primary"
-                  checked={dynamicPricingEnabled}
-                  onChange={(e) => setDynamicPricingEnabled(e.target.checked)}
-                />
-                <span className="label-text">
-                  Enable dynamic pricing for hyperblogs
-                </span>
-              </label>
-            </div>
-
-            {dynamicPricingEnabled && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">
-                      Price Step (USD)
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    className="input input-bordered w-full"
-                    value={priceStepUsd}
-                    onChange={(e) =>
-                      setPriceStepUsd(parseFloat(e.target.value) || 0)
-                    }
-                    min={0}
-                    max={100}
-                    step={0.01}
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">
-                      Decay Rate (USD/hour)
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    className="input input-bordered w-full"
-                    value={priceDecayRate}
-                    onChange={(e) =>
-                      setPriceDecayRate(parseFloat(e.target.value) || 0)
-                    }
-                    min={0}
-                    max={10}
-                    step={0.01}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="divider">Image Generation</div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">
-                  Banner Image Model
-                </span>
-              </label>
-              <select
-                className="select select-bordered w-full"
-                value={imageModel}
-                onChange={(e) =>
-                  setImageModel(
-                    e.target.value as "schnell" | "dev" | "pro" | "realism"
-                  )
-                }
-              >
-                <option value="schnell">Schnell - Fast & Good Quality</option>
-                <option value="dev">Dev - Balanced Speed/Quality</option>
-                <option value="pro">Pro - High Quality</option>
-                <option value="realism">Realism - Photorealistic</option>
-              </select>
-            </div>
-
-            <div className="divider">HTN Template (Optional)</div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">
-                  Blog/Card Generation Template
-                </span>
-              </label>
-              <div className="flex items-center gap-2">
-                {selectedTemplate ? (
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="badge badge-primary badge-sm">
-                      {selectedTemplate.template_type}
-                    </span>
-                    <span className="text-sm font-medium truncate">
-                      {selectedTemplate.name}
-                    </span>
-                    <button
-                      className="btn btn-ghost btn-xs"
-                      onClick={() => setSelectedTemplate(null)}
-                    >
-                      Clear
-                    </button>
+                    {agentSelection.error.bonfires}
+                  </div>
+                ) : displayBonfires.length === 0 ? (
+                  <div
+                    className="p-6 rounded-lg text-center"
+                    style={{
+                      background: ds.surface,
+                      color: ds.textSecondary,
+                      fontSize: "14px",
+                    }}
+                  >
+                    No public bonfires available to create a dataroom.
                   </div>
                 ) : (
-                  <span className="text-sm opacity-60 flex-1">
-                    Default (Auto)
-                  </span>
-                )}
-                <button
-                  className="btn btn-sm btn-outline"
-                  onClick={() => setIsPickerOpen(true)}
-                >
-                  {selectedTemplate ? "Change" : "Select Template"}
-                </button>
-              </div>
-              <label className="label">
-                <span className="label-text-alt opacity-60">
-                  Controls how blog/card content is structured and generated.
-                </span>
-              </label>
-            </div>
-
-            <div className="modal-action">
-              <button className="btn" onClick={handleBack}>
-                Back
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleNext}
-                disabled={!isStep2Valid || !isSystemPromptValid}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* HTN Template Picker Modal */}
-        <HTNTemplatePicker
-          isOpen={isPickerOpen}
-          onClose={() => setIsPickerOpen(false)}
-          onSelect={setSelectedTemplate}
-          onCreateCustom={() => setIsCreatorOpen(true)}
-          selectedTemplateId={selectedTemplate?.id}
-        />
-
-        {/* HTN Template Creator Modal */}
-        <HTNTemplateCreator
-          isOpen={isCreatorOpen}
-          onClose={() => setIsCreatorOpen(false)}
-          onCreated={() => {
-            // Re-open picker after creating so user can select the new template
-            setIsCreatorOpen(false);
-            setIsPickerOpen(true);
-          }}
-        />
-
-        {/* Step 3: Center Node Selection */}
-        {currentStep === 3 && (
-          <div className="space-y-4">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <span className="loading loading-spinner loading-lg"></span>
-                <p className="mt-4 text-sm opacity-70">Fetching entities...</p>
-              </div>
-            ) : previewEntities.length === 0 ? (
-              <div className="alert alert-warning">
-                <span>
-                  No entities found. Try going back and adjusting your
-                  description.
-                </span>
-              </div>
-            ) : (
-              <>
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">
-                      Select Center Node
-                    </span>
-                    <span className="label-text-alt">
-                      {previewEntities.length} entities found
-                    </span>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                  {previewEntities.map((entity) => (
-                    <div
-                      key={entity.uuid}
-                      className={`card bg-base-200 shadow-sm cursor-pointer transition-all ${
-                        selectedCenterNode?.uuid === entity.uuid
-                          ? "ring-2 ring-primary"
-                          : ""
-                      }`}
-                      onClick={() => setSelectedCenterNode(entity)}
-                    >
-                      <div className="card-body p-4">
-                        <div className="flex items-start gap-2">
-                          <input
-                            type="radio"
-                            className="radio radio-primary radio-sm mt-1"
-                            checked={selectedCenterNode?.uuid === entity.uuid}
-                            onChange={() => setSelectedCenterNode(entity)}
-                          />
-                          <div className="flex-1">
-                            <span className="badge badge-primary badge-sm mb-1">
-                              {entity.entity_type}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-0.5 rounded-lg overflow-hidden">
+                    {displayBonfires.map((b) => {
+                      const isSelected = selectedBonfire?.id === b.id;
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          className="relative text-left p-5 transition-colors duration-200 cursor-pointer"
+                          style={{
+                            background: isSelected ? ds.surface2 : ds.surface,
+                            outline: isSelected ? `2px solid ${ds.ember}` : "none",
+                            outlineOffset: "-2px",
+                            borderRadius: isSelected ? ds.radius : undefined,
+                            zIndex: isSelected ? 1 : 0,
+                          }}
+                          onClick={() => setSelectedBonfire(b)}
+                          onMouseEnter={(e) => {
+                            if (!isSelected)
+                              e.currentTarget.style.background = ds.surface2;
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected)
+                              e.currentTarget.style.background = ds.surface;
+                          }}
+                        >
+                          {isSelected && (
+                            <div
+                              className="absolute top-0 left-0 right-0 h-0.5"
+                              style={{ background: ds.ember }}
+                            />
+                          )}
+                          <p
+                            style={{
+                              fontFamily: "'Montserrat', sans-serif",
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              color: isSelected ? ds.text : ds.textSecondary,
+                              marginBottom: "4px",
+                            }}
+                          >
+                            {b.name}
+                          </p>
+                          {b.is_public && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase" as const,
+                                color: ds.ember,
+                              }}
+                            >
+                              Public
                             </span>
-                            <p className="font-semibold text-sm">
-                              {entity.name}
-                            </p>
-                            {entity.summary && (
-                              <p className="text-xs opacity-70 line-clamp-2">
-                                {entity.summary}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
 
-            <div className="modal-action">
-              <button className="btn" onClick={handleBack}>
-                Back
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleComplete}
-                disabled={!selectedCenterNode || loading}
-              >
-                Create Data Room
-              </button>
-            </div>
+            {/* ══════════ Step 2: Description & Settings ══════════ */}
+            {currentStep === 2 && (
+              <div className="space-y-5">
+                {/* Description + System Prompt */}
+                <div className="space-y-4">
+                  <WizardField
+                    label="Description"
+                    required
+                    counter={`${description.length}/500`}
+                    hint="min 10 characters"
+                  >
+                    <textarea
+                      className="w-full resize-none outline-none placeholder:opacity-40"
+                      rows={3}
+                      placeholder="What is this data room about?"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      maxLength={500}
+                      style={{
+                        background: ds.surface,
+                        border: `1px solid ${description.length > 0 && description.trim().length < 10 ? "rgba(220,50,50,0.4)" : ds.borderBright}`,
+                        borderRadius: ds.radius,
+                        padding: "14px 16px",
+                        color: ds.text,
+                        fontSize: "15px",
+                        fontFamily: "'DM Sans', sans-serif",
+                        lineHeight: 1.65,
+                      }}
+                    />
+                  </WizardField>
+
+                  <WizardField
+                    label="System Prompt"
+                    counter={`${systemPrompt.length}/1000`}
+                  >
+                    <textarea
+                      className="w-full resize-none outline-none placeholder:opacity-40"
+                      rows={3}
+                      placeholder="Custom instructions for AI chat interactions..."
+                      value={systemPrompt}
+                      onChange={(e) => setSystemPrompt(e.target.value)}
+                      maxLength={1000}
+                      style={{
+                        background: ds.surface,
+                        border: `1px solid ${!isSystemPromptValid ? "rgba(220,50,50,0.4)" : ds.borderBright}`,
+                        borderRadius: ds.radius,
+                        padding: "14px 16px",
+                        color: ds.text,
+                        fontSize: "15px",
+                        fontFamily: "'DM Sans', sans-serif",
+                        lineHeight: 1.65,
+                      }}
+                    />
+                  </WizardField>
+                </div>
+
+                {/* Subscription Settings Panel */}
+                <WizardPanel label="Subscription">
+                  <div className="grid grid-cols-3 gap-0.5">
+                    <WizardNumberInput
+                      label="Price"
+                      unit="USD"
+                      value={priceUsd}
+                      onChange={(v) => setPriceUsd(v)}
+                      min={0.01}
+                      max={1000}
+                      step={0.01}
+                    />
+                    <WizardNumberInput
+                      label="Queries"
+                      unit="limit"
+                      value={queryLimit}
+                      onChange={(v) => setQueryLimit(Math.round(v))}
+                      min={1}
+                      max={1000}
+                      step={1}
+                    />
+                    <WizardNumberInput
+                      label="Expires"
+                      unit="days"
+                      value={expirationDays}
+                      onChange={(v) => setExpirationDays(Math.round(v))}
+                      min={1}
+                      max={365}
+                      step={1}
+                    />
+                  </div>
+                </WizardPanel>
+
+                {/* Dynamic Pricing Panel */}
+                <WizardPanel label="Dynamic Pricing">
+                  <label
+                    className="flex items-center gap-3 cursor-pointer p-4"
+                    style={{ background: ds.surface }}
+                  >
+                    <div
+                      className="relative w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer"
+                      style={{
+                        background: dynamicPricingEnabled ? ds.ember : ds.textDim,
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setDynamicPricingEnabled(!dynamicPricingEnabled);
+                      }}
+                    >
+                      <div
+                        className="absolute top-0.5 w-4 h-4 rounded-full transition-transform duration-200"
+                        style={{
+                          background: "#fff",
+                          transform: dynamicPricingEnabled ? "translateX(22px)" : "translateX(2px)",
+                        }}
+                      />
+                    </div>
+                    <span style={{ fontSize: "14px", color: ds.textSecondary }}>
+                      Adjust hyperblog prices automatically
+                    </span>
+                  </label>
+
+                  {dynamicPricingEnabled && (
+                    <div className="grid grid-cols-2 gap-0.5 mt-0.5">
+                      <WizardNumberInput
+                        label="Step"
+                        unit="USD"
+                        value={priceStepUsd}
+                        onChange={(v) => setPriceStepUsd(v)}
+                        min={0}
+                        max={100}
+                        step={0.01}
+                      />
+                      <WizardNumberInput
+                        label="Decay"
+                        unit="USD/hr"
+                        value={priceDecayRate}
+                        onChange={(v) => setPriceDecayRate(v)}
+                        min={0}
+                        max={10}
+                        step={0.01}
+                      />
+                    </div>
+                  )}
+                </WizardPanel>
+
+                {/* Generation Panel */}
+                <WizardPanel label="Generation">
+                  <div
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-0.5"
+                  >
+                    {/* Image Model */}
+                    <div className="p-4 space-y-2" style={{ background: ds.surface }}>
+                      <p style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: ds.textDim }}>
+                        Banner Model
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(
+                          [
+                            { value: "schnell", label: "Schnell" },
+                            { value: "dev", label: "Dev" },
+                            { value: "pro", label: "Pro" },
+                            { value: "realism", label: "Realism" },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer"
+                            style={{
+                              fontFamily: "'Montserrat', sans-serif",
+                              background:
+                                imageModel === opt.value ? ds.emberDim : "transparent",
+                              border: `1px solid ${imageModel === opt.value ? "rgba(245,87,42,0.3)" : ds.border}`,
+                              color:
+                                imageModel === opt.value ? ds.ember : ds.textSecondary,
+                            }}
+                            onClick={() => setImageModel(opt.value)}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* HTN Template */}
+                    <div className="p-4 space-y-2" style={{ background: ds.surface }}>
+                      <p style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: ds.textDim }}>
+                        Template
+                      </p>
+                      <div className="flex items-center gap-2">
+                        {selectedTemplate ? (
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span
+                              className="px-2 py-0.5 rounded text-xs font-semibold shrink-0"
+                              style={{
+                                background: ds.emberDim,
+                                color: ds.ember,
+                                fontFamily: "'Montserrat', sans-serif",
+                                fontSize: "10px",
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase" as const,
+                              }}
+                            >
+                              {selectedTemplate.template_type}
+                            </span>
+                            <span
+                              className="truncate"
+                              style={{ fontSize: "13px", color: ds.text }}
+                            >
+                              {selectedTemplate.name}
+                            </span>
+                            <button
+                              className="text-xs cursor-pointer shrink-0"
+                              style={{ color: ds.textDim }}
+                              onClick={() => setSelectedTemplate(null)}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className="flex-1"
+                            style={{ fontSize: "13px", color: ds.textDim }}
+                          >
+                            Auto
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 cursor-pointer"
+                          style={{
+                            fontFamily: "'Montserrat', sans-serif",
+                            background: "transparent",
+                            border: `1px solid ${ds.borderBright}`,
+                            color: ds.textSecondary,
+                          }}
+                          onClick={() => setIsPickerOpen(true)}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = ds.surface2;
+                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderColor = ds.borderBright;
+                          }}
+                        >
+                          {selectedTemplate ? "Change" : "Select"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </WizardPanel>
+              </div>
+            )}
+
+            {/* ══════════ Step 3: Center Node Selection ══════════ */}
+            {currentStep === 3 && (
+              <div className="space-y-4">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div
+                      className="w-8 h-8 rounded-full border-2 animate-spin"
+                      style={{
+                        borderColor: ds.border,
+                        borderTopColor: ds.ember,
+                      }}
+                    />
+                    <p className="mt-4" style={{ fontSize: "13px", color: ds.textDim }}>
+                      Querying knowledge graph...
+                    </p>
+                  </div>
+                ) : previewEntities.length === 0 && !error ? (
+                  <div
+                    className="p-6 rounded-lg text-center"
+                    style={{
+                      background: ds.surface,
+                      color: ds.textSecondary,
+                      fontSize: "14px",
+                    }}
+                  >
+                    No entities found. Go back and adjust your description.
+                  </div>
+                ) : (
+                  <>
+                    <p style={{ fontSize: "13px", color: ds.textDim }}>
+                      {previewEntities.length} entities found
+                    </p>
+                    <div
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-0.5 rounded-lg overflow-hidden max-h-96 overflow-y-auto scrollbar-hide"
+                    >
+                      {previewEntities.map((entity) => {
+                        const isSelected = selectedCenterNode?.uuid === entity.uuid;
+                        return (
+                          <button
+                            key={entity.uuid}
+                            type="button"
+                            className="relative text-left p-4 transition-colors duration-200 cursor-pointer"
+                            style={{
+                              background: isSelected ? ds.surface2 : ds.surface,
+                              outline: isSelected ? `2px solid ${ds.ember}` : "none",
+                              outlineOffset: "-2px",
+                              borderRadius: isSelected ? ds.radius : undefined,
+                              zIndex: isSelected ? 1 : 0,
+                            }}
+                            onClick={() => setSelectedCenterNode(entity)}
+                            onMouseEnter={(e) => {
+                              if (!isSelected)
+                                e.currentTarget.style.background = ds.surface2;
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected)
+                                e.currentTarget.style.background = ds.surface;
+                            }}
+                          >
+                            {isSelected && (
+                              <div
+                                className="absolute top-0 left-0 right-0 h-0.5"
+                                style={{ background: ds.ember }}
+                              />
+                            )}
+                            <div className="flex items-start gap-3">
+                              <div
+                                className="w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200"
+                                style={{
+                                  borderColor: isSelected ? ds.ember : ds.borderBright,
+                                  background: isSelected ? ds.ember : "transparent",
+                                }}
+                              >
+                                {isSelected && (
+                                  <div className="w-2 h-2 rounded-full bg-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span
+                                  className="inline-block mb-1 px-2 py-0.5 rounded text-xs"
+                                  style={{
+                                    fontFamily: "'Montserrat', sans-serif",
+                                    fontSize: "10px",
+                                    fontWeight: 600,
+                                    letterSpacing: "0.04em",
+                                    textTransform: "uppercase" as const,
+                                    background: ds.emberDim,
+                                    color: ds.ember,
+                                  }}
+                                >
+                                  {entity.entity_type}
+                                </span>
+                                <p
+                                  style={{
+                                    fontFamily: "'Montserrat', sans-serif",
+                                    fontSize: "14px",
+                                    fontWeight: 700,
+                                    color: ds.text,
+                                    marginBottom: "2px",
+                                  }}
+                                >
+                                  {entity.name}
+                                </p>
+                                {entity.summary && (
+                                  <p
+                                    className="line-clamp-2"
+                                    style={{
+                                      fontSize: "13px",
+                                      color: ds.textSecondary,
+                                      lineHeight: 1.5,
+                                    }}
+                                  >
+                                    {entity.summary}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* ── Footer ── */}
+          <div
+            className="sticky bottom-0 px-8 py-5 flex items-center justify-between"
+            style={{
+              background: ds.bg,
+              borderTop: `1px solid ${ds.border}`,
+            }}
+          >
+            <button
+              type="button"
+              className="px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer"
+              style={{
+                fontFamily: "'Montserrat', sans-serif",
+                fontSize: "14px",
+                fontWeight: 600,
+                background: "transparent",
+                border: `1px solid ${ds.borderBright}`,
+                color: ds.textSecondary,
+              }}
+              onClick={currentStep === 1 ? onClose : handleBack}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = ds.surface;
+                e.currentTarget.style.color = ds.text;
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = ds.textSecondary;
+                e.currentTarget.style.borderColor = ds.borderBright;
+              }}
+            >
+              {currentStep === 1 ? "Cancel" : "Back"}
+            </button>
+
+            <button
+              type="button"
+              className="px-8 py-3 rounded-lg text-sm font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
+              style={{
+                fontFamily: "'Montserrat', sans-serif",
+                fontSize: "14px",
+                fontWeight: 700,
+                background: "#ffffff",
+                color: ds.bg,
+                boxShadow: "0 4px 24px rgba(245,87,42,0.2)",
+              }}
+              onClick={
+                currentStep === 3 ? handleComplete : handleNext
+              }
+              disabled={
+                (currentStep === 1 && !selectedBonfire) ||
+                (currentStep === 2 && (!isStep2Valid || !isSystemPromptValid)) ||
+                (currentStep === 3 && (!selectedCenterNode || loading))
+              }
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.opacity = "0.92";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(245,87,42,0.3)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = "1";
+                e.currentTarget.style.transform = "none";
+                e.currentTarget.style.boxShadow = "0 4px 24px rgba(245,87,42,0.2)";
+              }}
+            >
+              {currentStep === 3 ? "Create Data Room" : "Continue"}
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* HTN Template Picker Modal */}
+      <HTNTemplatePicker
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={setSelectedTemplate}
+        onCreateCustom={() => setIsCreatorOpen(true)}
+        selectedTemplateId={selectedTemplate?.id}
+      />
+
+      {/* HTN Template Creator Modal */}
+      <HTNTemplateCreator
+        isOpen={isCreatorOpen}
+        onClose={() => setIsCreatorOpen(false)}
+        onCreated={() => {
+          setIsCreatorOpen(false);
+          setIsPickerOpen(true);
+        }}
+      />
+    </>
+  );
+}
+
+/* ── Sub-components ── */
+
+function WizardField({
+  label,
+  required,
+  counter,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  counter?: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between">
+        <label
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontSize: "13px",
+            fontWeight: 700,
+            color: ds.text,
+          }}
+        >
+          {label}
+          {required && (
+            <span style={{ color: ds.ember, marginLeft: "2px" }}>*</span>
+          )}
+        </label>
+        <span style={{ fontSize: "12px", color: ds.textDim }}>
+          {counter}
+          {hint && <span className="ml-1">({hint})</span>}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function WizardPanel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-0">
+      <p
+        className="mb-2"
+        style={{
+          fontFamily: "'Montserrat', sans-serif",
+          fontSize: "12px",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase" as const,
+          color: ds.ember,
+        }}
+      >
+        {label}
+      </p>
+      <div
+        className="rounded-lg overflow-hidden"
+        style={{ border: `1px solid ${ds.border}` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function WizardNumberInput({
+  label,
+  unit,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+}) {
+  return (
+    <div className="p-4 space-y-1.5" style={{ background: ds.surface }}>
+      <p
+        style={{
+          fontSize: "11px",
+          fontWeight: 600,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase" as const,
+          color: ds.textDim,
+        }}
+      >
+        {label}
+      </p>
+      <div className="flex items-baseline gap-1.5">
+        <input
+          type="number"
+          className="bg-transparent outline-none w-full"
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          min={min}
+          max={max}
+          step={step}
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontSize: "24px",
+            fontWeight: 800,
+            color: ds.text,
+            lineHeight: 1,
+            /* Hide spinner arrows */
+            MozAppearance: "textfield",
+          }}
+        />
+        <span style={{ fontSize: "12px", color: ds.textDim, fontWeight: 500, whiteSpace: "nowrap" }}>
+          {unit}
+        </span>
+      </div>
+      <style>{`input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}`}</style>
     </div>
   );
 }

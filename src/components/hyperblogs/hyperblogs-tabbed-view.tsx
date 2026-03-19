@@ -132,7 +132,7 @@ function HyperblogsFlatFeed() {
 
   return (
     <>
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="mt-4 flex flex-col gap-4 max-w-2xl mx-auto w-full">
         {Array.from({ length: totalCount || PAGE_SIZE }, (_, index) => {
           const blog = hyperblogs[index];
           return index < hyperblogs.length && blog ? (
@@ -140,9 +140,10 @@ function HyperblogsFlatFeed() {
               key={blog.id}
               data={blog}
               href={`/hyperblogs/${blog.id}`}
+              variant="featured"
             />
           ) : (
-            <HyperBlogCard key={`skeleton-${index}`} isLoading href="#" />
+            <HyperBlogCard key={`skeleton-${index}`} isLoading href="#" variant="featured" />
           );
         })}
       </div>

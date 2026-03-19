@@ -8,12 +8,9 @@
  */
 import { UserProfile } from "@clerk/nextjs";
 
-import { Header } from "@/components/shared/Header";
-
 export default function ProfilePage() {
   return (
-    <div className="min-h-screen bg-base-100">
-      <Header />
+    <div className="bg-base-100">
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Account Settings</h1>

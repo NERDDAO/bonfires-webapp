@@ -13,8 +13,6 @@ import { redirect } from "next/navigation";
 import { OrganizationProfile } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 
-import { Header } from "@/components/shared/Header";
-
 export default async function BonfireSettingsPage() {
   const { orgRole } = await auth();
 
@@ -24,8 +22,7 @@ export default async function BonfireSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <Header />
+    <div className="bg-base-100">
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Bonfire Settings</h1>

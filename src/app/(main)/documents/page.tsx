@@ -28,8 +28,6 @@ import {
 } from "@/components/documents";
 import { useBonfireSelection } from "@/components/shared/BonfireSelector";
 import { BonfireSelector } from "@/components/shared/BonfireSelector";
-import { Footer } from "@/components/shared/Footer";
-import { Header } from "@/components/shared/Header";
 import { useAuth } from "@/hooks/useAuth";
 
 /**
@@ -180,10 +178,8 @@ export default function DocumentsPage() {
   const isLoading = isBonfiresLoading || isChunksLoading;
 
   return (
-    <div className="min-h-screen flex flex-col bg-base-100">
-      <Header />
-
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
+    <div className="flex-1">
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Page header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-base-content mb-2">
@@ -350,8 +346,6 @@ export default function DocumentsPage() {
           </div>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }

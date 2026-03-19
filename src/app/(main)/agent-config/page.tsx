@@ -8,7 +8,6 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@clerk/nextjs/server";
 
-import { Header } from "@/components/shared/Header";
 import { AgentConfigDashboard } from "@/components/agent-config/AgentConfigDashboard";
 
 export default async function AgentConfigPage() {
@@ -19,8 +18,7 @@ export default async function AgentConfigPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <Header />
+    <div className="bg-base-100">
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Agent Configuration</h1>

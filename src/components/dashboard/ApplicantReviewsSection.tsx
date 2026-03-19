@@ -11,6 +11,7 @@ import {
   useApplicantReviewsQuery,
 } from "@/hooks/queries/useApplicantReviewsQuery";
 import { useApplicationActions } from "@/hooks/queries/useApplicationActions";
+import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
 import { useProfileModal } from "@/hooks/queries/useProfileModal";
 import {
   useRubricListQuery,
@@ -18,8 +19,9 @@ import {
 } from "@/hooks/queries/useRubricQuery";
 import { ApplicantDetailSidebar } from "@/components/applicant-reviews/ApplicantDetailSidebar";
 import { ApplicantReviewsTable } from "@/components/applicant-reviews/ApplicantReviewsTable";
+import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
 import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
-import { Modal } from "@/components/ui/modal";
+import { SlotRankingPanel } from "@/components/applicant-reviews/SlotRankingPanel";
 import type {
   ApplicantReviewActionResponse,
   ApplicantReviewBatchImportResponse,
@@ -33,17 +35,26 @@ const SORT_OPTIONS = [
   { value: "name", label: "Name" },
 ] as const;
 
+const PAGE_SIZE = 50;
+
 interface ApplicantReviewsSectionProps {
   bonfireId: string;
+  /** When true, show the agent ID input inline (standalone page mode). */
+  showAgentIdInput?: boolean;
 }
 
 export function ApplicantReviewsSection({
   bonfireId,
+  showAgentIdInput,
 }: ApplicantReviewsSectionProps) {
   const queryClient = useQueryClient();
   const [agentId, setAgentId] = useState("");
   const [batchId, setBatchId] = useState<string | null>(null);
   const [tableText, setTableText] = useState("");
+  const [importMode, setImportMode] = useState<"tsv" | "json">("tsv");
+  const [jsonText, setJsonText] = useState("");
+  const [columnMapEnabled, setColumnMapEnabled] = useState(false);
+  const [columnMapText, setColumnMapText] = useState("{}");
   const [sortBy, setSortBy] = useState("score");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [shortlistOnly, setShortlistOnly] = useState(false);
@@ -51,16 +62,15 @@ export function ApplicantReviewsSection({
     string | null
   >(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
   const [page, setPage] = useState(0);
-  const PAGE_SIZE = 50;
   const [selectedRubricDocId, setSelectedRubricDocId] = useState<string | null>(null);
   const [selectedRubricId, setSelectedRubricId] = useState<string | null>(null);
 
+  const batchProgress = useBatchProgress();
   const applicationActions = useApplicationActions();
   const profileModal = useProfileModal();
-  const isActive = applicationActions.isReevaluating;
+  const isActive = batchProgress.isOpen || applicationActions.isReevaluating;
   const toastIdRef = useRef<string | null>(null);
 
   // Track reevaluation progress via toast
@@ -79,8 +89,8 @@ export function ApplicantReviewsSection({
     }
   }, [applicationActions.reevaluateProgress, isActive]);
 
-  const rubricListQuery = useRubricListQuery(bonfireId);
-  const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId);
+  const rubricListQuery = useRubricListQuery(bonfireId || null);
+  const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId || null);
 
   // Auto-select active/latest rubric on load
   useEffect(() => {
@@ -100,7 +110,7 @@ export function ApplicantReviewsSection({
   }, [structuredRubricQuery.data]);
 
   const reviewsQuery = useApplicantReviewsQuery({
-    bonfireId,
+    bonfireId: bonfireId || null,
     batchId,
     sortBy,
     sortOrder,
@@ -112,12 +122,11 @@ export function ApplicantReviewsSection({
   });
   const detailQuery = useApplicantReviewDetail({
     applicationId: selectedApplicationId,
-    rubricId: selectedRubricId,
     refetchInterval: isActive ? 4000 : 15000,
+    rubricId: selectedRubricId,
   });
 
   const applications = reviewsQuery.data?.items ?? [];
-
   const hasData = useMemo(() => applications.length > 0, [applications]);
 
   const refreshData = async () => {
@@ -147,27 +156,39 @@ export function ApplicantReviewsSection({
   };
 
   const handleImport = async () => {
-    if (!tableText.trim()) {
-      toast.error("Pasted table text is required.");
+    if (!bonfireId.trim()) {
+      toast.error("Bonfire ID is required.");
+      return;
+    }
+    if (importMode === "tsv" && !tableText.trim()) {
+      toast.error("Paste table text is required for TSV import.");
+      return;
+    }
+    if (importMode === "json" && !jsonText.trim()) {
+      toast.error("JSON rows are required for JSON import.");
       return;
     }
 
     setIsImporting(true);
     try {
-      const response =
-        await apiClient.post<ApplicantReviewBatchImportResponse>(
-          "/api/applicant-review-batches/import",
-          {
-            bonfire_id: bonfireId,
-            agent_id: agentId.trim() || undefined,
-            batch_name: `Applicant Batch ${new Date().toISOString()}`,
-            source_name: "manual-paste",
-            table_text: tableText,
-          },
-        );
+      const payload = {
+        bonfire_id: bonfireId.trim(),
+        agent_id: agentId.trim() || undefined,
+        batch_name: `Applicant Batch ${new Date().toISOString()}`,
+        source_name: importMode === "tsv" ? "manual-paste" : "json-import",
+        ...(importMode === "tsv"
+          ? { table_text: tableText }
+          : {
+              rows: JSON.parse(jsonText),
+              column_map: columnMapEnabled ? JSON.parse(columnMapText) : {},
+            }),
+      };
+      const response = await apiClient.post<ApplicantReviewBatchImportResponse>(
+        "/api/applicant-review-batches/import",
+        payload,
+      );
       setBatchId(response.batch_id);
-      setIsImportModalOpen(false);
-      setTableText("");
+      batchProgress.open(response.batch_id);
       toast.success(`Imported ${response.imported_count} applicant rows.`);
       await refreshData();
     } catch (error) {
@@ -179,9 +200,7 @@ export function ApplicantReviewsSection({
     }
   };
 
-  const handleShortlistToggle = async (
-    application: ApplicantReviewListItem,
-  ) => {
+  const handleShortlistToggle = async (application: ApplicantReviewListItem) => {
     const shortlisted = application.shortlist_status !== "shortlisted";
     await runAction(
       application.id,
@@ -190,123 +209,190 @@ export function ApplicantReviewsSection({
           `/api/applicant-reviews/${application.id}/shortlist`,
           { shortlisted },
         ),
-      shortlisted
-        ? "Applicant shortlisted."
-        : "Applicant removed from shortlist.",
+      shortlisted ? "Applicant shortlisted." : "Applicant removed from shortlist.",
     );
+  };
+
+  const handleReevaluateAll = () => {
+    batchProgress.open(batchId ?? "");
+    void (async () => {
+      try {
+        const toEvaluate = selectedRubricId
+          ? applications
+          : applications.filter((a) => a.evaluation_status !== "completed");
+        if (toEvaluate.length === 0) {
+          toast.success("All applications already evaluated.");
+          return;
+        }
+        await applicationActions.reevaluateAll(
+          toEvaluate.map((a) => a.id),
+          batchId ?? undefined,
+          selectedRubricId,
+          true,
+        );
+        await queryClient.invalidateQueries({
+          queryKey: ["applicantReviewBatch"],
+        });
+        await refreshData();
+        applicationActions.clearProgress();
+        toast.success("Re-evaluation complete.");
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Re-evaluation failed.",
+        );
+      }
+    })();
   };
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="mr-auto">
-            <h2 className="text-xl font-semibold">Applicant Reviews</h2>
-            <p className="text-sm text-base-content/70">
-              Import, rank by score, and curate the top 25.
-            </p>
+      {/* ── Import Panel (Bonfires design system) ── */}
+      <section className="bf-review-panel">
+        <div className="bf-import-card">
+          <div className="bf-section-label">IMPORT</div>
+          <h3>Applicant Reviews</h3>
+
+          <div style={{ marginBottom: 20 }}>
+            <div className="bf-mode-toggle">
+              <button
+                className={importMode === "tsv" ? "active" : ""}
+                onClick={() => setImportMode("tsv")}
+              >
+                TSV
+              </button>
+              <button
+                className={importMode === "json" ? "active" : ""}
+                onClick={() => setImportMode("json")}
+              >
+                JSON
+              </button>
+            </div>
           </div>
 
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            onClick={() => setIsImportModalOpen(true)}
-          >
-            Import Batch
-          </button>
-
-          {applications.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => {
-                void (async () => {
-                  try {
-                    const toEvaluate = selectedRubricId
-                      ? applications
-                      : applications.filter(
-                          (a) => a.evaluation_status !== "completed",
-                        );
-                    if (toEvaluate.length === 0) {
-                      toast.success("All applications already evaluated.");
-                      return;
-                    }
-                    await applicationActions.reevaluateAll(
-                      toEvaluate.map((a) => a.id),
-                      batchId ?? undefined,
-                      selectedRubricId,
-                      true,
-                    );
-                    await refreshData();
-                    applicationActions.clearProgress();
-                    applicationActions.cancelStream();
-                  } catch (err) {
-                    toast.error(
-                      err instanceof Error
-                        ? err.message
-                        : "Re-evaluation failed.",
-                    );
-                  }
-                })();
-              }}
-              disabled={applicationActions.isReevaluating}
-            >
-              {applicationActions.isReevaluating
-                ? "Re-evaluating..."
-                : "Rescore All"}
-            </button>
+          {showAgentIdInput && (
+            <div style={{ marginBottom: 16 }}>
+              <span className="bf-label">Review Agent ID</span>
+              <input
+                className="bf-input"
+                value={agentId}
+                onChange={(event) => setAgentId(event.target.value)}
+                placeholder="Optional agent for stack / episode writeback"
+              />
+            </div>
           )}
 
-          {batchId && (
-            <span className="text-sm text-base-content/70">
-              Batch: <span className="font-mono">{batchId}</span>
-            </span>
+          {importMode === "tsv" ? (
+            <div style={{ marginBottom: 16 }}>
+              <span className="bf-label">Paste table text</span>
+              <textarea
+                className="bf-textarea"
+                value={tableText}
+                onChange={(event) => setTableText(event.target.value)}
+                placeholder="Paste TSV copied from Excel or Google Sheets"
+              />
+            </div>
+          ) : (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <span className="bf-label">JSON rows (Artizen export)</span>
+                <textarea
+                  className="bf-textarea"
+                  value={jsonText}
+                  onChange={(event) => setJsonText(event.target.value)}
+                  placeholder='[{"Full Name": "Alice", "Email": "alice@example.com", ...}]'
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div
+                  className="bf-collapsible-header"
+                  onClick={() => setColumnMapEnabled(!columnMapEnabled)}
+                >
+                  <div className="bf-ember-line" />
+                  <span className="bf-label">Column Mapping</span>
+                  <span style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                    {columnMapEnabled ? "Custom" : "Passthrough (auto)"}
+                  </span>
+                </div>
+                {columnMapEnabled && (
+                  <div style={{ marginTop: 8 }}>
+                    <textarea
+                      className="bf-textarea"
+                      style={{ minHeight: 80 }}
+                      value={columnMapText}
+                      onChange={(e) => setColumnMapText(e.target.value)}
+                      placeholder='{"Source Column": "target_field", ...}'
+                    />
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-dim)",
+                        marginTop: 4,
+                        display: "block",
+                      }}
+                    >
+                      Empty {"{}"} = auto snake_case all keys
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
           )}
-        </div>
-      </section>
 
-      <Modal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        title="Import Applicant Batch"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <label className="form-control">
-            <span className="label-text text-sm font-medium">
-              Review Agent ID
-            </span>
-            <input
-              className="input input-bordered"
-              value={agentId}
-              onChange={(event) => setAgentId(event.target.value)}
-              placeholder="Optional agent for stack / episode writeback"
-            />
-          </label>
-
-          <label className="form-control">
-            <span className="label-text text-sm font-medium">
-              Paste table text
-            </span>
-            <textarea
-              className="textarea textarea-bordered min-h-48"
-              value={tableText}
-              onChange={(event) => setTableText(event.target.value)}
-              placeholder="Paste TSV copied from Excel or Google Sheets"
-            />
-          </label>
-
-          <div className="flex justify-end">
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
             <button
-              className="btn btn-primary"
-              onClick={handleImport}
+              className="bf-btn-primary"
+              onClick={() => void handleImport()}
               disabled={isImporting}
             >
               {isImporting ? "Importing..." : "Import Batch"}
             </button>
+
+            {applications.length > 0 && (
+              <button
+                type="button"
+                className="bf-btn-primary"
+                onClick={handleReevaluateAll}
+                disabled={applicationActions.isReevaluating}
+              >
+                {applicationActions.isReevaluating
+                  ? "Re-evaluating..."
+                  : "Rescore All"}
+              </button>
+            )}
+
+            {batchId && (
+              <>
+                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Batch:{" "}
+                  <span style={{ fontFamily: "monospace" }}>{batchId}</span>
+                </span>
+                <button
+                  type="button"
+                  className="bf-btn-secondary"
+                  onClick={() => batchProgress.open(batchId)}
+                >
+                  View progress
+                </button>
+              </>
+            )}
           </div>
         </div>
-      </Modal>
+      </section>
+
+      <BatchProgressModal
+        isOpen={batchProgress.isOpen}
+        onClose={batchProgress.close}
+        batch={batchProgress.batch}
+        reevaluateProgress={applicationActions.reevaluateProgress}
+        streamState={applicationActions.streamState}
+        onCancel={applicationActions.cancelStream}
+        onReevaluateAll={
+          batchId && applications.length > 0
+            ? () => handleReevaluateAll()
+            : undefined
+        }
+      />
 
       <FullProfileModal
         isOpen={profileModal.isOpen}
@@ -314,6 +400,7 @@ export function ApplicantReviewsSection({
         detail={detailQuery.data}
       />
 
+      {/* ── Table + Detail Sidebar ── */}
       <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
           <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -401,6 +488,7 @@ export function ApplicantReviewsSection({
                 a.click();
                 URL.revokeObjectURL(url);
               }}
+              disabled={!bonfireId}
               className="btn btn-ghost btn-sm mt-auto"
             >
               Export CSV
@@ -437,7 +525,11 @@ export function ApplicantReviewsSection({
             </div>
           )}
 
-          {reviewsQuery.isLoading ? (
+          {!bonfireId ? (
+            <div className="rounded-xl border border-dashed border-base-300 p-8 text-center text-sm text-base-content/60">
+              Select a bonfire to begin reviewing applicants.
+            </div>
+          ) : reviewsQuery.isLoading ? (
             <div className="p-8 text-center text-sm text-base-content/60">
               Loading applicants...
             </div>
@@ -451,6 +543,7 @@ export function ApplicantReviewsSection({
               selectedApplicationId={selectedApplicationId}
               onSelectApplication={setSelectedApplicationId}
               actionIds={actionIds}
+              showOrgColumn
               onShortlistToggle={(app) => void handleShortlistToggle(app)}
               onRetryResearch={(app) =>
                 void runAction(
@@ -464,6 +557,7 @@ export function ApplicantReviewsSection({
                 )
               }
               onRescore={(app) => {
+                batchProgress.open(batchId ?? "");
                 applicationActions.startSingleRescore();
                 setActionIds((prev) => ({ ...prev, [app.id]: true }));
                 void (async () => {
@@ -484,7 +578,32 @@ export function ApplicantReviewsSection({
                   }
                 })();
               }}
+              onDelete={(app) => {
+                if (!confirm(`Delete submission for ${app.full_name}?`)) return;
+                setActionIds((prev) => ({ ...prev, [app.id]: true }));
+                void (async () => {
+                  try {
+                    await apiClient.delete(`/api/applicant-reviews/${app.id}`);
+                    toast.success("Submission deleted");
+                    await refreshData();
+                  } catch {
+                    toast.error("Failed to delete");
+                  } finally {
+                    setActionIds((prev) => ({ ...prev, [app.id]: false }));
+                  }
+                })();
+              }}
             />
+          )}
+
+          {batchId && applications.some(a => a.evaluation_status === "completed") && (
+            <div className="bf-review-panel" style={{ marginTop: 24 }}>
+              <SlotRankingPanel
+                batchId={batchId}
+                applications={applications}
+                onSlotsAssigned={() => void refreshData()}
+              />
+            </div>
           )}
 
           {reviewsQuery.data && reviewsQuery.data.total > 0 && (
@@ -521,6 +640,7 @@ export function ApplicantReviewsSection({
             rubricName={structuredRubricQuery.data?.name}
             actionIds={actionIds}
             onEvaluate={(appId) => {
+              batchProgress.open(batchId ?? "");
               applicationActions.startSingleRescore();
               setActionIds((prev) => ({ ...prev, [appId]: true }));
               void (async () => {

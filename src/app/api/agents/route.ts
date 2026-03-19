@@ -94,14 +94,12 @@ export async function GET(request: NextRequest) {
  * - username: string (required)
  * - name: string (required)
  * - bonfire_id?: string
- * - capabilities?: string[]
  */
 export async function POST(request: NextRequest) {
   const { data: body, error } = await parseJsonBody<{
     username?: string;
     name?: string;
     bonfire_id?: string;
-    capabilities?: string[];
   }>(request);
 
   if (error) {

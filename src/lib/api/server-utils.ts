@@ -376,7 +376,7 @@ export async function handleProxySSERequest(
     method = "POST",
     body,
     headers = {},
-    timeout = 600000, // 10 minutes for long-running batch eval
+    timeout = 7200000, // 2 hours — batch eval can process 50+ applicants; per-applicant timeouts are handled server-side
     queryParams,
     includeAuth = true,
   } = options;

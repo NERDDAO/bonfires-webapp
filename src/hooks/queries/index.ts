@@ -54,6 +54,7 @@ export {
   usePublicHyperBlogsFeed,
   useDataRoomHyperBlogs,
   useDataRoomHyperBlogsInfiniteQuery,
+  usePublicHyperBlogsInfiniteQuery,
   hyperBlogsQueryKey,
 } from "./useHyperBlogsQuery";
 

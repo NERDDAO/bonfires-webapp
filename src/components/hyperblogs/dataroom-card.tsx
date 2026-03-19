@@ -67,13 +67,22 @@ export default function DataroomCard({
   data,
   isLoading,
   className,
+  autoOpenCreate,
 }: {
   data?: DataRoomInfo;
   isLoading?: boolean;
   className?: string;
+  autoOpenCreate?: boolean;
 }) {
   const router = useRouter();
   const [createBlogOpen, setCreateBlogOpen] = useState(false);
+
+  // Auto-open create modal when directed by URL params
+  useEffect(() => {
+    if (autoOpenCreate && data?.id) {
+      setCreateBlogOpen(true);
+    }
+  }, [autoOpenCreate, data?.id]);
   const [centerNode, setCenterNode] = useState<CenterNodeEntity | null>(null);
   const [isFetchingEntity, setIsFetchingEntity] = useState(false);
   const centerUuid = data?.center_node_uuid;
@@ -139,6 +148,8 @@ export default function DataroomCard({
   const title = data?.description || "";
   // @TODO: Replace with agent name
   const bonfireName = data?.bonfire_name || "";
+  const sourceBonfireName = data?.source_bonfire_name;
+  const showSourceBadge = sourceBonfireName && sourceBonfireName !== bonfireName;
   const creatorWallet = truncateAddress(data?.creator_wallet || "", 4);
   const formattedAuthor = `by ${creatorWallet ? creatorWallet : "Anonymous"}`;
   const cost = `Cost: $${data?.price_usd || 0}`;
@@ -150,8 +161,13 @@ export default function DataroomCard({
       )}
     >
       <div className="font-bold text-base lg:text-xl capitalize">{title}</div>
-      <div className="text-[#A9A9A9] text-xs lg:text-sm mb-2 line-clamp-2 shrink-0">
+      <div className="text-[#A9A9A9] text-xs lg:text-sm mb-2 line-clamp-2 shrink-0 flex items-center gap-2">
         {bonfireName}
+        {showSourceBadge && (
+          <Badge variant="outline" className="text-xs">
+            {sourceBonfireName}
+          </Badge>
+        )}
       </div>
       <div className="flex gap-2 flex-wrap items-center">
         <Badge variant="filled">{formattedAuthor}</Badge>

@@ -13,9 +13,10 @@ import {
 import { useApplicationActions } from "@/hooks/queries/useApplicationActions";
 import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
 import { useProfileModal } from "@/hooks/queries/useProfileModal";
+import { ApplicantDetailSidebar } from "@/components/applicant-reviews/ApplicantDetailSidebar";
+import { ApplicantReviewsTable } from "@/components/applicant-reviews/ApplicantReviewsTable";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
 import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
-import { DisplayFieldValue } from "@/components/applicant-reviews/DisplayField";
 import {
   useRubricListQuery,
   useStructuredRubricQuery,
@@ -24,7 +25,6 @@ import type {
   ApplicantReviewActionResponse,
   ApplicantReviewBatchImportResponse,
   ApplicantReviewListItem,
-  DisplaySection,
 } from "@/types/applicant-reviews";
 
 const SORT_OPTIONS = [
@@ -96,9 +96,6 @@ export default function ApplicantReviewsPage() {
   });
 
   const applications = reviewsQuery.data?.items ?? [];
-  const selectedApplication = detailQuery.data?.application;
-  const selectedReview = detailQuery.data?.review;
-  const selectedIdentity = detailQuery.data?.identity;
 
   const hasData = useMemo(() => applications.length > 0, [applications]);
 
@@ -257,6 +254,7 @@ export default function ApplicantReviewsPage() {
                           needsEvaluation.map((a) => a.id),
                           batchId ?? undefined,
                           selectedRubricId,
+                          true,
                         );
                         await queryClient.invalidateQueries({
                           queryKey: ["applicantReviewBatch"],
@@ -306,6 +304,7 @@ export default function ApplicantReviewsPage() {
                       needsEvaluation.map((a) => a.id),
                       batchId,
                       selectedRubricId,
+                      true,
                     );
                     await queryClient.invalidateQueries({
                       queryKey: ["applicantReviewBatch"],
@@ -467,152 +466,62 @@ export default function ApplicantReviewsPage() {
               No applicants found for the current query.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Applicant</th>
-                    <th>Org</th>
-                    <th>Score</th>
-                    <th>Confidence</th>
-                    <th>Status</th>
-                    <th>Shortlist</th>
-                    <th className="w-48">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {applications.map((application) => (
-                    <tr
-                      key={application.id}
-                      className={`cursor-pointer hover ${
-                        selectedApplicationId === application.id
-                          ? "bg-base-200"
-                          : ""
-                      }`}
-                      onClick={() => setSelectedApplicationId(application.id)}
-                    >
-                      <td>
-                        <div className="font-medium">{application.full_name}</div>
-                        <div className="text-xs text-base-content/60">
-                          {application.role_title || "Role not provided"}
-                        </div>
-                      </td>
-                      <td className="text-sm text-base-content/70 truncate max-w-[150px]">
-                        {application.organizations?.join(", ") || "\u2014"}
-                      </td>
-                      <td>{application.overall_score?.toFixed(1) ?? "—"}</td>
-                      <td>
-                        {application.confidence_score !== null &&
-                        application.confidence_score !== undefined
-                          ? `${Math.round(application.confidence_score * 100)}%`
-                          : "—"}
-                      </td>
-                      <td>
-                        <div className="text-xs">
-                          <div>{application.research_status}</div>
-                          <div>{application.evaluation_status}</div>
-                        </div>
-                      </td>
-                      <td>{application.shortlist_status}</td>
-                      <td>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            className="btn btn-xs"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void handleShortlistToggle(application);
-                            }}
-                            disabled={!!actionIds[application.id]}
-                          >
-                            {application.shortlist_status === "shortlisted"
-                              ? "Unshortlist"
-                              : "Shortlist"}
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-xs"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void runAction(
-                                application.id,
-                                () =>
-                                  apiClient.post<ApplicantReviewActionResponse>(
-                                    `/api/applicant-reviews/${application.id}/retry-research`,
-                                    {},
-                                  ),
-                                "Research retriggered.",
-                              );
-                            }}
-                            disabled={!!actionIds[application.id]}
-                          >
-                            Retry
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-xs"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              batchProgress.open(batchId ?? "");
-                              applicationActions.startSingleRescore();
-                              setActionIds((prev) => ({
-                                ...prev,
-                                [application.id]: true,
-                              }));
-                              void (async () => {
-                                try {
-                                  await apiClient.post<ApplicantReviewActionResponse>(
-                                    `/api/applicant-reviews/${application.id}/evaluate`,
-                                    { rubric_id: selectedRubricId ?? undefined },
-                                  );
-                                  toast.success("Evaluation queued.");
-                                  await refreshData();
-                                } catch (error) {
-                                  toast.error(
-                                    error instanceof Error
-                                      ? error.message
-                                      : "Action failed unexpectedly",
-                                  );
-                                } finally {
-                                  setActionIds((prev) => ({
-                                    ...prev,
-                                    [application.id]: false,
-                                  }));
-                                  applicationActions.completeSingleRescore();
-                                }
-                              })();
-                            }}
-                            disabled={!!actionIds[application.id]}
-                          >
-                            Re-score
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-xs text-error"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (!confirm(`Delete submission for ${application.full_name}?`)) return;
-                              setActionIds((prev) => ({ ...prev, [application.id]: true }));
-                              void (async () => {
-                                try {
-                                  await apiClient.delete(`/api/applicant-reviews/${application.id}`);
-                                  toast.success("Submission deleted");
-                                  await refreshData();
-                                } catch {
-                                  toast.error("Failed to delete");
-                                } finally {
-                                  setActionIds((prev) => ({ ...prev, [application.id]: false }));
-                                }
-                              })();
-                            }}
-                            disabled={!!actionIds[application.id]}
-                            title="Delete submission"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ApplicantReviewsTable
+              applications={applications}
+              selectedApplicationId={selectedApplicationId}
+              onSelectApplication={setSelectedApplicationId}
+              actionIds={actionIds}
+              showOrgColumn
+              onShortlistToggle={(app) => void handleShortlistToggle(app)}
+              onRetryResearch={(app) =>
+                void runAction(
+                  app.id,
+                  () =>
+                    apiClient.post<ApplicantReviewActionResponse>(
+                      `/api/applicant-reviews/${app.id}/retry-research`,
+                      {},
+                    ),
+                  "Research retriggered.",
+                )
+              }
+              onRescore={(app) => {
+                batchProgress.open(batchId ?? "");
+                applicationActions.startSingleRescore();
+                setActionIds((prev) => ({ ...prev, [app.id]: true }));
+                void (async () => {
+                  try {
+                    await apiClient.post<ApplicantReviewActionResponse>(
+                      `/api/applicant-reviews/${app.id}/evaluate`,
+                      { rubric_id: selectedRubricId ?? undefined },
+                    );
+                    toast.success("Evaluation queued.");
+                    await refreshData();
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Action failed unexpectedly",
+                    );
+                  } finally {
+                    setActionIds((prev) => ({ ...prev, [app.id]: false }));
+                    applicationActions.completeSingleRescore();
+                  }
+                })();
+              }}
+              onDelete={(app) => {
+                if (!confirm(`Delete submission for ${app.full_name}?`)) return;
+                setActionIds((prev) => ({ ...prev, [app.id]: true }));
+                void (async () => {
+                  try {
+                    await apiClient.delete(`/api/applicant-reviews/${app.id}`);
+                    toast.success("Submission deleted");
+                    await refreshData();
+                  } catch {
+                    toast.error("Failed to delete");
+                  } finally {
+                    setActionIds((prev) => ({ ...prev, [app.id]: false }));
+                  }
+                })();
+              }}
+            />
           )}
 
           {reviewsQuery.data && reviewsQuery.data.total > 0 && (
@@ -641,221 +550,37 @@ export default function ApplicantReviewsPage() {
         </div>
 
         <aside className="sticky top-20 self-start rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm max-h-[calc(100vh-6rem)] overflow-y-auto">
-          {!selectedApplicationId ? (
-            <div className="text-sm text-base-content/60">
-              Select an applicant to inspect their normalized profile, evidence,
-              and rubric breakdown.
-            </div>
-          ) : detailQuery.isLoading ? (
-            <div className="text-sm text-base-content/60">
-              Loading applicant detail...
-            </div>
-          ) : selectedApplication ? (
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  {selectedApplication.full_name}
-                </h2>
-                <p className="text-sm text-base-content/70">
-                  {selectedApplication.role_title || "Role not provided"}
-                </p>
-              </div>
-
-              {(() => {
-                const identitySection = (detailQuery.data?.display_sections ?? []).find(
-                  (s: DisplaySection) => s.kind === "identity",
-                );
-                if (identitySection && identitySection.fields.length > 0) {
-                  return (
-                    <div className="space-y-1 text-sm">
-                      {identitySection.fields.map((field) => (
-                        <div key={field.key}>
-                          <span className="font-medium">{field.label}:</span>{" "}
-                          <DisplayFieldValue field={field} />
-                        </div>
-                      ))}
-                    </div>
+          <ApplicantDetailSidebar
+            selectedApplicationId={selectedApplicationId}
+            detail={detailQuery.data}
+            isLoading={detailQuery.isLoading}
+            selectedRubricId={selectedRubricId}
+            rubricName={structuredRubricQuery.data?.name}
+            actionIds={actionIds}
+            onEvaluate={(appId) => {
+              batchProgress.open(batchId ?? "");
+              applicationActions.startSingleRescore();
+              setActionIds((prev) => ({ ...prev, [appId]: true }));
+              void (async () => {
+                try {
+                  await apiClient.post<ApplicantReviewActionResponse>(
+                    `/api/applicant-reviews/${appId}/evaluate`,
+                    { rubric_id: selectedRubricId },
                   );
+                  toast.success("Evaluation queued.");
+                  await refreshData();
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Action failed unexpectedly",
+                  );
+                } finally {
+                  setActionIds((prev) => ({ ...prev, [appId]: false }));
+                  applicationActions.completeSingleRescore();
                 }
-                // Fallback to hardcoded fields if display_sections not available
-                return (
-                  <div className="space-y-1 text-sm">
-                    <div>
-                      <span className="font-medium">Ethereum:</span>{" "}
-                      {selectedIdentity?.ethereum_address ||
-                        selectedApplication.ethereum_address ||
-                        "—"}
-                    </div>
-                    <div>
-                      <span className="font-medium">GitHub:</span>{" "}
-                      {selectedIdentity?.github_url ||
-                        selectedApplication.github_profile_url ||
-                        "—"}
-                    </div>
-                    <div>
-                      <span className="font-medium">Twitter/X:</span>{" "}
-                      {selectedIdentity?.twitter_url ||
-                        selectedApplication.twitter_handle ||
-                        "—"}
-                    </div>
-                    <div>
-                      <span className="font-medium">Telegram:</span>{" "}
-                      {selectedIdentity?.telegram_url || "—"}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {!selectedReview && selectedRubricId && (
-                <div className="rounded-xl border border-dashed border-base-300 p-4 text-center space-y-3">
-                  <p className="text-sm text-base-content/60">
-                    Not yet evaluated with this rubric.
-                  </p>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (!selectedApplicationId) return;
-                      batchProgress.open(batchId ?? "");
-                      applicationActions.startSingleRescore();
-                      setActionIds((prev) => ({ ...prev, [selectedApplicationId]: true }));
-                      void (async () => {
-                        try {
-                          await apiClient.post<ApplicantReviewActionResponse>(
-                            `/api/applicant-reviews/${selectedApplicationId}/evaluate`,
-                            { rubric_id: selectedRubricId },
-                          );
-                          toast.success("Evaluation queued.");
-                          await refreshData();
-                        } catch (error) {
-                          toast.error(
-                            error instanceof Error ? error.message : "Action failed unexpectedly",
-                          );
-                        } finally {
-                          setActionIds((prev) => ({ ...prev, [selectedApplicationId!]: false }));
-                          applicationActions.completeSingleRescore();
-                        }
-                      })();
-                    }}
-                    disabled={!!actionIds[selectedApplicationId!]}
-                  >
-                    Evaluate with {structuredRubricQuery.data?.name ?? "this rubric"}
-                  </button>
-                </div>
-              )}
-
-              {selectedReview && (
-                <div className="rounded-xl border border-base-300 p-4 space-y-3">
-                  <div>
-                    <div className="text-sm font-medium">
-                      Score {selectedReview.weighted_score.toFixed(1)} / 100
-                    </div>
-                    <div className="text-xs text-base-content/60">
-                      {selectedReview.recommendation} · confidence{" "}
-                      {Math.round(selectedReview.confidence_score * 100)}%
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm w-full border border-primary text-primary"
-                    onClick={() => profileModal.open()}
-                    data-element-id="view-full-profile"
-                  >
-                    View Full Profile
-                  </button>
-
-                  <div>
-                    <h4 className="text-xs font-semibold">Bio</h4>
-                    <p className="mt-1 text-sm">
-                      {selectedReview.bio || "No generated bio for this review."}
-                    </p>
-                  </div>
-
-                  <p className="text-sm">{selectedReview.rationale}</p>
-
-                  <div className="space-y-2">
-                    {selectedReview.category_scores.map((category) => (
-                      <div key={category.name}>
-                        <div className="flex items-center justify-between text-xs font-medium">
-                          <span>{category.name}</span>
-                          <span>{category.score}</span>
-                        </div>
-                        <progress
-                          className="progress progress-primary w-full"
-                          value={category.score}
-                          max={100}
-                        />
-                        {category.reasoning && (
-                          <p className="mt-0.5 text-xs text-base-content/60">
-                            {category.reasoning}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {selectedReview.strengths.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-semibold text-success">
-                        Strengths
-                      </h4>
-                      <ul className="mt-1 list-disc list-inside text-xs space-y-0.5">
-                        {selectedReview.strengths.map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {selectedReview.concerns.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-semibold text-warning">
-                        Concerns
-                      </h4>
-                      <ul className="mt-1 list-disc list-inside text-xs space-y-0.5">
-                        {selectedReview.concerns.map((c, i) => (
-                          <li key={i}>{c}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {selectedReview.comparative_reasoning && (
-                    <div>
-                      <h4 className="text-xs font-semibold text-info">
-                        Comparative Analysis
-                      </h4>
-                      <p className="mt-1 text-xs">
-                        {selectedReview.comparative_reasoning}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <h3 className="mb-2 text-sm font-semibold">Evidence Links</h3>
-                <ul className="space-y-1 text-sm">
-                  {selectedApplication.public_evidence_links?.length ? (
-                    selectedApplication.public_evidence_links.map((link) => (
-                      <li key={link} className="break-all text-primary">
-                        <a href={link} target="_blank" rel="noreferrer">
-                          {link}
-                        </a>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="text-base-content/60">No public links listed.</li>
-                  )}
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-base-content/60">
-              Unable to load applicant detail.
-            </div>
-          )}
+              })();
+            }}
+            onViewFullProfile={() => profileModal.open()}
+          />
         </aside>
       </section>
     </div>

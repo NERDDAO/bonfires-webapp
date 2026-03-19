@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { useSearchParams } from "next/navigation";
+
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { hyperblogsCopy } from "@/content/hyperblogs";
 import { useDataRoomsInfiniteQuery } from "@/hooks";
@@ -14,7 +16,11 @@ import DataroomCard from "./dataroom-card";
 
 const PAGE_SIZE = 4;
 
-export default function DataroomFeed() {
+export default function DataroomFeed({ sortBy }: { sortBy?: "created_at" | "total_purchases" } = {}) {
+  const searchParams = useSearchParams();
+  const createForDataroomId = searchParams.get("dataroomId");
+  const autoCreate = searchParams.get("create") === "true";
+
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
 
@@ -25,7 +31,7 @@ export default function DataroomFeed() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId });
+  } = useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId, sortBy });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { dataroomTitle, dataroomDescription, dataroomTooltipContent } = hyperblogsCopy;
@@ -71,7 +77,11 @@ export default function DataroomFeed() {
         {Array.from({ length: totalCount || PAGE_SIZE }, (_, index) => {
           const dataroom = dataRooms[index];
           return index < dataRooms.length && dataroom ? (
-            <DataroomCard key={dataroom.id} data={dataroom} />
+            <DataroomCard
+              key={dataroom.id}
+              data={dataroom}
+              autoOpenCreate={autoCreate && dataroom.id === createForDataroomId}
+            />
           ) : (
             <DataroomCard key={`skeleton-${index}`} isLoading />
           );

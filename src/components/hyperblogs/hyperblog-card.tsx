@@ -128,21 +128,22 @@ export default function HyperBlogCard({
         ))}
       </div>
 
-      <div
-        className={cn(
-          "mt-4 relative w-full bg-[#FFFFFF05] rounded-lg border-[0.78px] border-[#333333]",
-          variant === "featured" ? "h-18 lg:h-64" : "h-18 lg:h-32"
-        )}
-      >
-        {imageSrc && (
+      {imageSrc ? (
+        <div
+          className={cn(
+            "mt-4 relative w-full rounded-lg overflow-hidden border-[0.78px] border-[#333333]",
+            variant === "featured" ? "h-48 lg:h-64" : "h-18 lg:h-32"
+          )}
+        >
           <Image
             src={imageSrc}
             alt={title}
             fill
-            className="object-cover rounded-lg"
+            sizes={variant === "featured" ? "(max-width: 672px) 100vw, 672px" : "(max-width: 768px) 100vw, 50vw"}
+            className="object-cover"
           />
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <div className="mt-4 flex gap-4 items-center">
         {[

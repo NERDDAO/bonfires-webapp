@@ -1,6 +1,6 @@
 "use client";
 
-import {  useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -20,6 +20,18 @@ export function Navbar() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { navigation: navigationItems } = useSiteConfig();
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = navRef.current;
+      if (!el) return;
+      el.classList.toggle("scrolled", window.scrollY > 0);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const activeSection = useMemo((): NavigationItem => {
     const segment = pathname.split("/")[1];
@@ -37,8 +49,8 @@ export function Navbar() {
   const closeDrawer = () => setDrawerOpen(false);
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between w-full bg-brand-black px-8 lg:px-20 min-h-16 lg:min-h-20">
-      <Link href="/" className="flex items-center shrink-0" aria-label="Home">
+    <nav ref={navRef} className="bf-nav">
+      <Link href="/" className="bf-nav-logo" aria-label="Home">
         <Image
           src="/logo-white.svg"
           alt=""
@@ -50,7 +62,7 @@ export function Navbar() {
       </Link>
 
       {/* Desktop: center nav buttons */}
-      <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-2">
+      <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex bf-nav-links">
         {navigationItems.map((item) => (
           <NavbarButton
             key={item.label}
@@ -85,7 +97,7 @@ export function Navbar() {
       />
 
       {/* Auth and Wallet buttons */}
-      <div className="navbar-end items-center gap-2 hidden lg:flex">
+      <div className="hidden lg:flex items-center gap-2">
         <Signin />
         <ConnectWallet />
       </div>

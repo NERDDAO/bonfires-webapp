@@ -13,71 +13,164 @@ interface FullProfileModalProps {
   detail: ApplicantReviewDetailResponse | undefined;
 }
 
-function EvidenceItem({ item }: { item: Record<string, unknown> }) {
-  const kind = (item["kind"] as string) ?? "unknown";
-  const url = (item["url"] as string) ?? "";
-  const status = (item["status"] as string) ?? "";
-  const snippet =
-    (item["extracted_text"] as string) ?? (item["snippet"] as string) ?? "";
-  const isFailed = String(status).toLowerCase() === "failed";
+/* ── Shared sub-components ── */
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg bg-dark-s-800 p-3 space-y-1">
-      <div className="flex justify-between items-center flex-wrap gap-2">
-        <span className="text-sm font-medium text-dark-s-0">
-          {(item["label"] as string) ?? kind}
-        </span>
-        <div className="flex gap-2">
-          <span className="rounded px-2 py-0.5 text-xs bg-dark-s-700 text-primary">
-            {kind}
-          </span>
-          <span
-            className={`rounded px-2 py-0.5 text-xs ${
-              isFailed ? "bg-red-950/50 text-red-400" : "bg-green-950/30 text-green-400"
-            }`}
-          >
-            {status || "—"}
-          </span>
-        </div>
-      </div>
-      {url && (
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="text-xs text-primary break-all hover:underline"
+    <h3 className="bf-section-label" style={{ marginBottom: 12 }}>
+      {children}
+    </h3>
+  );
+}
+
+function FieldCard({
+  children,
+  compact,
+}: {
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--bf-surface2)",
+        border: "1px solid var(--bf-border)",
+        borderRadius: "var(--bf-radius)",
+        padding: compact ? "8px 12px" : 12,
+        fontSize: 14,
+        lineHeight: 1.6,
+        color: "var(--bf-text-secondary)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Divider() {
+  return (
+    <div
+      style={{
+        height: 1,
+        background: "var(--bf-border)",
+        margin: "20px 0",
+      }}
+    />
+  );
+}
+
+/* ── Profile Header ── */
+
+function ProfileHeader({
+  name,
+  subtitle,
+  review,
+}: {
+  name: string;
+  subtitle: string;
+  review?: ApplicantReviewDetailResponse["review"];
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: 16,
+        paddingBottom: 16,
+        borderBottom: "1px solid var(--bf-border)",
+        marginBottom: 20,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-montserrat), Montserrat, sans-serif",
+            fontSize: 24,
+            fontWeight: 800,
+            color: "var(--bf-text)",
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            marginBottom: 4,
+          }}
         >
-          {url}
-        </a>
-      )}
-      {snippet && (
-        <p
-          className={`text-xs leading-relaxed ${
-            isFailed ? "text-red-400" : "text-dark-s-200"
-          }`}
-        >
-          {snippet}
+          {name}
+        </h2>
+        <p style={{ fontSize: 14, color: "var(--bf-text-secondary)" }}>
+          {subtitle}
         </p>
+      </div>
+
+      {review && (
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div
+            style={{
+              fontFamily: "var(--font-montserrat), Montserrat, sans-serif",
+              fontSize: 28,
+              fontWeight: 800,
+              color: "var(--bf-text)",
+              lineHeight: 1,
+            }}
+          >
+            {review.weighted_score.toFixed(1)}
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--bf-text-secondary)",
+              marginTop: 2,
+            }}
+          >
+            {review.recommendation} · {Math.round(review.confidence_score * 100)}%
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
+/* ── Section renderers ── */
+
 function IdentitySection({ section }: { section: DisplaySection }) {
   return (
-    <section data-element-id="profile-identity">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-        {section.fields.map((field) => (
-          <div key={field.key}>
-            <div className="text-xs text-dark-s-200">{field.label}</div>
-            <div className="text-dark-s-0 break-all">
-              <DisplayFieldValue field={field} />
+    <section>
+      <SectionHeading>{section.label}</SectionHeading>
+      <div
+        style={{
+          background: "var(--bf-surface2)",
+          border: "1px solid var(--bf-border)",
+          borderRadius: "var(--bf-radius)",
+          padding: 16,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px 24px",
+            fontSize: 14,
+          }}
+        >
+          {section.fields.map((field) => (
+            <div key={field.key}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "var(--bf-text-dim)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: 2,
+                }}
+              >
+                {field.label}
+              </div>
+              <div style={{ color: "var(--bf-text)", wordBreak: "break-all" }}>
+                <DisplayFieldValue field={field} />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -86,18 +179,23 @@ function IdentitySection({ section }: { section: DisplaySection }) {
 function NarrativeSection({ section }: { section: DisplaySection }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
-      <div className="space-y-3">
+      <SectionHeading>{section.label}</SectionHeading>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {section.fields.map((field) => (
           <div key={field.key}>
-            <div className="text-xs font-semibold text-dark-s-200 mb-1">
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--bf-text-secondary)",
+                marginBottom: 4,
+              }}
+            >
               {field.label}
             </div>
-            <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+            <FieldCard compact>
               <DisplayFieldValue field={field} />
-            </div>
+            </FieldCard>
           </div>
         ))}
       </div>
@@ -108,9 +206,7 @@ function NarrativeSection({ section }: { section: DisplaySection }) {
 function TagsSection({ section }: { section: DisplaySection }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
+      <SectionHeading>{section.label}</SectionHeading>
       {section.fields.map((field) => (
         <DisplayFieldValue key={field.key} field={field} />
       ))}
@@ -121,14 +217,37 @@ function TagsSection({ section }: { section: DisplaySection }) {
 function MetaSection({ section }: { section: DisplaySection }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        {section.label}
-      </h3>
-      <div className="space-y-1 text-sm">
-        {section.fields.map((field) => (
-          <div key={field.key} className="flex gap-2">
-            <span className="text-dark-s-200 font-medium">{field.label}:</span>
-            <span className="text-dark-s-100">
+      <SectionHeading>{section.label}</SectionHeading>
+      <div
+        style={{
+          background: "var(--bf-surface2)",
+          border: "1px solid var(--bf-border)",
+          borderRadius: "var(--bf-radius)",
+          padding: 12,
+          fontSize: 13,
+        }}
+      >
+        {section.fields.map((field, i) => (
+          <div
+            key={field.key}
+            style={{
+              display: "flex",
+              gap: 8,
+              padding: "6px 0",
+              borderTop: i > 0 ? "1px solid var(--bf-border)" : undefined,
+            }}
+          >
+            <span
+              style={{
+                color: "var(--bf-text-dim)",
+                fontWeight: 500,
+                minWidth: 100,
+                flexShrink: 0,
+              }}
+            >
+              {field.label}
+            </span>
+            <span style={{ color: "var(--bf-text)" }}>
               <DisplayFieldValue field={field} />
             </span>
           </div>
@@ -151,46 +270,335 @@ function SectionRenderer({ section }: { section: DisplaySection }) {
   }
 }
 
-/**
- * Fallback: render normalized_fields as a simple dump when display_sections
- * is not available (e.g. older backend).
- */
-function NormalizedFieldsFallback({ fields }: { fields: Record<string, unknown> }) {
+/* ── Category score bars (from review) ── */
+
+function CategoryScores({
+  review,
+}: {
+  review: NonNullable<ApplicantReviewDetailResponse["review"]>;
+}) {
+  return (
+    <section>
+      <SectionHeading>Score Breakdown</SectionHeading>
+      <div
+        style={{
+          background: "var(--bf-surface2)",
+          border: "1px solid var(--bf-border)",
+          borderRadius: "var(--bf-radius)",
+          padding: 16,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {review.category_scores.map((cat) => (
+            <div key={cat.name}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 13,
+                  marginBottom: 4,
+                }}
+              >
+                <span style={{ fontWeight: 500, color: "var(--bf-text)" }}>
+                  {cat.name}
+                </span>
+                <span
+                  style={{
+                    fontFamily:
+                      "var(--font-montserrat), Montserrat, sans-serif",
+                    fontWeight: 700,
+                    color: "var(--bf-text)",
+                  }}
+                >
+                  {cat.score}
+                </span>
+              </div>
+              <div className="bf-score-bar">
+                <div
+                  className="bf-score-bar-fill"
+                  style={{ width: `${cat.score}%` }}
+                />
+              </div>
+              {cat.reasoning && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--bf-text-dim)",
+                    marginTop: 4,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {cat.reasoning}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {(review.strengths.length > 0 || review.concerns.length > 0) && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: "1px solid var(--bf-border)",
+            }}
+          >
+            {review.strengths.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#4ade80",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Strengths
+                </div>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    fontSize: 12,
+                    color: "var(--bf-text-secondary)",
+                  }}
+                >
+                  {review.strengths.map((s, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        paddingLeft: 12,
+                        position: "relative",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          color: "#4ade80",
+                          fontWeight: 700,
+                        }}
+                      >
+                        +
+                      </span>
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {review.concerns.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--bf-ember)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Concerns
+                </div>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    fontSize: 12,
+                    color: "var(--bf-text-secondary)",
+                  }}
+                >
+                  {review.concerns.map((c, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        paddingLeft: 12,
+                        position: "relative",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          color: "var(--bf-ember)",
+                          fontWeight: 700,
+                        }}
+                      >
+                        -
+                      </span>
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ── Evidence ── */
+
+function EvidenceItem({ item }: { item: Record<string, unknown> }) {
+  const kind = (item["kind"] as string) ?? "unknown";
+  const url = (item["url"] as string) ?? "";
+  const status = (item["status"] as string) ?? "";
+  const snippet =
+    (item["extracted_text"] as string) ?? (item["snippet"] as string) ?? "";
+  const isFailed = String(status).toLowerCase() === "failed";
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr auto",
+        gap: 8,
+        padding: "10px 12px",
+        borderBottom: "1px solid var(--bf-border)",
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: "var(--bf-text)",
+            marginBottom: 2,
+          }}
+        >
+          {(item["label"] as string) ?? kind}
+        </div>
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              fontSize: 12,
+              color: "var(--bf-ember)",
+              wordBreak: "break-all",
+              display: "block",
+            }}
+            className="hover:underline"
+          >
+            {url}
+          </a>
+        )}
+        {snippet && (
+          <p
+            style={{
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: isFailed ? "#ef4444" : "var(--bf-text-dim)",
+              marginTop: 4,
+            }}
+          >
+            {snippet.length > 200 ? snippet.slice(0, 200) + "..." : snippet}
+          </p>
+        )}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: 4,
+        }}
+      >
+        <span className="bf-badge-ember" style={{ fontSize: 10 }}>
+          {kind}
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            padding: "2px 8px",
+            borderRadius: "var(--bf-radius-pill)",
+            background: isFailed
+              ? "rgba(239, 68, 68, 0.15)"
+              : "rgba(74, 222, 128, 0.1)",
+            color: isFailed ? "#ef4444" : "#4ade80",
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            fontWeight: 500,
+          }}
+        >
+          {status || "—"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Fallback for older backends without display_sections ── */
+
+function NormalizedFieldsFallback({
+  fields,
+}: {
+  fields: Record<string, unknown>;
+}) {
   const SKIP = new Set([
-    "full_name", "organizations", "role_title", "submitted_at_raw",
-    "submitted_at", "token", "validation_errors", "public_evidence_links",
+    "full_name",
+    "organizations",
+    "role_title",
+    "submitted_at_raw",
+    "submitted_at",
+    "token",
+    "validation_errors",
+    "public_evidence_links",
   ]);
 
   const entries = Object.entries(fields).filter(
-    ([key, val]) => !SKIP.has(key) && val != null && String(val).trim() !== "",
+    ([key, val]) =>
+      !SKIP.has(key) && val != null && String(val).trim() !== "",
   );
 
   if (entries.length === 0) return null;
 
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-        Application Fields
-      </h3>
-      <div className="space-y-3">
+      <SectionHeading>Application Fields</SectionHeading>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {entries.map(([key, val]) => (
           <div key={key}>
-            <div className="text-xs font-semibold text-dark-s-200 mb-1">
-              {key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--bf-text-secondary)",
+                marginBottom: 4,
+              }}
+            >
+              {key
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase())}
             </div>
-            <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
+            <FieldCard compact>
               {typeof val === "string"
                 ? val
                 : Array.isArray(val)
                   ? val.join(", ")
                   : JSON.stringify(val)}
-            </div>
+            </FieldCard>
           </div>
         ))}
       </div>
     </section>
   );
 }
+
+/* ── Main Modal ── */
 
 export function FullProfileModal({
   isOpen,
@@ -202,11 +610,12 @@ export function FullProfileModal({
   const role = app?.role_title ?? detail?.identity?.role_title ?? "";
   const orgs = app?.organizations?.length
     ? app.organizations.join(", ")
-    : detail?.identity?.organizations?.join(", ") ?? "";
+    : (detail?.identity?.organizations?.join(", ") ?? "");
 
   const sections = detail?.display_sections ?? [];
   const evidence = (app?.evidence ?? []) as Array<Record<string, unknown>>;
   const subtitle = [role, orgs].filter(Boolean).join(" · ") || "—";
+  const review = detail?.review;
 
   const hasSections = sections.length > 0;
 
@@ -214,19 +623,16 @@ export function FullProfileModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={name}
-      description={subtitle}
       size="xl"
       showCloseButton
-      className="max-w-[640px] max-h-[85vh] overflow-y-auto"
+      className="max-w-[720px] max-h-[85vh] overflow-y-auto"
     >
-      <div className="space-y-5 pt-2">
+      <ProfileHeader name={name} subtitle={subtitle} review={review} />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         {hasSections ? (
-          sections.map((section, i) => (
-            <div key={section.key}>
-              <SectionRenderer section={section} />
-              {i < sections.length - 1 && <hr className="border-dark-s-700 mt-5" />}
-            </div>
+          sections.map((section) => (
+            <SectionRenderer key={section.key} section={section} />
           ))
         ) : (
           app?.normalized_fields && (
@@ -234,28 +640,35 @@ export function FullProfileModal({
           )
         )}
 
-        {hasSections && <hr className="border-dark-s-700" />}
+        {review && <CategoryScores review={review} />}
 
-        {detail?.review != null && (
-          <>
-            <section data-element-id="profile-generated-bio">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-                Generated bio
-              </h3>
-              <div className="rounded-lg bg-dark-s-800 p-3 text-sm leading-relaxed text-dark-s-100">
-                {detail.review.bio || "No generated bio for this review."}
-              </div>
-            </section>
-            <hr className="border-dark-s-700" />
-          </>
+        {review?.bio && (
+          <section>
+            <SectionHeading>Generated Bio</SectionHeading>
+            <FieldCard>{review.bio}</FieldCard>
+          </section>
+        )}
+
+        {review?.comparative_reasoning && (
+          <section>
+            <SectionHeading>Comparative Analysis</SectionHeading>
+            <FieldCard>{review.comparative_reasoning}</FieldCard>
+          </section>
         )}
 
         {evidence.length > 0 && (
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-dark-s-0 mb-2">
-              Evidence ({evidence.length} items)
-            </h3>
-            <div className="space-y-2">
+            <SectionHeading>
+              Evidence ({evidence.length})
+            </SectionHeading>
+            <div
+              style={{
+                background: "var(--bf-surface2)",
+                border: "1px solid var(--bf-border)",
+                borderRadius: "var(--bf-radius)",
+                overflow: "hidden",
+              }}
+            >
               {evidence.map((item, i) => (
                 <EvidenceItem key={i} item={item} />
               ))}

@@ -124,7 +124,7 @@ const Button = React.forwardRef<
         />
         <div
           className={cn(
-            "absolute left-0 top-0 flex items-center justify-center rounded-lg py-3 px-3.5 text-black transition-transform duration-75 ease-out whitespace-nowrap",
+            "absolute left-0 top-0 flex items-center justify-center rounded-lg py-3 px-3.5 text-white transition-transform duration-75 ease-out whitespace-nowrap",
             variant === "primary" && "right-0 bg-brand-primary",
             variant === "outline" &&
               "right-0 bg-brand-black text-brand-primary border",

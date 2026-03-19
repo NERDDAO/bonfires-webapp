@@ -1,5 +1,6 @@
 import { Background } from "@/components/background";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/shared/Footer";
 import { OrgSwitchGuard } from "@/components/subdomain/OrgSwitchGuard";
 import { SubdomainResolver } from "@/components/subdomain/SubdomainResolver";
 import { SiteConfigProvider } from "@/contexts";
@@ -17,7 +18,14 @@ export default async function MainLayout({
         <SiteConfigProvider>
           <Background>
             <Navbar />
-            <OrgSwitchGuard>{children}</OrgSwitchGuard>
+            <OrgSwitchGuard>
+              <div className="bf-page">
+                <main className="bf-container" style={{ paddingTop: 24, paddingBottom: 48 }}>
+                  {children}
+                </main>
+                <Footer />
+              </div>
+            </OrgSwitchGuard>
           </Background>
         </SiteConfigProvider>
       </Providers>

@@ -18,10 +18,10 @@ export const rootSiteConfig: SiteConfig = {
   ],
 
   theme: {
-    brandPrimary: "#4fc5ff",
-    brandSecondary: "#3a9fd4",
-    brandBlack: "#0e1117",
-    brandSkyblue: "#4fc5ff",
+    brandPrimary: "#f5572a",
+    brandSecondary: "#ff8a5c",
+    brandBlack: "#0a1216",
+    brandSkyblue: "#f5572a",
   },
 
   landing: RootLanding,

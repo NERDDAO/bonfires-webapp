@@ -14,7 +14,6 @@ import type {
 } from "@/types";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-import { Header } from "@/components/shared/Header";
 import { DataRoomMarketplaceCard } from "@/components/web3/DataRoomMarketplaceCard";
 import { DataRoomWizard } from "@/components/web3/DataRoomWizard";
 
@@ -24,8 +23,7 @@ import { useWalletAccount } from "@/lib/wallet/e2e";
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-base-100">
-      <Header />
+    <div className="flex flex-col bg-base-100">
       <div className="flex-1">{children}</div>
     </div>
   );

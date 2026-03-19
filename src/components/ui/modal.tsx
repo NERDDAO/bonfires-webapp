@@ -101,9 +101,13 @@ export function Modal({
 
       {/* Modal content */}
       <div
+        style={{
+          background: "var(--bf-surface, #152530)",
+          borderColor: "var(--bf-border-bright, rgba(255,255,255,0.14))",
+        }}
         className={cn(
           "p-5 lg:p-7.5 relative z-10 w-full overflow-hidden rounded-2xl",
-          "bg-brand-black border border-dark-s-700 shadow-2xl",
+          "border shadow-2xl",
           "animate-in fade-in zoom-in-95 duration-200",
           sizeClasses[size],
           className

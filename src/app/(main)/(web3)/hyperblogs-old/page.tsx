@@ -11,8 +11,6 @@ import Link from "next/link";
 
 import type { HyperBlogInfo, HyperBlogListResponse } from "@/types";
 
-import { Header } from "@/components/shared/Header";
-
 import {
   calculateReadingTime,
   formatTimestamp,
@@ -22,8 +20,7 @@ import {
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-base-100">
-      <Header />
+    <div className="flex flex-col bg-base-100">
       <div className="flex-1">{children}</div>
     </div>
   );

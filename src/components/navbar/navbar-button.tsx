@@ -23,10 +23,8 @@ export function NavbarButton({
   const { label, href, dropdownItems } = navigationItem;
 
   const buttonClasses = cn(
-    "whitespace-nowrap leading-[1.2] inline-flex items-center gap-2 rounded-lg px-6 py-3 transition-colors hover:bg-[#1A1C1F] hover:text-dark-s-0 rounded-t-lg rounded-b-none border-b",
-    isActive
-      ? "bg-[#1A1C1F] text-dark-s-0 border-b-brand-primary"
-      : "bg-brand-bg text-dark-s-0/70 border-b-transparent"
+    "bf-nav-link",
+    isActive && "active"
   );
 
   // No dropdown: render as link
@@ -70,7 +68,8 @@ export function NavbarButton({
           id="navbar-dropdown-menu"
           role="menu"
           aria-labelledby="navbar-dropdown-trigger"
-          className="absolute left-0 top-full z-100 mt-1 min-w-40 list-none rounded-b-lg rounded-t-none bg-brand-black"
+          className="absolute left-0 top-full z-100 mt-1 min-w-40 list-none rounded-b-lg rounded-t-none"
+          style={{ background: "var(--bf-surface)" }}
         >
           {dropdownItems.map((item) => (
             <li key={item.label} role="none">

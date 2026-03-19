@@ -8,13 +8,14 @@ export function DisplayFieldValue({ field }: { field: DisplayField }) {
   switch (field.format) {
     case "url": {
       const href = typeof val === "string" ? val : "";
-      if (!href) return <span className="text-dark-s-200">—</span>;
+      if (!href) return <span style={{ color: "var(--bf-text-dim)" }}>—</span>;
       return (
         <a
           href={href}
           target="_blank"
           rel="noreferrer"
-          className="text-primary hover:underline break-all"
+          style={{ color: "var(--bf-ember)", wordBreak: "break-all" }}
+          className="hover:underline"
         >
           {href}
         </a>
@@ -23,7 +24,7 @@ export function DisplayFieldValue({ field }: { field: DisplayField }) {
 
     case "handle": {
       const handle = typeof val === "string" ? val : "";
-      if (!handle) return <span className="text-dark-s-200">—</span>;
+      if (!handle) return <span style={{ color: "var(--bf-text-dim)" }}>—</span>;
       const display = handle.startsWith("@") ? handle : `@${handle}`;
       if (field.resolved_url) {
         return (
@@ -31,7 +32,8 @@ export function DisplayFieldValue({ field }: { field: DisplayField }) {
             href={field.resolved_url}
             target="_blank"
             rel="noreferrer"
-            className="text-primary hover:underline"
+            style={{ color: "var(--bf-ember)" }}
+            className="hover:underline"
           >
             {display}
           </a>
@@ -42,7 +44,11 @@ export function DisplayFieldValue({ field }: { field: DisplayField }) {
 
     case "address": {
       const addr = typeof val === "string" ? val : "";
-      return <span className="font-mono text-xs break-all">{addr || "—"}</span>;
+      return (
+        <span style={{ fontFamily: "monospace", fontSize: 12, wordBreak: "break-all" }}>
+          {addr || "—"}
+        </span>
+      );
     }
 
     case "tags": {
@@ -51,13 +57,20 @@ export function DisplayFieldValue({ field }: { field: DisplayField }) {
         : typeof val === "string"
           ? val.split(",").map((t) => t.trim()).filter(Boolean)
           : [];
-      if (tags.length === 0) return <span className="text-dark-s-200">—</span>;
+      if (tags.length === 0) return <span style={{ color: "var(--bf-text-dim)" }}>—</span>;
       return (
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <span
               key={tag}
-              className="rounded border border-dark-s-600 px-2 py-1 text-xs text-dark-s-100 bg-dark-s-800"
+              style={{
+                border: "1px solid var(--bf-border-bright)",
+                borderRadius: "var(--bf-radius)",
+                padding: "2px 8px",
+                fontSize: 12,
+                color: "var(--bf-text-secondary)",
+                background: "var(--bf-surface2)",
+              }}
             >
               {tag}
             </span>

@@ -13,6 +13,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 import "./(styles)/globals.css";
+import "@/styles/bonfires-reviews.css";
 
 const { laroSoft, dmSans, montserrat } = customFonts;
 

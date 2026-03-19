@@ -23,7 +23,7 @@ export default function SpecularCircle({
         className="z-30"
       />
 
-      <div className="z-30 absolute -top-2 -right-2 rounded-full flex items-center justify-center h-7 w-7 bg-brand-primary text-brand-black text-sm font-bold shadow-[0_4px_4px_rgba(0,0,0,0.25)]">
+      <div className="z-30 absolute -top-2 -right-2 rounded-full flex items-center justify-center h-7 w-7 bg-brand-primary text-white text-sm font-bold shadow-[0_4px_4px_rgba(0,0,0,0.25)]">
         {count}
       </div>
 

@@ -26,40 +26,46 @@ export function ApplicantReviewsTable({
   showOrgColumn,
 }: ApplicantReviewsTableProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="table table-sm">
+    <div className="bf-table-wrap">
+      <table className="bf-table">
         <thead>
           <tr>
             <th>Applicant</th>
+            <th>Rank</th>
             {showOrgColumn && <th>Org</th>}
             <th>Score</th>
             <th>Confidence</th>
             <th>Status</th>
             <th>Shortlist</th>
-            <th className={onDelete ? "w-48" : "w-40"}>Actions</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {applications.map((application) => (
             <tr
               key={application.id}
-              className={`cursor-pointer hover ${
-                selectedApplicationId === application.id ? "bg-base-200" : ""
-              }`}
+              className={`cursor-pointer ${selectedApplicationId === application.id ? "selected" : ""}`}
               onClick={() => onSelectApplication(application.id)}
             >
               <td>
-                <div className="font-medium">{application.full_name}</div>
-                <div className="text-xs text-base-content/60">
+                <div className="bf-name">{application.full_name}</div>
+                <div className="bf-role">
                   {application.role_title || "Role not provided"}
                 </div>
               </td>
+              <td style={{ whiteSpace: 'nowrap' }}>
+                {application.slot_rank != null ? (
+                  <span className="bf-rank-cell">#{application.slot_rank}</span>
+                ) : (
+                  <span style={{ color: 'var(--bf-text-dim)' }}>&mdash;</span>
+                )}
+              </td>
               {showOrgColumn && (
-                <td className="text-sm text-base-content/70 truncate max-w-[150px]">
+                <td className="truncate" style={{ maxWidth: 150, color: 'var(--bf-text-secondary)' }}>
                   {application.organizations?.join(", ") || "\u2014"}
                 </td>
               )}
-              <td>{application.overall_score?.toFixed(1) ?? "—"}</td>
+              <td style={{ whiteSpace: 'nowrap' }}><span className="bf-score">{application.overall_score?.toFixed(1) ?? "—"}</span></td>
               <td>
                 {application.confidence_score !== null &&
                 application.confidence_score !== undefined
@@ -67,7 +73,7 @@ export function ApplicantReviewsTable({
                   : "—"}
               </td>
               <td>
-                <div className="text-xs">
+                <div className="bf-status">
                   <div>{application.research_status}</div>
                   <div>{application.evaluation_status}</div>
                 </div>
@@ -76,7 +82,7 @@ export function ApplicantReviewsTable({
               <td>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    className="btn btn-xs"
+                    className="bf-action-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       onShortlistToggle(application);
@@ -88,7 +94,7 @@ export function ApplicantReviewsTable({
                       : "Shortlist"}
                   </button>
                   <button
-                    className="btn btn-ghost btn-xs"
+                    className="bf-action-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       onRetryResearch(application);
@@ -98,7 +104,7 @@ export function ApplicantReviewsTable({
                     Retry
                   </button>
                   <button
-                    className="btn btn-ghost btn-xs"
+                    className="bf-action-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       onRescore(application);
@@ -109,7 +115,7 @@ export function ApplicantReviewsTable({
                   </button>
                   {onDelete && (
                     <button
-                      className="btn btn-ghost btn-xs text-error"
+                      className="bf-action-btn danger"
                       onClick={(e) => {
                         e.stopPropagation();
                         onDelete(application);

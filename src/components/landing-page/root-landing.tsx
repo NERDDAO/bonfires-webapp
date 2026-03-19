@@ -39,7 +39,7 @@ export default function RootLanding() {
         <div className="flex flex-col sm:flex-row gap-4 mt-10">
           <Link
             href="/explore"
-            className="btn btn-lg bg-brand-primary hover:bg-brand-primary/85 text-brand-black font-semibold border-none"
+            className="btn btn-lg bg-brand-primary hover:bg-brand-primary/85 text-white font-semibold border-none"
           >
             Explore Bonfires
           </Link>

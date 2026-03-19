@@ -21,8 +21,6 @@ import {
   RecentChatsSection,
   WalletInfoSection,
 } from "@/components/dashboard";
-import { Header } from "@/components/shared/Header";
-
 /**
  * Dashboard Page
  *
@@ -41,8 +39,7 @@ export default function DashboardPage() {
   const isWalletConnected = dashboardData.wallet.isConnected;
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <Header />
+    <div className="bg-base-100">
       {/* Page header */}
       <header className="border-b border-base-300 bg-base-200">
         <div className="container mx-auto px-4 py-6">

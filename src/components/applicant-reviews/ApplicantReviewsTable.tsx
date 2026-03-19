@@ -48,16 +48,16 @@ export function ApplicantReviewsTable({
               onClick={() => onSelectApplication(application.id)}
             >
               <td>
-                <span className="bf-name">{application.full_name}</span>
-                <span className="bf-role">
+                <div className="bf-name">{application.full_name}</div>
+                <div className="bf-role">
                   {application.role_title || "Role not provided"}
-                </span>
+                </div>
               </td>
-              <td>
+              <td style={{ whiteSpace: 'nowrap' }}>
                 {application.slot_rank != null ? (
                   <span className="bf-rank-cell">#{application.slot_rank}</span>
                 ) : (
-                  <span className="text-base-content/40">&mdash;</span>
+                  <span style={{ color: 'var(--bf-text-dim)' }}>&mdash;</span>
                 )}
               </td>
               {showOrgColumn && (
@@ -65,7 +65,7 @@ export function ApplicantReviewsTable({
                   {application.organizations?.join(", ") || "\u2014"}
                 </td>
               )}
-              <td><span className="bf-score">{application.overall_score?.toFixed(1) ?? "—"}</span></td>
+              <td style={{ whiteSpace: 'nowrap' }}><span className="bf-score">{application.overall_score?.toFixed(1) ?? "—"}</span></td>
               <td>
                 {application.confidence_score !== null &&
                 application.confidence_score !== undefined

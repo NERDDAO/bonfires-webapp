@@ -33,7 +33,7 @@ export function ApplicantDetailSidebar({
 
   if (!selectedApplicationId) {
     return (
-      <div className="text-sm text-base-content/60">
+      <div style={{ fontSize: 14, color: 'var(--bf-text-dim)' }}>
         Select an applicant to inspect their normalized profile, evidence, and
         rubric breakdown.
       </div>
@@ -42,7 +42,7 @@ export function ApplicantDetailSidebar({
 
   if (isLoading) {
     return (
-      <div className="text-sm text-base-content/60">
+      <div style={{ fontSize: 14, color: 'var(--bf-text-dim)' }}>
         Loading applicant detail...
       </div>
     );
@@ -50,7 +50,7 @@ export function ApplicantDetailSidebar({
 
   if (!selectedApplication) {
     return (
-      <div className="text-sm text-base-content/60">
+      <div style={{ fontSize: 14, color: 'var(--bf-text-dim)' }}>
         Unable to load applicant detail.
       </div>
     );
@@ -59,10 +59,10 @@ export function ApplicantDetailSidebar({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold">
+        <h2 style={{ fontFamily: 'var(--font-montserrat), Montserrat, sans-serif', fontSize: 22, fontWeight: 700, color: 'var(--bf-text)' }}>
           {selectedApplication.full_name}
         </h2>
-        <p className="text-sm text-base-content/70">
+        <p style={{ fontSize: 14, color: 'var(--bf-text-secondary)' }}>
           {selectedApplication.role_title || "Role not provided"}
         </p>
       </div>
@@ -70,12 +70,13 @@ export function ApplicantDetailSidebar({
       <IdentitySection detail={detail} />
 
       {!selectedReview && selectedRubricId && (
-        <div className="rounded-xl border border-dashed border-base-300 p-4 text-center space-y-3">
-          <p className="text-sm text-base-content/60">
+        <div className="space-y-3" style={{ background: 'var(--bf-surface)', border: '1px dashed var(--bf-border-bright)', borderRadius: 'var(--bf-radius)', padding: 16, textAlign: 'center' }}>
+          <p style={{ fontSize: 14, color: 'var(--bf-text-dim)' }}>
             Not yet evaluated with this rubric.
           </p>
           <button
-            className="btn btn-primary btn-sm"
+            className="bf-btn-primary"
+            style={{ fontSize: 13, padding: '8px 16px' }}
             onClick={(e) => {
               e.stopPropagation();
               onEvaluate(selectedApplicationId);
@@ -88,12 +89,12 @@ export function ApplicantDetailSidebar({
       )}
 
       {selectedReview && (
-        <div className="rounded-xl border border-base-300 p-4 space-y-3">
+        <div className="space-y-3" style={{ background: 'var(--bf-surface)', border: '1px solid var(--bf-border)', borderRadius: 'var(--bf-radius)', padding: 16 }}>
           <div>
-            <div className="text-sm font-medium">
+            <div style={{ fontFamily: 'var(--font-montserrat), Montserrat, sans-serif', fontSize: 15, fontWeight: 700, color: 'var(--bf-text)' }}>
               Score {selectedReview.weighted_score.toFixed(1)} / 100
             </div>
-            <div className="text-xs text-base-content/60">
+            <div style={{ fontSize: 12, color: 'var(--bf-text-secondary)' }}>
               {selectedReview.recommendation} · confidence{" "}
               {Math.round(selectedReview.confidence_score * 100)}%
             </div>
@@ -101,7 +102,8 @@ export function ApplicantDetailSidebar({
 
           <button
             type="button"
-            className="btn btn-ghost btn-sm w-full border border-primary text-primary"
+            className="bf-btn-secondary"
+            style={{ width: '100%', fontSize: 13, padding: '8px 16px', borderColor: 'var(--bf-ember)', color: 'var(--bf-ember)' }}
             onClick={() => onViewFullProfile()}
             data-element-id="view-full-profile"
           >
@@ -109,7 +111,7 @@ export function ApplicantDetailSidebar({
           </button>
 
           <div>
-            <h4 className="text-xs font-semibold">Bio</h4>
+            <h4 className="bf-section-label" style={{ marginBottom: 4 }}>Bio</h4>
             <p className="mt-1 text-sm">
               {selectedReview.bio || "No generated bio for this review."}
             </p>
@@ -124,13 +126,11 @@ export function ApplicantDetailSidebar({
                   <span>{category.name}</span>
                   <span>{category.score}</span>
                 </div>
-                <progress
-                  className="progress progress-primary w-full"
-                  value={category.score}
-                  max={100}
-                />
+                <div className="bf-score-bar" style={{ marginTop: 4 }}>
+                  <div className="bf-score-bar-fill" style={{ width: `${category.score}%` }} />
+                </div>
                 {category.reasoning && (
-                  <p className="mt-0.5 text-xs text-base-content/60">
+                  <p className="mt-0.5" style={{ fontSize: 12, color: 'var(--bf-text-secondary)' }}>
                     {category.reasoning}
                   </p>
                 )}
@@ -140,7 +140,7 @@ export function ApplicantDetailSidebar({
 
           {selectedReview.strengths.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-success">Strengths</h4>
+              <h4 style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>Strengths</h4>
               <ul className="mt-1 list-disc list-inside text-xs space-y-0.5">
                 {selectedReview.strengths.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -151,7 +151,7 @@ export function ApplicantDetailSidebar({
 
           {selectedReview.concerns.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-warning">Concerns</h4>
+              <h4 style={{ fontSize: 12, fontWeight: 700, color: 'var(--bf-ember)' }}>Concerns</h4>
               <ul className="mt-1 list-disc list-inside text-xs space-y-0.5">
                 {selectedReview.concerns.map((c, i) => (
                   <li key={i}>{c}</li>
@@ -162,7 +162,7 @@ export function ApplicantDetailSidebar({
 
           {selectedReview.comparative_reasoning && (
             <div>
-              <h4 className="text-xs font-semibold text-info">
+              <h4 style={{ fontSize: 12, fontWeight: 700, color: 'var(--bf-text-secondary)' }}>
                 Comparative Analysis
               </h4>
               <p className="mt-1 text-xs">
@@ -174,18 +174,18 @@ export function ApplicantDetailSidebar({
       )}
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold">Evidence Links</h3>
+        <h3 className="bf-section-label" style={{ marginBottom: 8 }}>Evidence Links</h3>
         <ul className="space-y-1 text-sm">
           {selectedApplication.public_evidence_links?.length ? (
             selectedApplication.public_evidence_links.map((link) => (
-              <li key={link} className="break-all text-primary">
+              <li key={link} style={{ wordBreak: 'break-all', color: 'var(--bf-ember)' }}>
                 <a href={link} target="_blank" rel="noreferrer">
                   {link}
                 </a>
               </li>
             ))
           ) : (
-            <li className="text-base-content/60">No public links listed.</li>
+            <li style={{ color: 'var(--bf-text-dim)' }}>No public links listed.</li>
           )}
         </ul>
       </div>
@@ -210,7 +210,7 @@ function IdentitySection({
       <div className="space-y-1 text-sm">
         {identitySection.fields.map((field) => (
           <div key={field.key}>
-            <span className="font-medium">{field.label}:</span>{" "}
+            <span style={{ fontWeight: 500, color: 'var(--bf-text-secondary)' }}>{field.label}:</span>{" "}
             <DisplayFieldValue field={field} />
           </div>
         ))}
@@ -222,19 +222,19 @@ function IdentitySection({
   return (
     <div className="space-y-1 text-sm">
       <div>
-        <span className="font-medium">Ethereum:</span>{" "}
+        <span style={{ fontWeight: 500, color: 'var(--bf-text-secondary)' }}>Ethereum:</span>{" "}
         {identity?.ethereum_address || application?.ethereum_address || "—"}
       </div>
       <div>
-        <span className="font-medium">GitHub:</span>{" "}
+        <span style={{ fontWeight: 500, color: 'var(--bf-text-secondary)' }}>GitHub:</span>{" "}
         {identity?.github_url || application?.github_profile_url || "—"}
       </div>
       <div>
-        <span className="font-medium">Twitter/X:</span>{" "}
+        <span style={{ fontWeight: 500, color: 'var(--bf-text-secondary)' }}>Twitter/X:</span>{" "}
         {identity?.twitter_url || application?.twitter_handle || "—"}
       </div>
       <div>
-        <span className="font-medium">Telegram:</span>{" "}
+        <span style={{ fontWeight: 500, color: 'var(--bf-text-secondary)' }}>Telegram:</span>{" "}
         {identity?.telegram_url || "—"}
       </div>
     </div>

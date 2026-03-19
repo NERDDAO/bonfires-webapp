@@ -402,12 +402,13 @@ export function ApplicantReviewsSection({
 
       {/* ── Table + Detail Sidebar ── */}
       <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+        <div style={{ background: 'var(--bf-surface)', border: '1px solid var(--bf-border)', borderRadius: 'var(--bf-radius)', padding: 24 }}>
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <label className="form-control">
-              <span className="label-text text-sm font-medium">Sort</span>
+              <span className="bf-label">Sort</span>
               <select
-                className="select select-bordered"
+                className="bf-input"
+                style={{ padding: '8px 12px' }}
                 value={sortBy}
                 onChange={(event) => { setSortBy(event.target.value); setPage(0); }}
               >
@@ -420,9 +421,10 @@ export function ApplicantReviewsSection({
             </label>
 
             <label className="form-control">
-              <span className="label-text text-sm font-medium">Order</span>
+              <span className="bf-label">Order</span>
               <select
-                className="select select-bordered"
+                className="bf-input"
+                style={{ padding: '8px 12px' }}
                 value={sortOrder}
                 onChange={(event) => {
                   setSortOrder(event.target.value === "asc" ? "asc" : "desc");
@@ -435,7 +437,7 @@ export function ApplicantReviewsSection({
             </label>
 
             <label className="label cursor-pointer gap-2 pt-6">
-              <span className="label-text">Shortlist only</span>
+              <span className="bf-label" style={{ marginBottom: 0 }}>Shortlist only</span>
               <input
                 type="checkbox"
                 className="checkbox checkbox-sm"
@@ -449,9 +451,10 @@ export function ApplicantReviewsSection({
 
             {rubricListQuery.data && rubricListQuery.data.items.length > 0 && (
               <label className="form-control">
-                <span className="label-text text-sm font-medium">Rubric</span>
+                <span className="bf-label">Rubric</span>
                 <select
-                  className="select select-bordered"
+                  className="bf-input"
+                  style={{ padding: '8px 12px' }}
                   value={selectedRubricDocId ?? "default"}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -489,7 +492,8 @@ export function ApplicantReviewsSection({
                 URL.revokeObjectURL(url);
               }}
               disabled={!bonfireId}
-              className="btn btn-ghost btn-sm mt-auto"
+              className="bf-action-btn"
+              style={{ marginTop: 'auto' }}
             >
               Export CSV
             </button>
@@ -526,15 +530,15 @@ export function ApplicantReviewsSection({
           )}
 
           {!bonfireId ? (
-            <div className="rounded-xl border border-dashed border-base-300 p-8 text-center text-sm text-base-content/60">
+            <div className="p-8 text-center text-sm" style={{ border: '1px dashed var(--bf-border-bright)', borderRadius: 'var(--bf-radius)', color: 'var(--bf-text-dim)' }}>
               Select a bonfire to begin reviewing applicants.
             </div>
           ) : reviewsQuery.isLoading ? (
-            <div className="p-8 text-center text-sm text-base-content/60">
+            <div className="p-8 text-center text-sm" style={{ color: 'var(--bf-text-dim)' }}>
               Loading applicants...
             </div>
           ) : !hasData ? (
-            <div className="rounded-xl border border-dashed border-base-300 p-8 text-center text-sm text-base-content/60">
+            <div className="p-8 text-center text-sm" style={{ border: '1px dashed var(--bf-border-bright)', borderRadius: 'var(--bf-radius)', color: 'var(--bf-text-dim)' }}>
               No applicants found. Import a batch above to begin reviewing.
             </div>
           ) : (
@@ -607,22 +611,22 @@ export function ApplicantReviewsSection({
           )}
 
           {reviewsQuery.data && reviewsQuery.data.total > 0 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-base-300">
-              <span className="text-sm text-base-content/60">
+            <div className="flex items-center justify-between" style={{ borderTop: '1px solid var(--bf-border)', padding: '12px 16px' }}>
+              <span style={{ fontSize: 14, color: 'var(--bf-text-secondary)' }}>
                 Showing {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, reviewsQuery.data.total)} of {reviewsQuery.data.total}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="btn btn-sm btn-ghost disabled:opacity-40"
+                  className="bf-action-btn"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={(page + 1) * PAGE_SIZE >= reviewsQuery.data.total}
-                  className="btn btn-sm btn-ghost disabled:opacity-40"
+                  className="bf-action-btn"
                 >
                   Next
                 </button>
@@ -631,7 +635,7 @@ export function ApplicantReviewsSection({
           )}
         </div>
 
-        <aside className="sticky top-20 self-start rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <aside className="sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto" style={{ background: 'var(--bf-surface)', border: '1px solid var(--bf-border)', borderRadius: 'var(--bf-radius)', padding: 24 }}>
           <ApplicantDetailSidebar
             selectedApplicationId={selectedApplicationId}
             detail={detailQuery.data}

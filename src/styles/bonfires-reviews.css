@@ -1,26 +1,32 @@
-/* Bonfires Design System — Applicant Review Panel Styles
-   Scoped to .bf-review-panel to avoid global DaisyUI conflicts.
-   Tokens: dark teal-black surfaces, ember accent, Montserrat/DM Sans typography.
+/* Bonfires Design System — Global Tokens & Component Styles
+   Tokens declared on :root so they're available everywhere.
+   Prefixed --bf-* to avoid DaisyUI conflicts.
    Fonts loaded via Next.js: --font-montserrat, --font-dm-sans */
 
 /* ── Design Tokens ── */
-.bf-review-panel {
-  --bg: #0d1f26;
-  --surface: #152530;
-  --surface2: #1a2f3a;
-  --ember: #f5572a;
-  --ember-dim: rgba(245, 87, 42, 0.25);
-  --ember-glow: rgba(245, 87, 42, 0.12);
-  --text: #f3ffff;
-  --text-secondary: #8da8af;
-  --text-dim: #3d5a64;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-bright: rgba(255, 255, 255, 0.12);
-  --radius: 8px;
+:root {
+  --bf-bg: #0d1f26;
+  --bf-bg2: #111c23;
+  --bf-surface: #152530;
+  --bf-surface2: #1a2f3a;
+  --bf-ember: #f5572a;
+  --bf-ember-dim: rgba(245, 87, 42, 0.15);
+  --bf-ember-glow: rgba(245, 87, 42, 0.07);
+  --bf-text: #f3ffff;
+  --bf-text-secondary: #8da8af;
+  --bf-text-dim: #3d5a64;
+  --bf-border: rgba(255, 255, 255, 0.07);
+  --bf-border-bright: rgba(255, 255, 255, 0.14);
+  --bf-radius: 8px;
+  --bf-radius-pill: 100px;
+  --bf-radius-icon: 12px;
+}
 
+/* ── Review Panel ── */
+.bf-review-panel {
   font-family: var(--font-dm-sans), "DM Sans", sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  color: var(--bf-text);
+  background: var(--bf-bg);
   border-radius: 12px;
   padding: 36px;
 }
@@ -32,7 +38,7 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ember);
+  color: var(--bf-ember);
   margin-bottom: 8px;
 }
 
@@ -41,24 +47,24 @@
   font-family: var(--font-montserrat), "Montserrat", sans-serif;
   font-weight: 700;
   font-size: 22px;
-  color: var(--text);
+  color: var(--bf-text);
   margin: 0 0 20px;
 }
 
 /* ── Import Card ── */
 .bf-import-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--bf-surface);
+  border: 1px solid var(--bf-border);
+  border-radius: var(--bf-radius);
   padding: 36px;
 }
 
 /* ── Mode Toggle (segmented control) ── */
 .bf-mode-toggle {
   display: inline-flex;
-  border-radius: var(--radius);
+  border-radius: var(--bf-radius);
   overflow: hidden;
-  border: 1px solid var(--border-bright);
+  border: 1px solid var(--bf-border-bright);
 }
 
 .bf-mode-toggle button {
@@ -69,12 +75,12 @@
   border: none;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  background: var(--surface2);
-  color: var(--text-secondary);
+  background: var(--bf-surface2);
+  color: var(--bf-text-secondary);
 }
 
 .bf-mode-toggle button.active {
-  background: var(--ember);
+  background: var(--bf-ember);
   color: #fff;
 }
 
@@ -88,10 +94,10 @@
   font-family: var(--font-dm-sans), "DM Sans", sans-serif;
   font-weight: 400;
   font-size: 14px;
-  background: var(--surface2);
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius);
-  color: var(--text);
+  background: var(--bf-surface2);
+  border: 1px solid var(--bf-border-bright);
+  border-radius: var(--bf-radius);
+  color: var(--bf-text);
   padding: 10px 14px;
   width: 100%;
   transition: border-color 0.2s;
@@ -99,13 +105,13 @@
 
 .bf-input::placeholder,
 .bf-textarea::placeholder {
-  color: var(--text-dim);
+  color: var(--bf-text-dim);
 }
 
 .bf-input:focus,
 .bf-textarea:focus {
   outline: none;
-  border-color: var(--ember);
+  border-color: var(--bf-ember);
 }
 
 .bf-textarea {
@@ -118,7 +124,7 @@
   font-family: var(--font-dm-sans), "DM Sans", sans-serif;
   font-weight: 500;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--bf-text-secondary);
   margin-bottom: 6px;
   display: block;
 }
@@ -127,7 +133,7 @@
 .bf-ember-line {
   width: 40px;
   height: 2px;
-  background: var(--ember);
+  background: var(--bf-ember);
   border-radius: 1px;
 }
 
@@ -139,7 +145,7 @@
   background: #fff;
   color: #0d1f26;
   border: none;
-  border-radius: var(--radius);
+  border-radius: var(--bf-radius);
   padding: 10px 24px;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.15s;
@@ -162,17 +168,17 @@
   font-weight: 500;
   font-size: 14px;
   background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius);
+  color: var(--bf-text-secondary);
+  border: 1px solid var(--bf-border-bright);
+  border-radius: var(--bf-radius);
   padding: 10px 24px;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
 
 .bf-btn-secondary:hover {
-  border-color: var(--ember);
-  color: var(--text);
+  border-color: var(--bf-ember);
+  color: var(--bf-text);
 }
 
 /* ── Slot Ranking Grid ── */
@@ -187,9 +193,9 @@
   grid-template-columns: 48px 1fr minmax(120px, 200px) 60px auto;
   align-items: center;
   gap: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--bf-surface);
+  border: 1px solid var(--bf-border);
+  border-radius: var(--bf-radius);
   padding: 14px 20px;
   position: relative;
   transition: background 0.2s;
@@ -202,14 +208,14 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--ember);
+  background: var(--bf-ember);
   opacity: 0;
   transition: opacity 0.2s;
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: var(--bf-radius) var(--bf-radius) 0 0;
 }
 
 .bf-slot-card:hover {
-  background: var(--surface2);
+  background: var(--bf-surface2);
 }
 
 .bf-slot-card:hover::before {
@@ -221,17 +227,17 @@
   font-family: var(--font-montserrat), "Montserrat", sans-serif;
   font-weight: 800;
   font-size: 18px;
-  color: var(--ember);
+  color: var(--bf-ember);
 }
 
 .bf-slot-rank.dim {
-  color: var(--text-dim);
+  color: var(--bf-text-dim);
 }
 
 /* ── Score Bar ── */
 .bf-score-bar {
   height: 6px;
-  background: var(--surface2);
+  background: var(--bf-surface2);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -239,12 +245,12 @@
 .bf-score-bar-fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--ember), #ff8a5c);
+  background: linear-gradient(90deg, var(--bf-ember), #ff8a5c);
   transition: width 0.6s ease-out;
 }
 
 .bf-score-bar-fill.dim {
-  background: var(--text-dim);
+  background: var(--bf-text-dim);
 }
 
 /* ── Score Value ── */
@@ -252,7 +258,7 @@
   font-family: var(--font-montserrat), "Montserrat", sans-serif;
   font-weight: 700;
   font-size: 15px;
-  color: var(--text);
+  color: var(--bf-text);
   text-align: right;
 }
 
@@ -263,8 +269,8 @@
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: var(--ember-dim);
-  color: var(--ember);
+  background: var(--bf-ember-dim);
+  color: var(--bf-ember);
   padding: 3px 10px;
   border-radius: 100px;
   white-space: nowrap;
@@ -277,7 +283,7 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-dim);
+  color: var(--bf-text-dim);
   padding: 3px 10px;
   border-radius: 100px;
   white-space: nowrap;
@@ -294,7 +300,7 @@
   font-family: var(--font-montserrat), "Montserrat", sans-serif;
   font-weight: 800;
   font-size: 28px;
-  color: var(--text);
+  color: var(--bf-text);
   line-height: 1;
 }
 
@@ -302,7 +308,7 @@
   font-family: var(--font-dm-sans), "DM Sans", sans-serif;
   font-weight: 400;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--bf-text-secondary);
   margin-top: 4px;
 }
 
@@ -344,7 +350,7 @@
   font-family: var(--font-montserrat), "Montserrat", sans-serif;
   font-weight: 700;
   font-size: 14px;
-  color: var(--ember);
+  color: var(--bf-ember);
 }
 
 /* ── Animations ── */
@@ -361,4 +367,371 @@
 
 .bf-fade-up {
   animation: bfFadeUp 0.4s ease-out both;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Global Components
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Film Grain Overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* ── Navigation ── */
+.bf-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 40px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bf-bg);
+  border-bottom: 1px solid transparent;
+  transition: background 0.3s, border-color 0.3s, backdrop-filter 0.3s;
+}
+
+.bf-nav.scrolled {
+  background: rgba(13, 31, 38, 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--bf-border);
+}
+
+.bf-nav-logo {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--bf-text);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bf-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bf-nav-link {
+  color: var(--bf-text-secondary);
+  text-decoration: none;
+  font-family: var(--font-dm-sans), "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--bf-radius);
+  transition: color 0.2s, background 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.bf-nav-link:hover {
+  color: var(--bf-text);
+  background: var(--bf-surface);
+}
+
+.bf-nav-link.active {
+  color: var(--bf-text);
+  border-bottom-color: var(--bf-ember);
+}
+
+.bf-nav-cta {
+  background: var(--bf-ember);
+  color: white;
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: var(--bf-radius);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.bf-nav-cta:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+/* ── Footer ── */
+.bf-footer {
+  background: var(--bf-bg2);
+  border-top: 1px solid var(--bf-border);
+  padding: 48px 40px 32px;
+  font-family: var(--font-dm-sans), "DM Sans", sans-serif;
+}
+
+.bf-footer-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.bf-footer-brand {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--bf-text);
+}
+
+.bf-footer-links {
+  display: flex;
+  gap: 24px;
+  list-style: none;
+}
+
+.bf-footer-links a {
+  color: var(--bf-text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.bf-footer-links a:hover {
+  color: var(--bf-text);
+}
+
+.bf-footer-social {
+  display: flex;
+  gap: 16px;
+}
+
+.bf-footer-social a {
+  color: var(--bf-text-dim);
+  transition: color 0.2s;
+}
+
+.bf-footer-social a:hover {
+  color: var(--bf-ember);
+}
+
+.bf-footer-copy {
+  max-width: 1080px;
+  margin: 32px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--bf-border);
+  font-size: 13px;
+  color: var(--bf-text-dim);
+}
+
+/* ── Data Table ── */
+.bf-table-wrap {
+  background: var(--bf-surface);
+  border: 1px solid var(--bf-border);
+  border-radius: var(--bf-radius);
+  overflow: hidden;
+}
+
+.bf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-dm-sans), "DM Sans", sans-serif;
+  font-size: 14px;
+  color: var(--bf-text);
+}
+
+.bf-table thead {
+  background: var(--bf-bg2);
+}
+
+.bf-table th {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bf-text-secondary);
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--bf-border);
+}
+
+.bf-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bf-border);
+  vertical-align: middle;
+}
+
+.bf-table tbody tr {
+  transition: background 0.2s;
+  position: relative;
+}
+
+.bf-table tbody tr:hover {
+  background: var(--bf-surface2);
+}
+
+.bf-table tbody tr.selected {
+  background: var(--bf-surface2);
+  box-shadow: inset 2px 0 0 var(--bf-ember);
+}
+
+.bf-table .bf-score {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.bf-table .bf-name {
+  font-weight: 500;
+  color: var(--bf-text);
+}
+
+.bf-table .bf-role {
+  font-size: 12px;
+  color: var(--bf-text-dim);
+}
+
+.bf-table .bf-status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bf-table .bf-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.bf-table .bf-action-btn {
+  font-family: var(--font-dm-sans), "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--bf-border-bright);
+  background: transparent;
+  color: var(--bf-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.bf-table .bf-action-btn:hover {
+  border-color: var(--bf-ember);
+  color: var(--bf-text);
+}
+
+.bf-table .bf-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bf-table .bf-action-btn.danger {
+  color: #e55;
+}
+
+.bf-table .bf-action-btn.danger:hover {
+  border-color: #e55;
+}
+
+/* ── Page Wrapper ── */
+.bf-page {
+  min-height: 100vh;
+  background: var(--bf-bg);
+  color: var(--bf-text);
+  font-family: var(--font-dm-sans), "DM Sans", sans-serif;
+}
+
+.bf-page-header {
+  padding: 40px 0 32px;
+}
+
+.bf-page-header h1 {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 800;
+  color: var(--bf-text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.bf-page-header p {
+  color: var(--bf-text-secondary);
+  font-size: 16px;
+  font-weight: 300;
+}
+
+.bf-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Document Cards ── */
+.bf-doc-card {
+  background: var(--bf-surface);
+  border: 1px solid var(--bf-border);
+  border-radius: var(--bf-radius);
+  padding: 24px;
+  position: relative;
+  transition: background 0.3s;
+}
+
+.bf-doc-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--bf-ember);
+  opacity: 0;
+  transition: opacity 0.3s;
+  border-radius: var(--bf-radius) var(--bf-radius) 0 0;
+}
+
+.bf-doc-card:hover {
+  background: var(--bf-surface2);
+}
+
+.bf-doc-card:hover::before {
+  opacity: 1;
+}
+
+.bf-doc-card h2 {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--bf-text);
+  margin-bottom: 8px;
+}
+
+/* ── Summary Stat Cards ── */
+.bf-stat-card {
+  background: var(--bf-surface);
+  border: 1px solid var(--bf-border);
+  border-radius: var(--bf-radius);
+  padding: 24px;
+}
+
+.bf-stat-card .bf-stat-value {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  color: var(--bf-text);
+  line-height: 1;
+}
+
+.bf-stat-card .bf-stat-title {
+  font-size: 13px;
+  color: var(--bf-text-secondary);
+  margin-top: 6px;
+  letter-spacing: 0.03em;
 }

@@ -448,6 +448,8 @@ export interface DataRoomInfo {
   total_purchases?: number;
   last_purchase_at?: string;
   image_model?: "schnell" | "dev" | "pro" | "realism";
+  source_bonfire_id?: string | null;
+  source_bonfire_name?: string | null;
 }
 
 export interface DataRoomListResponse {
@@ -554,6 +556,8 @@ export interface HyperBlogInfo {
   blog_content?: {
     formatted_content?: string | null;
   };
+  source_bonfire_id?: string | null;
+  source_bonfire_name?: string | null;
 }
 
 export interface HyperBlogListResponse {

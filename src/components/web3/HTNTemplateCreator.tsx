@@ -119,7 +119,6 @@ export function HTNTemplateCreator({
   const handleSubmit = async () => {
     setFormError(null);
 
-    // Build node_count_config from enabled lengths
     const nodeCountConfig: Record<
       string,
       { max_nodes: number; max_words: number; description: string }
@@ -134,7 +133,6 @@ export function HTNTemplateCreator({
       }
     }
 
-    // Ensure default_length references an enabled length
     const effectiveDefault: string = nodeCountConfig[defaultLength]
       ? defaultLength
       : (Object.keys(nodeCountConfig)[0] ?? "medium");
@@ -164,40 +162,62 @@ export function HTNTemplateCreator({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Custom HTN Template"
       size="xl"
+      showCloseButton
+      className="max-w-[720px] max-h-[85vh] overflow-y-auto"
     >
-      <div className="mt-4 space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+      {/* Header */}
+      <div style={{ borderBottom: "1px solid var(--bf-border)", paddingBottom: 16, marginBottom: 20 }}>
+        <div className="bf-section-label">HTN TEMPLATE</div>
+        <h2
+          style={{
+            fontFamily: "var(--font-montserrat), Montserrat, sans-serif",
+            fontSize: 22,
+            fontWeight: 800,
+            color: "var(--bf-text)",
+            lineHeight: 1.1,
+          }}
+        >
+          Create Custom Template
+        </h2>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {formError && (
-          <div className="alert alert-error text-sm">
-            <span>{formError}</span>
+          <div
+            style={{
+              background: "rgba(239, 68, 68, 0.15)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "var(--bf-radius)",
+              padding: "10px 14px",
+              fontSize: 13,
+              color: "#ef4444",
+            }}
+          >
+            {formError}
           </div>
         )}
 
         {/* Name & Type */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-semibold">Template Name *</span>
-            </label>
+        <div className="bf-grid-2">
+          <div>
+            <span className="bf-label">Template Name *</span>
             <input
               type="text"
-              className="input input-bordered w-full"
+              className="bf-input"
               placeholder="My Custom Blog Template"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={200}
             />
           </div>
-
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text font-semibold">Type *</span>
-            </label>
+          <div>
+            <span className="bf-label">Type *</span>
             <select
-              className="select select-bordered w-full"
+              className="bf-input"
               value={templateType}
               onChange={(e) => setTemplateType(e.target.value)}
+              style={{ padding: "10px 14px" }}
             >
               <option value="blog">Blog</option>
               <option value="card">Card</option>
@@ -207,15 +227,16 @@ export function HTNTemplateCreator({
         </div>
 
         {/* Description */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-semibold">
-              Description (optional)
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span className="bf-label">Description (optional)</span>
+            <span style={{ fontSize: 11, color: "var(--bf-text-dim)" }}>
+              {description.length}/1000
             </span>
-            <span className="label-text-alt">{description.length}/1000</span>
-          </label>
+          </div>
           <textarea
-            className="textarea textarea-bordered h-16"
+            className="bf-textarea"
+            style={{ minHeight: 64 }}
             placeholder="What this template is designed for..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -224,17 +245,21 @@ export function HTNTemplateCreator({
         </div>
 
         {/* System Prompt */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-semibold">System Prompt *</span>
-            <span className="label-text-alt">min 10 chars</span>
-          </label>
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span className="bf-label">System Prompt *</span>
+            <span style={{ fontSize: 11, color: "var(--bf-text-dim)" }}>min 10 chars</span>
+          </div>
           <textarea
-            className={`textarea textarea-bordered h-32 font-mono text-xs ${
-              systemPrompt.length > 0 && systemPrompt.length < 10
-                ? "textarea-error"
-                : ""
-            }`}
+            className="bf-textarea"
+            style={{
+              minHeight: 120,
+              fontFamily: "monospace",
+              fontSize: 12,
+              borderColor: systemPrompt.length > 0 && systemPrompt.length < 10
+                ? "var(--bf-ember)"
+                : undefined,
+            }}
             placeholder="You are an expert content strategist..."
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
@@ -242,124 +267,160 @@ export function HTNTemplateCreator({
         </div>
 
         {/* User Prompt Template */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-semibold">
-              User Prompt Template *
-            </span>
-            <span className="label-text-alt">min 10 chars</span>
-          </label>
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span className="bf-label">User Prompt Template *</span>
+            <span style={{ fontSize: 11, color: "var(--bf-text-dim)" }}>min 10 chars</span>
+          </div>
           <textarea
-            className={`textarea textarea-bordered h-32 font-mono text-xs ${
-              userPromptTemplate.length > 0 && userPromptTemplate.length < 10
-                ? "textarea-error"
-                : ""
-            }`}
+            className="bf-textarea"
+            style={{
+              minHeight: 120,
+              fontFamily: "monospace",
+              fontSize: 12,
+              borderColor: userPromptTemplate.length > 0 && userPromptTemplate.length < 10
+                ? "var(--bf-ember)"
+                : undefined,
+            }}
             placeholder="Based on the following context, design a blog outline..."
             value={userPromptTemplate}
             onChange={(e) => setUserPromptTemplate(e.target.value)}
           />
-          <label className="label">
-            <span className="label-text-alt">
-              Available placeholders:{" "}
-              {PLACEHOLDER_HINTS.map((p) => (
-                <code key={p} className="text-xs mx-0.5 opacity-80">
-                  {p}
-                </code>
-              ))}
-            </span>
-          </label>
+          <div style={{ marginTop: 6, fontSize: 11, color: "var(--bf-text-dim)" }}>
+            Placeholders:{" "}
+            {PLACEHOLDER_HINTS.map((p) => (
+              <code
+                key={p}
+                style={{
+                  fontSize: 11,
+                  margin: "0 2px",
+                  padding: "1px 4px",
+                  borderRadius: 4,
+                  background: "var(--bf-surface2)",
+                  color: "var(--bf-text-secondary)",
+                }}
+              >
+                {p}
+              </code>
+            ))}
+          </div>
         </div>
 
         {/* Length Configurations */}
-        <div className="divider text-sm">Length Configurations</div>
-
-        {Object.entries(lengthConfigs).map(([length, config]) => (
-          <div
-            key={length}
-            className={`card bg-base-200 ${config.enabled ? "" : "opacity-50"}`}
-          >
-            <div className="card-body p-4 space-y-2">
-              <label className="label cursor-pointer justify-start gap-3">
-                <input
-                  type="checkbox"
-                  className="toggle toggle-primary toggle-sm"
-                  checked={config.enabled}
-                  onChange={(e) =>
-                    updateLengthConfig(length, "enabled", e.target.checked)
-                  }
-                />
-                <span className="label-text font-semibold capitalize">
-                  {length}
-                </span>
-              </label>
-
-              {config.enabled && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="form-control">
-                    <label className="label py-0">
-                      <span className="label-text text-xs">Max Nodes</span>
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={20}
-                      className="input input-bordered input-sm"
-                      placeholder="4"
-                      value={config.maxNodes}
-                      onChange={(e) =>
-                        updateLengthConfig(length, "maxNodes", Number(e.target.value) || 1)
-                      }
-                    />
-                  </div>
-                  <div className="form-control">
-                    <label className="label py-0">
-                      <span className="label-text text-xs">Max Words / Section</span>
-                    </label>
-                    <input
-                      type="number"
-                      min={50}
-                      max={2000}
-                      step={50}
-                      className="input input-bordered input-sm"
-                      placeholder="1200"
-                      value={config.maxWords}
-                      onChange={(e) =>
-                        updateLengthConfig(length, "maxWords", Number(e.target.value) || 100)
-                      }
-                    />
-                  </div>
-                  <div className="form-control">
-                    <label className="label py-0">
-                      <span className="label-text text-xs">Description</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="input input-bordered input-sm"
-                      placeholder="Concise content..."
-                      value={config.description}
-                      onChange={(e) =>
-                        updateLengthConfig(
-                          length,
-                          "description",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <div className="bf-ember-line" />
+            <span className="bf-section-label" style={{ marginBottom: 0 }}>
+              Length Configurations
+            </span>
           </div>
-        ))}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {Object.entries(lengthConfigs).map(([length, config]) => (
+              <div
+                key={length}
+                style={{
+                  background: "var(--bf-surface2)",
+                  border: "1px solid var(--bf-border)",
+                  borderRadius: "var(--bf-radius)",
+                  padding: 16,
+                  opacity: config.enabled ? 1 : 0.5,
+                  transition: "opacity 0.2s",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    cursor: "pointer",
+                    marginBottom: config.enabled ? 12 : 0,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={config.enabled}
+                    onChange={(e) =>
+                      updateLengthConfig(length, "enabled", e.target.checked)
+                    }
+                    style={{ accentColor: "var(--bf-ember)" }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-montserrat), Montserrat, sans-serif",
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: "var(--bf-text)",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {length}
+                  </span>
+                </label>
+
+                {config.enabled && (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 2fr",
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <span className="bf-label" style={{ fontSize: 11 }}>Max Nodes</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        className="bf-input"
+                        style={{ padding: "6px 10px", fontSize: 13 }}
+                        value={config.maxNodes}
+                        onChange={(e) =>
+                          updateLengthConfig(length, "maxNodes", Number(e.target.value) || 1)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <span className="bf-label" style={{ fontSize: 11 }}>Max Words</span>
+                      <input
+                        type="number"
+                        min={50}
+                        max={2000}
+                        step={50}
+                        className="bf-input"
+                        style={{ padding: "6px 10px", fontSize: 13 }}
+                        value={config.maxWords}
+                        onChange={(e) =>
+                          updateLengthConfig(length, "maxWords", Number(e.target.value) || 100)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <span className="bf-label" style={{ fontSize: 11 }}>Description</span>
+                      <input
+                        type="text"
+                        className="bf-input"
+                        style={{ padding: "6px 10px", fontSize: 13 }}
+                        placeholder="Concise content..."
+                        value={config.description}
+                        onChange={(e) =>
+                          updateLengthConfig(length, "description", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Default Length */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-semibold">Default Length</span>
-          </label>
+        <div>
+          <span className="bf-label">Default Length</span>
           <select
-            className="select select-bordered select-sm w-full max-w-xs"
+            className="bf-input"
+            style={{ padding: "8px 12px", maxWidth: 200 }}
             value={defaultLength}
             onChange={(e) => setDefaultLength(e.target.value)}
           >
@@ -375,23 +436,25 @@ export function HTNTemplateCreator({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-base-300">
-        <button className="btn btn-sm" onClick={handleClose}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 8,
+          paddingTop: 16,
+          marginTop: 20,
+          borderTop: "1px solid var(--bf-border)",
+        }}
+      >
+        <button className="bf-btn-secondary" onClick={handleClose}>
           Cancel
         </button>
         <button
-          className="btn btn-sm btn-primary"
-          onClick={handleSubmit}
+          className="bf-btn-primary"
+          onClick={() => void handleSubmit()}
           disabled={!isFormValid || createMutation.isPending}
         >
-          {createMutation.isPending ? (
-            <>
-              <span className="loading loading-spinner loading-xs" />
-              Creating...
-            </>
-          ) : (
-            "Create Template"
-          )}
+          {createMutation.isPending ? "Creating..." : "Create Template"}
         </button>
       </div>
     </Modal>

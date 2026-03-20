@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useRouter } from "next/navigation";
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { usePublicHyperBlogsInfiniteQuery } from "@/hooks/queries/useHyperBlogsQuery";
 import { useCreateDataRoom } from "@/hooks/mutations/useCreateDataRoom";
@@ -23,6 +24,7 @@ export function HyperblogsTabbedView() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const createDataRoom = useCreateDataRoom();
   const { address } = useWalletAccount();
+  const router = useRouter();
 
   const handleWizardComplete = (config: {
     bonfireId: string;
@@ -38,21 +40,33 @@ export function HyperblogsTabbedView() {
     imageModel?: "schnell" | "dev" | "pro" | "realism";
     htnTemplateId?: string;
   }) => {
-    createDataRoom.mutate({
-      bonfire_id: config.bonfireId,
-      description: config.description,
-      system_prompt: config.systemPrompt ?? "",
-      center_node_uuid: config.centerNodeUuid,
-      price_usd: config.priceUsd,
-      query_limit: config.queryLimit,
-      expiration_days: config.expirationDays,
-      dynamic_pricing_enabled: config.dynamicPricingEnabled,
-      price_step_usd: config.priceStepUsd,
-      price_decay_rate: config.priceDecayRate,
-      image_model: config.imageModel,
-      htn_template_id: config.htnTemplateId,
-      creator_wallet: address ?? "",
-    });
+    createDataRoom.mutate(
+      {
+        bonfire_id: config.bonfireId,
+        description: config.description,
+        system_prompt: config.systemPrompt ?? "",
+        center_node_uuid: config.centerNodeUuid,
+        price_usd: config.priceUsd,
+        query_limit: config.queryLimit,
+        expiration_days: config.expirationDays,
+        dynamic_pricing_enabled: config.dynamicPricingEnabled,
+        price_step_usd: config.priceStepUsd,
+        price_decay_rate: config.priceDecayRate,
+        image_model: config.imageModel,
+        htn_template_id: config.htnTemplateId,
+        creator_wallet: address ?? "",
+      },
+      {
+        onSuccess: (data) => {
+          const dataroomId = data.dataroom?.id;
+          if (dataroomId) {
+            router.push(`/hyperblogs/dataroom/${dataroomId}`);
+          } else {
+            setActiveTab("datarooms");
+          }
+        },
+      }
+    );
   };
 
   return (

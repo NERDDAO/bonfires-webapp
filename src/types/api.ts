@@ -544,6 +544,7 @@ export interface HyperBlogInfo {
   id: string;
   dataroom_id: string;
   user_query: string;
+  title?: string | null;
   generation_status: "generating" | "completed" | "failed";
   author_wallet: string;
   author_name?: string;

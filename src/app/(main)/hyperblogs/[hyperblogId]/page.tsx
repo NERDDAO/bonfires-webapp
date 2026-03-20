@@ -323,7 +323,7 @@ export default function HyperBlogDetailPage() {
     return null;
   }
 
-  const formattedAuthor = `by ${truncateAddress(blog.author_wallet, 4)}`;
+  const authorWallet = blog.author_wallet ? truncateAddress(blog.author_wallet, 4) : "";
   const timestamp = new Date(blog.created_at);
   const formattedTimestamp = timestamp.toLocaleDateString("en-US", {
     month: "short",
@@ -369,21 +369,23 @@ export default function HyperBlogDetailPage() {
 
           {/* Title - same as card (expanded: larger) */}
           <h1 className="font-bold text-2xl lg:text-3xl capitalize text-white">
-            {blog.user_query}
+            {blog.title || blog.user_query}
           </h1>
 
           {/* Badges row - same as hyperblog-card */}
           <div className="flex gap-2 flex-wrap mt-1 lg:mt-2 mb-2">
-            <span className="w-full lg:w-auto text-center lg:text-left font-bold text-xs rounded-full px-3 py-1 bg-dark-s-700 text-white whitespace-nowrap">
-              {blog.author_name ? `by ${blog.author_name}` : formattedAuthor}
-            </span>
+            {(blog.author_name || authorWallet) && (
+              <span className="w-full lg:w-auto text-center lg:text-left font-bold text-xs rounded-full px-3 py-1 bg-dark-s-700 text-white whitespace-nowrap">
+                by {blog.author_name || authorWallet}
+              </span>
+            )}
             {blog.dataroom_description && blog.dataroom_id && (
               <Link
                 href={`/hyperblogs?dataroomId=${blog.dataroom_id}&create=true`}
                 className="text-xs text-center lg:text-left rounded-full px-3 py-1 text-white border border-[#646464]/50 whitespace-nowrap hover:border-white/60 transition-colors truncate max-w-48"
                 title={blog.dataroom_description}
               >
-                {blog.dataroom_description}
+                Dataroom: {blog.dataroom_description}
               </Link>
             )}
             {[

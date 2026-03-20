@@ -57,7 +57,10 @@ export function HyperblogsTabbedView() {
 
   return (
     <>
-      <HyperBlogsHeader onCreateClick={() => setWizardOpen(true)} />
+      <HyperBlogsHeader
+        showCreateButton={activeTab === "datarooms"}
+        onCreateClick={() => setWizardOpen(true)}
+      />
 
       <div role="tablist" className="tabs tabs-bordered mt-6">
         <button

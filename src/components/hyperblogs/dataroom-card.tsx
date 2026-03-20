@@ -151,8 +151,7 @@ export default function DataroomCard({
   const bonfireName = cleanBonfireName(data?.bonfire_name || "");
   const sourceBonfireName = data?.source_bonfire_name ? cleanBonfireName(data.source_bonfire_name) : undefined;
   const showSourceBadge = sourceBonfireName && sourceBonfireName !== bonfireName;
-  const creatorWallet = truncateAddress(data?.creator_wallet || "", 4);
-  const formattedAuthor = `by ${creatorWallet ? creatorWallet : "Anonymous"}`;
+  const creatorWallet = data?.creator_wallet ? truncateAddress(data.creator_wallet, 4) : "";
   const cost = `Cost: $${data?.price_usd || 0}`;
   return (
     <div
@@ -171,7 +170,7 @@ export default function DataroomCard({
         )}
       </div>
       <div className="flex gap-2 flex-wrap items-center">
-        <Badge variant="filled">{formattedAuthor}</Badge>
+        {creatorWallet && <Badge variant="filled">by {creatorWallet}</Badge>}
         <Badge variant="outline">{cost}</Badge>
         {isFetchingEntity && (
           <Badge

@@ -911,20 +911,22 @@ export function DataRoomWizard({
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <span
-                                  className="inline-block mb-1 px-2 py-0.5 rounded text-xs"
-                                  style={{
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    fontSize: "10px",
-                                    fontWeight: 600,
-                                    letterSpacing: "0.04em",
-                                    textTransform: "uppercase" as const,
-                                    background: ds.emberDim,
-                                    color: ds.ember,
-                                  }}
-                                >
-                                  {entity.entity_type}
-                                </span>
+                                {entity.entity_type !== "Unknown" && (
+                                  <span
+                                    className="inline-block mb-1 px-2 py-0.5 rounded text-xs"
+                                    style={{
+                                      fontFamily: "'Montserrat', sans-serif",
+                                      fontSize: "10px",
+                                      fontWeight: 600,
+                                      letterSpacing: "0.04em",
+                                      textTransform: "uppercase" as const,
+                                      background: ds.emberDim,
+                                      color: ds.ember,
+                                    }}
+                                  >
+                                    {entity.entity_type}
+                                  </span>
+                                )}
                                 <p
                                   style={{
                                     fontFamily: "'Montserrat', sans-serif",

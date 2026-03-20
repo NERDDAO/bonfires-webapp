@@ -75,7 +75,7 @@ export default function HyperBlogCard({
 
   const title = data?.user_query || "";
   const description = getTextFromMarkdown(data?.preview || "");
-  const formattedAuthor = `by ${truncateAddress(data?.author_wallet || "", 4)}`;
+  const authorWallet = data?.author_wallet ? truncateAddress(data.author_wallet, 4) : "";
   const timestamp = new Date(data?.created_at || "");
   const formattedTimestamp = timestamp.toLocaleDateString("en-US", {
     month: "short",
@@ -104,9 +104,11 @@ export default function HyperBlogCard({
         {description}
       </div>
       <div className="flex gap-2 flex-wrap mt-auto">
-        <span className="w-full lg:w-auto text-center lg:text-left font-bold text-xs rounded-full px-3 py-1 bg-dark-s-700 text-white whitespace-nowrap">
-          {formattedAuthor}
-        </span>
+        {authorWallet && (
+          <span className="w-full lg:w-auto text-center lg:text-left font-bold text-xs rounded-full px-3 py-1 bg-dark-s-700 text-white whitespace-nowrap">
+            by {authorWallet}
+          </span>
+        )}
         {[
           {
             value: formattedTimestamp,

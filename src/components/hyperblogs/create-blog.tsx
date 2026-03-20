@@ -83,8 +83,9 @@ export function CreateBlogModal({
   const [requiredInputs, setRequiredInputs] = useState<TemplateInput[]>([]);
   const [templateInputValues, setTemplateInputValues] = useState<Record<string, string>>({});
   const [templateLoading, setTemplateLoading] = useState(false);
+  const [resolvedTemplateType, setResolvedTemplateType] = useState<string | null>(null);
 
-  const isEvaluation = htnTemplateType === "evaluation";
+  const isEvaluation = htnTemplateType === "evaluation" || resolvedTemplateType === "evaluation";
 
   const { isConnected } = useWalletAccount();
   const { openConnectModal } = useConnectModal();
@@ -98,6 +99,10 @@ export function CreateBlogModal({
       const template = await apiClient.get<HTNTemplateInfo>(
         `/api/htn-templates/${htnTemplateId}`
       );
+      // Resolve template type from fetched data (backend doesn't send htn_template_type on datarooms)
+      if (template.template_type) {
+        setResolvedTemplateType(template.template_type);
+      }
       if (template.required_inputs && template.required_inputs.length > 0) {
         setRequiredInputs(template.required_inputs);
         // Initialize empty values
@@ -215,6 +220,7 @@ export function CreateBlogModal({
       setTxStep("redirecting");
       setDescription("");
       setTemplateInputValues({});
+      setResolvedTemplateType(null);
       await new Promise((resolve) => setTimeout(resolve, 1200));
       onSuccess?.(hyperblogId);
       onClose();

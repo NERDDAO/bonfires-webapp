@@ -11,10 +11,13 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
-import type { BonfireInfo } from "@/types";
+import type { BonfireInfo, HTNTemplateInfo } from "@/types";
 
 import { useSubdomainBonfire } from "@/contexts";
 import { useAgentSelection } from "@/hooks/web3";
+
+import { HTNTemplateCreator } from "./HTNTemplateCreator";
+import { HTNTemplatePicker } from "./HTNTemplatePicker";
 
 interface DataRoomConfig {
   bonfireId: string;
@@ -100,6 +103,9 @@ export function DataRoomWizard({
     "schnell" | "dev" | "pro" | "realism"
   >("dev");
   const [templateFormat, setTemplateFormat] = useState<"blog" | "card">("blog");
+  const [selectedTemplate, setSelectedTemplate] = useState<HTNTemplateInfo | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isCreatorOpen, setIsCreatorOpen] = useState(false);
   const [step2Attempted, setStep2Attempted] = useState(false);
 
   const agentSelection = useAgentSelection({ initialBonfireId });
@@ -123,6 +129,7 @@ export function DataRoomWizard({
       setPriceDecayRate(0.0);
       setImageModel("dev");
       setTemplateFormat("blog");
+      setSelectedTemplate(null);
       setStep2Attempted(false);
     }
   }, [isOpen, defaultPriceUsd]);
@@ -282,6 +289,7 @@ export function DataRoomWizard({
       priceStepUsd,
       priceDecayRate,
       imageModel,
+      htnTemplateId: selectedTemplate?.id,
     };
 
     onComplete(config);
@@ -298,6 +306,7 @@ export function DataRoomWizard({
     priceStepUsd,
     priceDecayRate,
     imageModel,
+    selectedTemplate,
     onComplete,
     onClose,
   ]);
@@ -694,33 +703,70 @@ export function DataRoomWizard({
                       </div>
                     </div>
 
-                    {/* Template Format */}
+                    {/* HTN Template */}
                     <div className="p-4 space-y-2" style={{ background: ds.surface }}>
                       <p style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: ds.textDim }}>
-                        Template Format
+                        Template
                       </p>
-                      <div className="flex gap-1.5">
-                        {(
-                          [
-                            { value: "blog", label: "Blog" },
-                            { value: "card", label: "Card" },
-                          ] as const
-                        ).map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer"
-                            style={{
-                              fontFamily: "'Montserrat', sans-serif",
-                              background: templateFormat === opt.value ? ds.emberDim : "transparent",
-                              border: `1px solid ${templateFormat === opt.value ? "rgba(245,87,42,0.3)" : ds.border}`,
-                              color: templateFormat === opt.value ? ds.ember : ds.textSecondary,
-                            }}
-                            onClick={() => setTemplateFormat(opt.value)}
+                      <div className="flex items-center gap-2">
+                        {selectedTemplate ? (
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span
+                              className="px-2 py-0.5 rounded text-xs font-semibold shrink-0"
+                              style={{
+                                background: ds.emberDim,
+                                color: ds.ember,
+                                fontFamily: "'Montserrat', sans-serif",
+                                fontSize: "10px",
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase" as const,
+                              }}
+                            >
+                              {selectedTemplate.template_type}
+                            </span>
+                            <span
+                              className="truncate"
+                              style={{ fontSize: "13px", color: ds.text }}
+                            >
+                              {selectedTemplate.name}
+                            </span>
+                            <button
+                              className="text-xs cursor-pointer shrink-0"
+                              style={{ color: ds.textDim }}
+                              onClick={() => setSelectedTemplate(null)}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className="flex-1"
+                            style={{ fontSize: "13px", color: ds.textDim }}
                           >
-                            {opt.label}
-                          </button>
-                        ))}
+                            Auto
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 cursor-pointer"
+                          style={{
+                            fontFamily: "'Montserrat', sans-serif",
+                            background: "transparent",
+                            border: `1px solid ${ds.borderBright}`,
+                            color: ds.textSecondary,
+                          }}
+                          onClick={() => setIsPickerOpen(true)}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = ds.surface2;
+                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.borderColor = ds.borderBright;
+                          }}
+                        >
+                          {selectedTemplate ? "Change" : "Select"}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -930,6 +976,24 @@ export function DataRoomWizard({
         </div>
       </div>
 
+      {/* HTN Template Picker Modal */}
+      <HTNTemplatePicker
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={setSelectedTemplate}
+        onCreateCustom={() => setIsCreatorOpen(true)}
+        selectedTemplateId={selectedTemplate?.id}
+      />
+
+      {/* HTN Template Creator Modal */}
+      <HTNTemplateCreator
+        isOpen={isCreatorOpen}
+        onClose={() => setIsCreatorOpen(false)}
+        onCreated={() => {
+          setIsCreatorOpen(false);
+          setIsPickerOpen(true);
+        }}
+      />
     </>
   );
 }

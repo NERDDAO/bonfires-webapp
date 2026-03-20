@@ -260,7 +260,7 @@ export function CreateBlogModal({
     >
       {/* Transaction status overlay */}
       {showOverlay && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-brand-black/90 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 rounded-2xl bg-brand-black/95 backdrop-blur-md">
           <Image
             src="/icons/loader-circle.svg"
             height={32}

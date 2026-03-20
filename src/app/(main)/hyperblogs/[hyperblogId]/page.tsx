@@ -421,10 +421,28 @@ export default function HyperBlogDetailPage() {
           )}
 
           {blog.generation_status === "failed" && (
-            <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-              <span className="text-red-200 text-sm">
-                Blog generation failed. Please try again later.
+            <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <span className="text-red-200 text-sm flex-1">
+                Blog generation failed. You can retry without additional payment.
               </span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/hyperblogs/${hyperblogId}/regenerate`, {
+                      method: "POST",
+                    });
+                    if (res.ok) {
+                      fetchBlog();
+                    }
+                  } catch {
+                    // ignore, user can retry manually
+                  }
+                }}
+                className="text-sm font-medium text-white border border-[#646464]/50 rounded-lg px-4 py-2 hover:bg-[#FFFFFF08] transition-colors shrink-0 cursor-pointer"
+              >
+                Retry Generation
+              </button>
             </div>
           )}
 

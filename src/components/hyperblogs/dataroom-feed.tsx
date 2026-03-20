@@ -14,7 +14,7 @@ import { InfoTooltip } from "@/components/ui/tooltip";
 
 import DataroomCard from "./dataroom-card";
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 12;
 
 export default function DataroomFeed({ sortBy }: { sortBy?: "created_at" | "total_purchases" } = {}) {
   const searchParams = useSearchParams();

@@ -9,9 +9,11 @@
  * Styled with the Bonfires design system: deep teal-black surfaces,
  * ember accent, Montserrat headings, DM Sans body.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { BonfireInfo, HTNTemplateInfo } from "@/types";
+
+import { apiClient } from "@/lib/api/client";
 
 import { useSubdomainBonfire } from "@/contexts";
 import { useAgentSelection } from "@/hooks/web3";
@@ -107,6 +109,7 @@ export function DataRoomWizard({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
   const [step2Attempted, setStep2Attempted] = useState(false);
+  const [clusterMemberIds, setClusterMemberIds] = useState<Set<string> | null>(null);
 
   const agentSelection = useAgentSelection({ initialBonfireId });
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
@@ -131,6 +134,7 @@ export function DataRoomWizard({
       setTemplateFormat("blog");
       setSelectedTemplate(null);
       setStep2Attempted(false);
+      setClusterMemberIds(null);
     }
   }, [isOpen, defaultPriceUsd]);
 
@@ -150,17 +154,48 @@ export function DataRoomWizard({
     }
   }, [initialBonfireId, agentSelection.availableBonfires, selectedBonfire]);
 
-  // Auto-select subdomain bonfire and skip to Step 2
+  // Auto-select subdomain bonfire — check cluster ownership first
   useEffect(() => {
     if (!isSubdomainScoped || !subdomainConfig?.bonfireId) return;
     if (agentSelection.availableBonfires.length === 0) return;
-    const bonfire = agentSelection.availableBonfires.find(
-      (b) => b.id === subdomainConfig.bonfireId
-    );
-    if (bonfire && !selectedBonfire) {
-      setSelectedBonfire(bonfire);
-      setCurrentStep(2);
-    }
+    if (selectedBonfire) return;
+
+    const bonfireId = subdomainConfig.bonfireId;
+
+    // Check if this bonfire owns a cluster
+    apiClient
+      .get<{ clusters: Array<{ bonfire_ids: string[]; owner_bonfire_id: string }> }>(
+        `/api/clusters?owner_bonfire_id=${bonfireId}`
+      )
+      .then((data) => {
+        const cluster = data.clusters?.[0];
+        if (cluster && cluster.bonfire_ids.length > 0) {
+          // Cluster leader: collect all member IDs + owner, show step 1
+          const memberSet = new Set(cluster.bonfire_ids.map(String));
+          memberSet.add(bonfireId);
+          setClusterMemberIds(memberSet);
+          // Stay on step 1 so user can pick a bonfire
+        } else {
+          // Not a cluster leader: auto-select and skip to step 2
+          const bonfire = agentSelection.availableBonfires.find(
+            (b) => b.id === bonfireId
+          );
+          if (bonfire) {
+            setSelectedBonfire(bonfire);
+            setCurrentStep(2);
+          }
+        }
+      })
+      .catch(() => {
+        // Cluster lookup failed — fall back to auto-select
+        const bonfire = agentSelection.availableBonfires.find(
+          (b) => b.id === bonfireId
+        );
+        if (bonfire) {
+          setSelectedBonfire(bonfire);
+          setCurrentStep(2);
+        }
+      });
   }, [isSubdomainScoped, subdomainConfig?.bonfireId, agentSelection.availableBonfires, selectedBonfire]);
 
   // Fetch preview when entering step 3
@@ -345,9 +380,16 @@ export function DataRoomWizard({
 
   if (!isOpen) return null;
 
-  const displayBonfires = publicOnly
-    ? agentSelection.availableBonfires.filter((b) => b.is_public !== false)
-    : agentSelection.availableBonfires;
+  const displayBonfires = useMemo(() => {
+    let bonfires = agentSelection.availableBonfires;
+    if (publicOnly) {
+      bonfires = bonfires.filter((b) => b.is_public !== false);
+    }
+    if (clusterMemberIds) {
+      bonfires = bonfires.filter((b) => clusterMemberIds.has(b.id));
+    }
+    return bonfires;
+  }, [agentSelection.availableBonfires, publicOnly, clusterMemberIds]);
 
   return (
     <>
@@ -601,6 +643,39 @@ export function DataRoomWizard({
             {/* ══════════ Step 2: Description & Settings ══════════ */}
             {currentStep === 2 && (
               <div className="space-y-5">
+                {/* Bonfire indicator when auto-selected */}
+                {selectedBonfire && isSubdomainScoped && (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                    style={{
+                      background: ds.emberDim,
+                      border: `1px solid rgba(245, 87, 42, 0.2)`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase" as const,
+                        color: ds.textDim,
+                        fontFamily: "'Montserrat', sans-serif",
+                      }}
+                    >
+                      Creating in
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: ds.ember,
+                        fontFamily: "'Montserrat', sans-serif",
+                      }}
+                    >
+                      {selectedBonfire.name}
+                    </span>
+                  </div>
+                )}
                 <p style={{ fontSize: "14px", color: ds.textSecondary, lineHeight: 1.6 }}>
                   Data Rooms allow the creation of Hyperblogs, please configure the settings here.
                 </p>

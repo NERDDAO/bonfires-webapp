@@ -11,12 +11,10 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
-import type { BonfireInfo, HTNTemplateInfo } from "@/types";
+import type { BonfireInfo } from "@/types";
 
+import { useSubdomainBonfire } from "@/contexts";
 import { useAgentSelection } from "@/hooks/web3";
-
-import { HTNTemplateCreator } from "./HTNTemplateCreator";
-import { HTNTemplatePicker } from "./HTNTemplatePicker";
 
 interface DataRoomConfig {
   bonfireId: string;
@@ -86,7 +84,7 @@ export function DataRoomWizard({
   );
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [priceUsd, setPriceUsd] = useState<number>(defaultPriceUsd ?? 0.01);
+  const [priceUsd, setPriceUsd] = useState<number>(defaultPriceUsd ?? 1);
   const [queryLimit, setQueryLimit] = useState<number>(20);
   const [expirationDays, setExpirationDays] = useState<number>(30);
   const [previewEntities, setPreviewEntities] = useState<PreviewEntity[]>([]);
@@ -101,12 +99,11 @@ export function DataRoomWizard({
   const [imageModel, setImageModel] = useState<
     "schnell" | "dev" | "pro" | "realism"
   >("dev");
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<HTNTemplateInfo | null>(null);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [isCreatorOpen, setIsCreatorOpen] = useState(false);
+  const [templateFormat, setTemplateFormat] = useState<"blog" | "card">("blog");
+  const [step2Attempted, setStep2Attempted] = useState(false);
 
   const agentSelection = useAgentSelection({ initialBonfireId });
+  const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
 
   // Reset state when modal closes
   useEffect(() => {
@@ -115,7 +112,7 @@ export function DataRoomWizard({
       setSelectedBonfire(null);
       setDescription("");
       setSystemPrompt("");
-      setPriceUsd(defaultPriceUsd ?? 0.01);
+      setPriceUsd(defaultPriceUsd ?? 1);
       setQueryLimit(20);
       setExpirationDays(30);
       setPreviewEntities([]);
@@ -125,7 +122,8 @@ export function DataRoomWizard({
       setPriceStepUsd(0.0);
       setPriceDecayRate(0.0);
       setImageModel("dev");
-      setSelectedTemplate(null);
+      setTemplateFormat("blog");
+      setStep2Attempted(false);
     }
   }, [isOpen, defaultPriceUsd]);
 
@@ -144,6 +142,19 @@ export function DataRoomWizard({
       }
     }
   }, [initialBonfireId, agentSelection.availableBonfires, selectedBonfire]);
+
+  // Auto-select subdomain bonfire and skip to Step 2
+  useEffect(() => {
+    if (!isSubdomainScoped || !subdomainConfig?.bonfireId) return;
+    if (agentSelection.availableBonfires.length === 0) return;
+    const bonfire = agentSelection.availableBonfires.find(
+      (b) => b.id === subdomainConfig.bonfireId
+    );
+    if (bonfire && !selectedBonfire) {
+      setSelectedBonfire(bonfire);
+      setCurrentStep(2);
+    }
+  }, [isSubdomainScoped, subdomainConfig?.bonfireId, agentSelection.availableBonfires, selectedBonfire]);
 
   // Fetch preview when entering step 3
   useEffect(() => {
@@ -231,29 +242,28 @@ export function DataRoomWizard({
   // Validation helpers
   const isStep2Valid =
     description.trim().length >= 10 &&
-    description.length <= 500 &&
-    priceUsd > 0 &&
-    queryLimit >= 1 &&
-    queryLimit <= 1000 &&
-    expirationDays >= 1 &&
-    expirationDays <= 365;
+    description.length <= 500;
   const isSystemPromptValid = systemPrompt.length <= 1000;
 
   const handleNext = useCallback(() => {
     setError(null);
     if (currentStep === 1 && selectedBonfire) {
       setCurrentStep(2);
-    } else if (currentStep === 2 && isStep2Valid) {
-      setCurrentStep(3);
+    } else if (currentStep === 2) {
+      setStep2Attempted(true);
+      if (isStep2Valid) {
+        setCurrentStep(3);
+      }
     }
   }, [currentStep, selectedBonfire, isStep2Valid]);
 
   const handleBack = useCallback(() => {
     setError(null);
-    if (currentStep > 1) {
+    const minStep = isSubdomainScoped ? 2 : 1;
+    if (currentStep > minStep) {
       setCurrentStep(currentStep - 1);
     }
-  }, [currentStep]);
+  }, [currentStep, isSubdomainScoped]);
 
   const handleComplete = useCallback(() => {
     if (!selectedBonfire || !selectedCenterNode || !description.trim()) return;
@@ -272,7 +282,6 @@ export function DataRoomWizard({
       priceStepUsd,
       priceDecayRate,
       imageModel,
-      htnTemplateId: selectedTemplate?.id,
     };
 
     onComplete(config);
@@ -289,7 +298,6 @@ export function DataRoomWizard({
     priceStepUsd,
     priceDecayRate,
     imageModel,
-    selectedTemplate,
     onComplete,
     onClose,
   ]);
@@ -584,18 +592,22 @@ export function DataRoomWizard({
             {/* ══════════ Step 2: Description & Settings ══════════ */}
             {currentStep === 2 && (
               <div className="space-y-5">
+                <p style={{ fontSize: "14px", color: ds.textSecondary, lineHeight: 1.6 }}>
+                  Data Rooms allow the creation of Hyperblogs, please configure the settings here.
+                </p>
                 {/* Description + System Prompt */}
                 <div className="space-y-4">
                   <WizardField
-                    label="Description"
+                    label="Title of Room"
                     required
                     counter={`${description.length}/500`}
                     hint="min 10 characters"
+                    subtext="What is this data room about? This title informs which graph nodes are selected for Hyperblog creation."
                   >
                     <textarea
                       className="w-full resize-none outline-none placeholder:opacity-40"
                       rows={3}
-                      placeholder="What is this data room about?"
+                      placeholder="Enter the title of this data room"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       maxLength={500}
@@ -610,16 +622,22 @@ export function DataRoomWizard({
                         lineHeight: 1.65,
                       }}
                     />
+                    {step2Attempted && description.trim().length < 10 && (
+                      <p style={{ fontSize: "12px", color: "#ff6b6b", marginTop: "4px" }}>
+                        Title must be at least 10 characters
+                      </p>
+                    )}
                   </WizardField>
 
                   <WizardField
-                    label="System Prompt"
+                    label="Style Prompt"
                     counter={`${systemPrompt.length}/1000`}
+                    subtext="This determines the voice of all hyperblogs minted from your data room."
                   >
                     <textarea
                       className="w-full resize-none outline-none placeholder:opacity-40"
                       rows={3}
-                      placeholder="Custom instructions for AI chat interactions..."
+                      placeholder="Describe the tone and style for generated hyperblogs..."
                       value={systemPrompt}
                       onChange={(e) => setSystemPrompt(e.target.value)}
                       maxLength={1000}
@@ -637,92 +655,6 @@ export function DataRoomWizard({
                   </WizardField>
                 </div>
 
-                {/* Subscription Settings Panel */}
-                <WizardPanel label="Subscription">
-                  <div className="grid grid-cols-3 gap-0.5">
-                    <WizardNumberInput
-                      label="Price"
-                      unit="USD"
-                      value={priceUsd}
-                      onChange={(v) => setPriceUsd(v)}
-                      min={0.01}
-                      max={1000}
-                      step={0.01}
-                    />
-                    <WizardNumberInput
-                      label="Queries"
-                      unit="limit"
-                      value={queryLimit}
-                      onChange={(v) => setQueryLimit(Math.round(v))}
-                      min={1}
-                      max={1000}
-                      step={1}
-                    />
-                    <WizardNumberInput
-                      label="Expires"
-                      unit="days"
-                      value={expirationDays}
-                      onChange={(v) => setExpirationDays(Math.round(v))}
-                      min={1}
-                      max={365}
-                      step={1}
-                    />
-                  </div>
-                </WizardPanel>
-
-                {/* Dynamic Pricing Panel */}
-                <WizardPanel label="Dynamic Pricing">
-                  <label
-                    className="flex items-center gap-3 cursor-pointer p-4"
-                    style={{ background: ds.surface }}
-                  >
-                    <div
-                      className="relative w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer"
-                      style={{
-                        background: dynamicPricingEnabled ? ds.ember : ds.textDim,
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setDynamicPricingEnabled(!dynamicPricingEnabled);
-                      }}
-                    >
-                      <div
-                        className="absolute top-0.5 w-4 h-4 rounded-full transition-transform duration-200"
-                        style={{
-                          background: "#fff",
-                          transform: dynamicPricingEnabled ? "translateX(22px)" : "translateX(2px)",
-                        }}
-                      />
-                    </div>
-                    <span style={{ fontSize: "14px", color: ds.textSecondary }}>
-                      Adjust hyperblog prices automatically
-                    </span>
-                  </label>
-
-                  {dynamicPricingEnabled && (
-                    <div className="grid grid-cols-2 gap-0.5 mt-0.5">
-                      <WizardNumberInput
-                        label="Step"
-                        unit="USD"
-                        value={priceStepUsd}
-                        onChange={(v) => setPriceStepUsd(v)}
-                        min={0}
-                        max={100}
-                        step={0.01}
-                      />
-                      <WizardNumberInput
-                        label="Decay"
-                        unit="USD/hr"
-                        value={priceDecayRate}
-                        onChange={(v) => setPriceDecayRate(v)}
-                        min={0}
-                        max={10}
-                        step={0.01}
-                      />
-                    </div>
-                  )}
-                </WizardPanel>
-
                 {/* Generation Panel */}
                 <WizardPanel label="Generation">
                   <div
@@ -731,7 +663,7 @@ export function DataRoomWizard({
                     {/* Image Model */}
                     <div className="p-4 space-y-2" style={{ background: ds.surface }}>
                       <p style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: ds.textDim }}>
-                        Banner Model
+                        Banner Image Model
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {(
@@ -762,70 +694,33 @@ export function DataRoomWizard({
                       </div>
                     </div>
 
-                    {/* HTN Template */}
+                    {/* Template Format */}
                     <div className="p-4 space-y-2" style={{ background: ds.surface }}>
                       <p style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: ds.textDim }}>
-                        Template
+                        Template Format
                       </p>
-                      <div className="flex items-center gap-2">
-                        {selectedTemplate ? (
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span
-                              className="px-2 py-0.5 rounded text-xs font-semibold shrink-0"
-                              style={{
-                                background: ds.emberDim,
-                                color: ds.ember,
-                                fontFamily: "'Montserrat', sans-serif",
-                                fontSize: "10px",
-                                letterSpacing: "0.04em",
-                                textTransform: "uppercase" as const,
-                              }}
-                            >
-                              {selectedTemplate.template_type}
-                            </span>
-                            <span
-                              className="truncate"
-                              style={{ fontSize: "13px", color: ds.text }}
-                            >
-                              {selectedTemplate.name}
-                            </span>
-                            <button
-                              className="text-xs cursor-pointer shrink-0"
-                              style={{ color: ds.textDim }}
-                              onClick={() => setSelectedTemplate(null)}
-                            >
-                              Clear
-                            </button>
-                          </div>
-                        ) : (
-                          <span
-                            className="flex-1"
-                            style={{ fontSize: "13px", color: ds.textDim }}
+                      <div className="flex gap-1.5">
+                        {(
+                          [
+                            { value: "blog", label: "Blog" },
+                            { value: "card", label: "Card" },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer"
+                            style={{
+                              fontFamily: "'Montserrat', sans-serif",
+                              background: templateFormat === opt.value ? ds.emberDim : "transparent",
+                              border: `1px solid ${templateFormat === opt.value ? "rgba(245,87,42,0.3)" : ds.border}`,
+                              color: templateFormat === opt.value ? ds.ember : ds.textSecondary,
+                            }}
+                            onClick={() => setTemplateFormat(opt.value)}
                           >
-                            Auto
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 cursor-pointer"
-                          style={{
-                            fontFamily: "'Montserrat', sans-serif",
-                            background: "transparent",
-                            border: `1px solid ${ds.borderBright}`,
-                            color: ds.textSecondary,
-                          }}
-                          onClick={() => setIsPickerOpen(true)}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = ds.surface2;
-                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
-                            e.currentTarget.style.borderColor = ds.borderBright;
-                          }}
-                        >
-                          {selectedTemplate ? "Change" : "Select"}
-                        </button>
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -910,35 +805,39 @@ export function DataRoomWizard({
                                   <div className="w-2 h-2 rounded-full bg-white" />
                                 )}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <span
-                                  className="inline-block mb-1 px-2 py-0.5 rounded text-xs"
-                                  style={{
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    fontSize: "10px",
-                                    fontWeight: 600,
-                                    letterSpacing: "0.04em",
-                                    textTransform: "uppercase" as const,
-                                    background: ds.emberDim,
-                                    color: ds.ember,
-                                  }}
-                                >
-                                  {entity.entity_type}
-                                </span>
+                              <div className="flex-1 min-w-0 overflow-hidden">
+                                {entity.entity_type !== "Unknown" && (
+                                  <span
+                                    className="inline-block mb-1 px-2 py-0.5 rounded text-xs"
+                                    style={{
+                                      fontFamily: "'Montserrat', sans-serif",
+                                      fontSize: "10px",
+                                      fontWeight: 600,
+                                      letterSpacing: "0.04em",
+                                      textTransform: "uppercase" as const,
+                                      background: ds.emberDim,
+                                      color: ds.ember,
+                                    }}
+                                  >
+                                    {entity.entity_type}
+                                  </span>
+                                )}
                                 <p
+                                  className="overflow-hidden break-words"
                                   style={{
                                     fontFamily: "'Montserrat', sans-serif",
                                     fontSize: "14px",
                                     fontWeight: 700,
                                     color: ds.text,
                                     marginBottom: "2px",
+                                    wordBreak: "break-word",
                                   }}
                                 >
                                   {entity.name}
                                 </p>
                                 {entity.summary && (
                                   <p
-                                    className="line-clamp-2"
+                                    className="line-clamp-2 break-words"
                                     style={{
                                       fontSize: "13px",
                                       color: ds.textSecondary,
@@ -979,7 +878,7 @@ export function DataRoomWizard({
                 border: `1px solid ${ds.borderBright}`,
                 color: ds.textSecondary,
               }}
-              onClick={currentStep === 1 ? onClose : handleBack}
+              onClick={currentStep === 1 || (currentStep === 2 && isSubdomainScoped) ? onClose : handleBack}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = ds.surface;
                 e.currentTarget.style.color = ds.text;
@@ -991,7 +890,7 @@ export function DataRoomWizard({
                 e.currentTarget.style.borderColor = ds.borderBright;
               }}
             >
-              {currentStep === 1 ? "Cancel" : "Back"}
+              {currentStep === 1 || (currentStep === 2 && isSubdomainScoped) ? "Cancel" : "Back"}
             </button>
 
             <button
@@ -1010,7 +909,6 @@ export function DataRoomWizard({
               }
               disabled={
                 (currentStep === 1 && !selectedBonfire) ||
-                (currentStep === 2 && (!isStep2Valid || !isSystemPromptValid)) ||
                 (currentStep === 3 && (!selectedCenterNode || loading))
               }
               onMouseEnter={(e) => {
@@ -1032,24 +930,6 @@ export function DataRoomWizard({
         </div>
       </div>
 
-      {/* HTN Template Picker Modal */}
-      <HTNTemplatePicker
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        onSelect={setSelectedTemplate}
-        onCreateCustom={() => setIsCreatorOpen(true)}
-        selectedTemplateId={selectedTemplate?.id}
-      />
-
-      {/* HTN Template Creator Modal */}
-      <HTNTemplateCreator
-        isOpen={isCreatorOpen}
-        onClose={() => setIsCreatorOpen(false)}
-        onCreated={() => {
-          setIsCreatorOpen(false);
-          setIsPickerOpen(true);
-        }}
-      />
     </>
   );
 }
@@ -1061,12 +941,14 @@ function WizardField({
   required,
   counter,
   hint,
+  subtext,
   children,
 }: {
   label: string;
   required?: boolean;
   counter?: string;
   hint?: string;
+  subtext?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -1090,6 +972,11 @@ function WizardField({
           {hint && <span className="ml-1">({hint})</span>}
         </span>
       </div>
+      {subtext && (
+        <p style={{ fontSize: "13px", color: ds.textSecondary, lineHeight: 1.5 }}>
+          {subtext}
+        </p>
+      )}
       {children}
     </div>
   );

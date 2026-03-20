@@ -57,19 +57,22 @@ export function HyperblogsTabbedView() {
 
   return (
     <>
-      <HyperBlogsHeader onCreateClick={() => setWizardOpen(true)} />
+      <HyperBlogsHeader
+        showCreateButton={activeTab === "datarooms"}
+        onCreateClick={() => setWizardOpen(true)}
+      />
 
-      <div role="tablist" className="tabs tabs-bordered mt-6">
+      <div role="tablist" className="flex gap-6 mt-6 border-b border-[#333333]">
         <button
           role="tab"
-          className={`tab ${activeTab === "hyperblogs" ? "tab-active" : ""}`}
+          className={`pb-2 text-sm font-medium transition-colors ${activeTab === "hyperblogs" ? "border-b-2 border-[#f5572a] text-white font-semibold" : "text-dark-s-500 hover:text-dark-s-200"}`}
           onClick={() => setActiveTab("hyperblogs")}
         >
           Hyperblogs
         </button>
         <button
           role="tab"
-          className={`tab ${activeTab === "datarooms" ? "tab-active" : ""}`}
+          className={`pb-2 text-sm font-medium transition-colors ${activeTab === "datarooms" ? "border-b-2 border-[#f5572a] text-white font-semibold" : "text-dark-s-500 hover:text-dark-s-200"}`}
           onClick={() => setActiveTab("datarooms")}
         >
           Datarooms

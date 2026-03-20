@@ -20,6 +20,7 @@ interface PurchaseBody {
   blog_length?: string;
   generation_mode?: string;
   expected_amount?: string;
+  template_inputs?: Record<string, unknown>;
 }
 
 /**

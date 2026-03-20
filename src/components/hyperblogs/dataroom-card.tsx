@@ -9,6 +9,7 @@ import { DataRoomInfo } from "@/types";
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/utils";
+import { cleanBonfireName } from "@/lib/utils/bonfire-name";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -147,8 +148,8 @@ export default function DataroomCard({
 
   const title = data?.description || "";
   // @TODO: Replace with agent name
-  const bonfireName = data?.bonfire_name || "";
-  const sourceBonfireName = data?.source_bonfire_name;
+  const bonfireName = cleanBonfireName(data?.bonfire_name || "");
+  const sourceBonfireName = data?.source_bonfire_name ? cleanBonfireName(data.source_bonfire_name) : undefined;
   const showSourceBadge = sourceBonfireName && sourceBonfireName !== bonfireName;
   const creatorWallet = truncateAddress(data?.creator_wallet || "", 4);
   const formattedAuthor = `by ${creatorWallet ? creatorWallet : "Anonymous"}`;

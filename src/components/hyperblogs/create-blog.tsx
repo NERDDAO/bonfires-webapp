@@ -275,7 +275,7 @@ export function CreateBlogModal({
 
       <div className="flex gap-2 flex-wrap mt-2">
         {dataroomTitle != null && dataroomTitle !== "" && (
-          <Badge variant="filled">Topic: {dataroomTitle}</Badge>
+          <Badge variant="filled">Dataroom: {dataroomTitle}</Badge>
         )}
         {isEvaluation && <Badge variant="filled">Evaluation</Badge>}
         <Badge variant="outline">Cost: ${dataroomPriceUsd ?? 0}</Badge>
@@ -346,7 +346,7 @@ export function CreateBlogModal({
           htmlFor="create-blog-description"
           className="text-xs font-medium text-dark-s-100 -mb-2 ml-4 bg-brand-black w-fit z-10"
         >
-          {isEvaluation ? "Evaluation Focus" : "Description"}
+          {isEvaluation ? "Evaluation Focus" : "Prompt"}
         </label>
         <textarea
           id="create-blog-description"

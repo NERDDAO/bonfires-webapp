@@ -368,46 +368,50 @@ export function CreateBlogModal({
           disabled={isSubmitting}
         />
 
-        <h2
-          id="modal-title"
-          className="font-semibold text-lg text-dark-s-0 mt-4"
-        >
-          {isEvaluation ? "Evaluation Depth" : "Blog Length"}
-        </h2>
-
-        {/* blog length options — tab-style like graph explorer select-panel */}
-        <div
-          className="mt-4 flex rounded-xl border border-[#333333] bg-[#181818] p-1"
-          role="group"
-          aria-label="Blog length"
-        >
-          {(
-            [
-              { value: "short" as const, label: ["Short", "(2 min)"] },
-              { value: "medium" as const, label: ["Medium", "(5 min)"] },
-              { value: "long" as const, label: ["Long", "(10 min)"] },
-            ] as const
-          ).map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setBlogLength(value)}
-              className={cn(
-                "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                blogLength === value
-                  ? "bg-[#22252B] text-white"
-                  : "text-[#667085] hover:text-white/90"
-              )}
-              aria-pressed={blogLength === value}
-              disabled={isSubmitting}
+        {/* Blog length selector — hidden for evaluation mode (uses standardized "medium") */}
+        {!isEvaluation && (
+          <>
+            <h2
+              id="modal-title"
+              className="font-semibold text-lg text-dark-s-0 mt-4"
             >
-              {label[0]}
-              <span className="hidden lg:inline">&nbsp;</span>
-              <br className="block lg:hidden" />
-              {label[1]}
-            </button>
-          ))}
-        </div>
+              Blog Length
+            </h2>
+
+            <div
+              className="mt-4 flex rounded-xl border border-[#333333] bg-[#181818] p-1"
+              role="group"
+              aria-label="Blog length"
+            >
+              {(
+                [
+                  { value: "short" as const, label: ["Short", "(2 min)"] },
+                  { value: "medium" as const, label: ["Medium", "(5 min)"] },
+                  { value: "long" as const, label: ["Long", "(10 min)"] },
+                ] as const
+              ).map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setBlogLength(value)}
+                  className={cn(
+                    "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    blogLength === value
+                      ? "bg-[#22252B] text-white"
+                      : "text-[#667085] hover:text-white/90"
+                  )}
+                  aria-pressed={blogLength === value}
+                  disabled={isSubmitting}
+                >
+                  {label[0]}
+                  <span className="hidden lg:inline">&nbsp;</span>
+                  <br className="block lg:hidden" />
+                  {label[1]}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         {error && (
           <p className="text-sm text-red-500 mt-2" role="alert">

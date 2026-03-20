@@ -221,6 +221,8 @@ export default function DataroomCard({
         dataroomId={data?.id ?? ""}
         dataroomTitle={data?.description}
         dataroomPriceUsd={data?.price_usd}
+        htnTemplateId={data?.htn_template_id}
+        htnTemplateType={data?.htn_template_type}
         onSuccess={(hyperblogId) => {
           setCreateBlogOpen(false);
           router.push(`/hyperblogs/${hyperblogId}`);

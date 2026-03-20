@@ -450,6 +450,8 @@ export interface DataRoomInfo {
   image_model?: "schnell" | "dev" | "pro" | "realism";
   source_bonfire_id?: string | null;
   source_bonfire_name?: string | null;
+  htn_template_id?: string | null;
+  htn_template_type?: string | null;
 }
 
 export interface DataRoomListResponse {
@@ -479,6 +481,14 @@ export interface CreateDataRoomRequest {
 // HTN Template Types
 // ============================================================================
 
+export interface TemplateInput {
+  name: string;
+  input_type: string; // "url", "url[]", "text"
+  label: string;
+  required: boolean;
+  description?: string | null;
+}
+
 export interface HTNTemplateInfo {
   id: string;
   name: string;
@@ -492,6 +502,7 @@ export interface HTNTemplateInfo {
   created_by: string | null;
   created_at: string | null;
   updated_at: string | null;
+  required_inputs?: TemplateInput[];
 }
 
 export interface HTNTemplateListResponse {

@@ -24,6 +24,7 @@ export type {
   DataRoomSubscription,
   HTNTemplateInfo,
   HTNTemplateListResponse,
+  TemplateInput,
   DelveRequest,
   DelveResponse,
   DocumentChunk,

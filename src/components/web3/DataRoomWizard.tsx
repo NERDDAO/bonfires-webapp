@@ -378,8 +378,6 @@ export function DataRoomWizard({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null;
-
   const displayBonfires = useMemo(() => {
     let bonfires = agentSelection.availableBonfires;
     if (publicOnly) {
@@ -390,6 +388,8 @@ export function DataRoomWizard({
     }
     return bonfires;
   }, [agentSelection.availableBonfires, publicOnly, clusterMemberIds]);
+
+  if (!isOpen) return null;
 
   return (
     <>

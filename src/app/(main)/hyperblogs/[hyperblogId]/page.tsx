@@ -369,7 +369,7 @@ export default function HyperBlogDetailPage() {
 
           {/* Title - same as card (expanded: larger) */}
           <h1 className="font-bold text-2xl lg:text-3xl capitalize text-white">
-            {blog.user_query}
+            {blog.title || blog.user_query}
           </h1>
 
           {/* Badges row - same as hyperblog-card */}

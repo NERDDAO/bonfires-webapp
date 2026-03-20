@@ -73,7 +73,7 @@ export default function HyperBlogCard({
     return <HyperBlogCardSkeleton className={className} variant={variant} />;
   }
 
-  const title = data?.user_query || "";
+  const title = data?.title || data?.user_query || "";
   const description = getTextFromMarkdown(data?.preview || "");
   const authorWallet = data?.author_wallet ? truncateAddress(data.author_wallet, 4) : "";
   const timestamp = new Date(data?.created_at || "");

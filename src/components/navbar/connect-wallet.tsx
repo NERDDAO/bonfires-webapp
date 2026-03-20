@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
 
@@ -58,6 +58,18 @@ export default function ConnectWallet() {
       : isCorrectChain
         ? (currentChain?.name ?? `Chain ${chainId}`)
         : "Wrong network";
+
+  // Auto-switch chain when wallet is connected but on wrong network (once per connection)
+  const autoSwitchAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (isConnected && !isCorrectChain && targetChainId != null && !autoSwitchAttemptedRef.current) {
+      autoSwitchAttemptedRef.current = true;
+      switchChain({ chainId: targetChainId });
+    }
+    if (!isConnected) {
+      autoSwitchAttemptedRef.current = false;
+    }
+  }, [isConnected, isCorrectChain, targetChainId, switchChain]);
 
   // Prevent hydration mismatch by only showing dynamic content after mount
   useEffect(() => {

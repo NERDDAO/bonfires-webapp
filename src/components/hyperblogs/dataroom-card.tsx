@@ -13,6 +13,12 @@ import { cleanBonfireName } from "@/lib/utils/bonfire-name";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { CreateBlogModal } from "./create-blog";
 import HyperblogFeed from "./hyperblog-feed";
 
@@ -172,6 +178,26 @@ export default function DataroomCard({
       <div className="flex gap-2 flex-wrap items-center">
         {creatorWallet && <Badge variant="filled">by {creatorWallet}</Badge>}
         <Badge variant="outline">{cost}</Badge>
+        {data?.htn_template_type && data.htn_template_type !== "blog" && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Badge variant="filled" className="capitalize cursor-help bg-[#f5572a]/15 text-[#f5572a] border-[#f5572a]/30">
+                    {data.htn_template_type}
+                  </Badge>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-60 text-xs">
+                {data.htn_template_type === "evaluation"
+                  ? "This dataroom uses an evaluation template. Hyperblogs will be generated as structured evaluations with source URL inputs."
+                  : data.htn_template_type === "card"
+                    ? "This dataroom generates card-format content instead of full blog posts."
+                    : `Uses a ${data.htn_template_type} template for content generation.`}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         {isFetchingEntity && (
           <Badge
             variant="outline"

@@ -417,7 +417,6 @@ body::before {
 }
 
 .bf-nav-links {
-  display: flex;
   align-items: center;
   gap: 6px;
 }

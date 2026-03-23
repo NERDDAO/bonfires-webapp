@@ -7,7 +7,7 @@ import type {
   ApplicantStreamState,
   BatchStreamState,
 } from "@/hooks/queries/useBatchEvaluateStream";
-import type { ApplicantReviewBatchInfo } from "@/types/applicant-reviews";
+import type { ApplicantReviewBatchInfo, ApplicationStatusItem } from "@/types/applicant-reviews";
 
 interface ReevaluateProgress {
   completed: number;
@@ -22,6 +22,7 @@ interface BatchProgressModalProps {
   onReevaluateAll?: () => void;
   streamState?: BatchStreamState;
   onCancel?: () => void;
+  onRetryApplication?: (applicationId: string) => void;
 }
 
 function ProgressBar({
@@ -40,6 +41,80 @@ function ProgressBar({
         className={className ?? "h-full rounded bg-primary"}
         style={{ width: `${pct}%` }}
       />
+    </div>
+  );
+}
+
+function StatusIcon({ phase }: { phase: string }) {
+  if (phase === "completed") return <span style={{ color: "#22c55e" }}>●</span>;
+  if (phase === "running") return <span style={{ color: "#f59e0b" }}>◌</span>;
+  if (phase === "failed") return <span style={{ color: "#ef4444" }}>✕</span>;
+  return <span style={{ color: "#6b7280" }}>○</span>;
+}
+
+function ApplicationStatusRow({
+  item,
+  onRetry,
+}: {
+  item: ApplicationStatusItem;
+  onRetry?: (id: string) => void;
+}) {
+  // Show the most advanced phase
+  const phase =
+    item.evaluation_status !== "pending"
+      ? item.evaluation_status
+      : item.research_status;
+  const error = item.last_evaluation_error || item.last_research_error;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "6px 0",
+        borderBottom: "1px solid var(--bf-border, #333)",
+        fontSize: 13,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <StatusIcon phase={phase} />
+        <span>{item.full_name}</span>
+        <span style={{ fontSize: 11, color: "var(--text-dim, #888)" }}>{phase}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {error && (
+          <span
+            style={{
+              fontSize: 11,
+              color: "#ef4444",
+              maxWidth: 200,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={error}
+          >
+            {error}
+          </span>
+        )}
+        {phase === "failed" && onRetry && (
+          <button
+            onClick={() => onRetry(item.id)}
+            style={{
+              fontSize: 11,
+              color: "#f59e0b",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              padding: 0,
+            }}
+          >
+            Retry
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -245,6 +320,7 @@ export function BatchProgressModal({
   onReevaluateAll,
   streamState,
   onCancel,
+  onRetryApplication,
 }: BatchProgressModalProps) {
   const total = batch?.imported_count ?? 0;
   const researchDone = batch?.research_completed_count ?? 0;
@@ -315,6 +391,42 @@ export function BatchProgressModal({
             <ProgressBar value={shortlisted} total={total || 1} className="h-full rounded bg-amber-500" />
           </div>
         </div>
+
+        {/* Per-application status */}
+        {batch?.application_items && batch.application_items.length > 0 && (
+          <details
+            open={batch.application_items.some(
+              (a) => a.research_status === "failed" || a.evaluation_status === "failed"
+            )}
+            style={{ marginTop: 16 }}
+          >
+            <summary
+              style={{
+                fontSize: 13,
+                cursor: "pointer",
+                userSelect: "none",
+                padding: "4px 0",
+                color: "var(--text-secondary, #ccc)",
+              }}
+            >
+              Applications ({batch.application_items.length})
+              {(batch.failed_count ?? 0) > 0 && (
+                <span style={{ color: "#ef4444", marginLeft: 8 }}>
+                  {batch.failed_count} failed
+                </span>
+              )}
+            </summary>
+            <div style={{ maxHeight: 300, overflowY: "auto", marginTop: 8 }}>
+              {batch.application_items.map((item) => (
+                <ApplicationStatusRow
+                  key={item.id}
+                  item={item}
+                  onRetry={onRetryApplication}
+                />
+              ))}
+            </div>
+          </details>
+        )}
 
         {/* Streaming view — replaces the old simple progress indicator */}
         {isStreaming && streamState ? (

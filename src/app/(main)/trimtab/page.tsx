@@ -310,7 +310,7 @@ function TrimtabViewerInner() {
     const statusNote = data.notes.find((n) => n.content.startsWith("STATUS"));
     if (!statusNote) return null;
     const match = statusNote.content.match(/phase:(\w+)/);
-    return match ? match[1].replace(/_/g, " ") : null;
+    return match?.[1]?.replace(/_/g, " ") ?? null;
   }, [data]);
 
   const currentTrack = useMemo(() => {
@@ -318,7 +318,7 @@ function TrimtabViewerInner() {
     const statusNote = data.notes.find((n) => n.content.startsWith("STATUS"));
     if (!statusNote) return null;
     const match = statusNote.content.match(/current:([^|]+)/);
-    return match ? match[1].trim() : null;
+    return match?.[1]?.trim() ?? null;
   }, [data]);
 
   const updatedTime = useMemo(() => {

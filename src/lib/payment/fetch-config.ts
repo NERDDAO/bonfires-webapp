@@ -5,9 +5,6 @@
  * params so the client signs payments to the correct recipient.
  */
 
-const API_URL =
-  process.env["NEXT_PUBLIC_DELVE_API_URL"] ?? "http://localhost:8000";
-
 export interface ServerPaymentConfig {
   payTo: string;
   network: string;
@@ -27,12 +24,15 @@ let cachedConfig: ServerPaymentConfig | null = null;
 export async function fetchPaymentConfig(): Promise<ServerPaymentConfig> {
   if (cachedConfig) return cachedConfig;
 
-  const response = await fetch(`${API_URL}/payment/config`);
+  // Use the Next.js API route to avoid CORS (server-side proxy)
+  const response = await fetch("/api/payments/config");
   if (!response.ok) {
     throw new Error(`Failed to fetch payment config: ${response.status}`);
   }
 
-  cachedConfig = (await response.json()) as ServerPaymentConfig;
+  const body = await response.json();
+  // The proxy wraps in {data: ...} via createSuccessResponse
+  cachedConfig = (body.data ?? body) as ServerPaymentConfig;
   return cachedConfig;
 }
 

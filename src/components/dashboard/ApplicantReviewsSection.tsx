@@ -92,9 +92,8 @@ export function ApplicantReviewsSection({
   // Auto-select the first active agent when agents load
   useEffect(() => {
     if (!agentId && agents.length > 0) {
-      const active = agents.find((a) => a.is_active);
-      const fallback = agents[0];
-      setAgentId((active ?? fallback).id);
+      const selected = agents.find((a) => a.is_active) ?? agents[0];
+      if (selected) setAgentId(selected.id);
     }
   }, [agents, agentId]);
 

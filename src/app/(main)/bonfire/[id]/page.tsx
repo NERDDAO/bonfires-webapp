@@ -20,7 +20,6 @@ import {
   usePurchaseAgent,
   useValidateToken,
 } from "@/hooks/useAgentDeploy";
-import { config } from "@/lib/config";
 import type { PurchaseAgentPayload, PurchaseAgentResult } from "@/hooks/useAgentDeploy";
 import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
 import { AgentDeployWizard } from "@/components/dashboard/AgentDeployWizard";
@@ -595,7 +594,7 @@ export default function BonfirePage() {
                     )}
                   </div>
                   <a
-                    href={`/trimtab/?agent=${agent.id}&api=${encodeURIComponent(config.api.baseUrl)}`}
+                    href={`/trimtab?agent=${agent.id}`}
                     className="btn btn-ghost btn-sm text-xs gap-1"
                   >
                     <span className="opacity-60">&#9679;</span>

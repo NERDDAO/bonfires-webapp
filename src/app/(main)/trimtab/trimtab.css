@@ -1,0 +1,645 @@
+/* Trimtab Viewer — Surveillance-noir agent mind viewer
+ * Scoped under .trimtab-viewer to avoid leaking into the rest of the app.
+ */
+
+/* === Google Font: JetBrains Mono === */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+/* === RESET (scoped) === */
+.trimtab-viewer *, .trimtab-viewer *::before, .trimtab-viewer *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* === CUSTOM PROPERTIES === */
+.trimtab-viewer {
+  /* Bonfires Design System */
+  --bg: #0d1f26;
+  --bg2: #111c23;
+  --surface: #152530;
+  --surface2: #1a2f3a;
+  --ember: #f5572a;
+  --ember-dim: rgba(245, 87, 42, 0.15);
+  --ember-glow: rgba(245, 87, 42, 0.07);
+  --text: #f3ffff;
+  --text-secondary: #8da8af;
+  --text-dim: #3d5a64;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-bright: rgba(255, 255, 255, 0.14);
+  --radius: 8px;
+  --radius-pill: 100px;
+
+  /* Trimtab-specific extensions */
+  --feed-bg: #0a1a20;
+  --ghost: #0f2028;
+
+  /* Root element styling */
+  position: relative;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+/* === Film Grain overlay (was body::before) === */
+.trimtab-viewer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* === CRT scanlines (was body::after) === */
+.trimtab-viewer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* === OVERLAYS === */
+.trimtab-viewer .vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(10,20,26,0.7) 100%);
+  pointer-events: none;
+  z-index: 9997;
+}
+
+.trimtab-viewer .h-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(245, 87, 42, 0.04);
+  z-index: 9996;
+  pointer-events: none;
+  animation: trimtab-bandScroll 12s linear infinite;
+}
+
+/* === HEADINGS === */
+.trimtab-viewer h1,
+.trimtab-viewer h2,
+.trimtab-viewer h3,
+.trimtab-viewer h4 {
+  font-family: 'Montserrat', sans-serif;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* === LAYOUT === */
+.trimtab-viewer .shell {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  grid-template-rows: 36px 1fr 28px;
+  height: 100%;
+  gap: 2px;
+  background: var(--bg);
+  animation: trimtab-pageGlitch 20s infinite;
+  position: relative;
+  z-index: 1;
+}
+
+/* === TOP BAR === */
+.trimtab-viewer .top-bar {
+  grid-column: 1 / -1;
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.trimtab-viewer .brand {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ember);
+}
+
+.trimtab-viewer .sep {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.trimtab-viewer .top-bar .agent-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.trimtab-viewer .top-bar .meta {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.trimtab-viewer .phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ember-dim);
+  border: 1px solid rgba(245,87,42,0.3);
+  color: var(--ember);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.trimtab-viewer .live-indicator {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trimtab-viewer .live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ember);
+  animation: trimtab-pulse 2s infinite;
+}
+
+.trimtab-viewer .live-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* === FEED === */
+.trimtab-viewer .feed-zone {
+  background: var(--feed-bg);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 32px 24px;
+}
+
+.trimtab-viewer .feed-zone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(var(--feed-bg), transparent);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.trimtab-viewer .feed-zone::after {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(245,87,42,0.03) 0%, transparent 70%);
+  bottom: 20%;
+  left: 30%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.trimtab-viewer .feed-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.trimtab-viewer .feed-line {
+  line-height: 2.4;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  animation: trimtab-typeIn 0.4s forwards;
+}
+
+/* Position-based fading: older lines at top are dimmer */
+.trimtab-viewer .feed-line.fade-1 { opacity: 0.12; }
+.trimtab-viewer .feed-line.fade-2 { opacity: 0.18; }
+.trimtab-viewer .feed-line.fade-3 { opacity: 0.25; }
+.trimtab-viewer .feed-line.fade-4 { opacity: 0.35; }
+.trimtab-viewer .feed-line.fade-5 { opacity: 0.45; }
+.trimtab-viewer .feed-line.fade-6 { opacity: 0.55; }
+.trimtab-viewer .feed-line.fade-7 { opacity: 0.65; }
+.trimtab-viewer .feed-line.fade-8 { opacity: 0.75; }
+.trimtab-viewer .feed-line.fade-9 { opacity: 0.85; }
+
+.trimtab-viewer .ts {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-right: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trimtab-viewer .thought {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-weight: 300;
+}
+
+.trimtab-viewer .thought .emphasis { font-style: normal; color: var(--text); font-weight: 400; }
+.trimtab-viewer .thought .uncertainty { color: var(--text-dim); }
+.trimtab-viewer .thought .conviction { color: var(--ember); font-style: normal; font-weight: 500; }
+.trimtab-viewer .thought .num { color: var(--text-secondary); font-style: normal; font-weight: 400; }
+.trimtab-viewer .thought .aside { color: var(--text-dim); font-size: 11px; }
+.trimtab-viewer .thought .project-name { color: var(--text); font-style: normal; font-weight: 500; }
+.trimtab-viewer .thought .score-high { color: var(--ember); font-style: normal; }
+.trimtab-viewer .thought .score-mid { color: var(--text-secondary); font-style: normal; }
+.trimtab-viewer .thought .score-low { color: var(--text-dim); font-style: normal; }
+
+.trimtab-viewer .feed-line.signal-burst {
+  background: linear-gradient(90deg, transparent, rgba(245,87,42,0.03) 20%, rgba(245,87,42,0.03) 80%, transparent);
+}
+.trimtab-viewer .feed-line.signal-burst .thought { color: var(--text); font-style: normal; }
+
+.trimtab-viewer .feed-line.note-write {
+  padding-left: 20px;
+  border-left: 2px solid var(--ember-dim);
+  margin-left: 78px;
+}
+.trimtab-viewer .feed-line.note-write .thought { font-size: 11px; color: var(--text-dim); font-style: normal; }
+
+.trimtab-viewer .feed-line.phase-shift {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.trimtab-viewer .feed-line.phase-shift .thought { color: var(--ember); font-style: normal; font-weight: 500; letter-spacing: 0.03em; }
+
+.trimtab-viewer .cursor-line {
+  margin-top: 8px;
+  height: 20px;
+  z-index: 1;
+  position: relative;
+}
+
+.trimtab-viewer .cursor-block {
+  display: inline-block;
+  width: 9px;
+  height: 15px;
+  background: var(--ember);
+  animation: trimtab-cursorBlink 1.2s step-end infinite;
+  margin-left: 78px;
+}
+
+/* === RIGHT SIDEBAR === */
+.trimtab-viewer .sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+.trimtab-viewer .panel {
+  background: var(--surface);
+  padding: 20px 24px;
+}
+
+.trimtab-viewer .panel-header {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ember);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trimtab-viewer .panel-header .count {
+  color: var(--text-dim);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* --- Mind Panel --- */
+.trimtab-viewer .mind-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.trimtab-viewer .mind-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trimtab-viewer .mind-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.trimtab-viewer .mind-value {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.trimtab-viewer .mind-value.primary { color: var(--text); font-size: 32px; }
+.trimtab-viewer .mind-value.phase-val { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--ember); }
+.trimtab-viewer .mind-value.current-name { font-size: 15px; font-weight: 700; color: var(--text); }
+
+.trimtab-viewer .mind-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+.trimtab-viewer .mind-metric.full { grid-column: 1 / -1; }
+
+.trimtab-viewer .mind-value .frac {
+  font-size: 16px;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+/* --- Leaderboard --- */
+.trimtab-viewer .score-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trimtab-viewer .score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.trimtab-viewer .score-rank {
+  font-family: 'JetBrains Mono', monospace;
+  width: 20px;
+  text-align: right;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.trimtab-viewer .score-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  flex: 1;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trimtab-viewer .score-bar-mini {
+  width: 80px;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.trimtab-viewer .score-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--text-dim);
+  border-radius: 1px;
+}
+
+.trimtab-viewer .score-bar-fill.top { background: var(--ember); }
+
+.trimtab-viewer .score-num {
+  font-family: 'Montserrat', sans-serif;
+  width: 26px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trimtab-viewer .score-num.top { color: var(--text); }
+
+.trimtab-viewer .score-row.reviewing {
+  background: var(--surface2);
+  padding: 4px 8px;
+  margin: 0 -8px;
+  border-radius: var(--radius);
+}
+
+.trimtab-viewer .score-row.reviewing .score-name { color: var(--text); font-weight: 500; }
+
+/* --- Notes --- */
+.trimtab-viewer .notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trimtab-viewer .note-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 0;
+}
+
+.trimtab-viewer .note-type-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trimtab-viewer .note-type {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.trimtab-viewer .note-type.status { color: var(--ember); }
+.trimtab-viewer .note-type.track { color: var(--text-secondary); }
+.trimtab-viewer .note-type.light { color: var(--text-dim); }
+
+.trimtab-viewer .note-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.trimtab-viewer .note-content {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.trimtab-viewer .note-content .n-name { color: var(--text); font-weight: 400; }
+.trimtab-viewer .note-content .n-score { font-weight: 500; }
+.trimtab-viewer .note-content .n-score.high { color: var(--ember); }
+.trimtab-viewer .note-content .n-score.mid { color: var(--text-secondary); }
+
+.trimtab-viewer .note-entry.active {
+  background: var(--surface2);
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border-radius: var(--radius);
+  border-left: 2px solid var(--ember);
+}
+
+.trimtab-viewer .note-entry.active .note-content { color: var(--text); }
+
+/* === STATUS BAR === */
+.trimtab-viewer .status-bar {
+  grid-column: 1 / -1;
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  gap: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.trimtab-viewer .status-bar .s-val { color: var(--text-secondary); }
+
+.trimtab-viewer .progress-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trimtab-viewer .progress-track-mini {
+  width: 100px;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.trimtab-viewer .progress-fill-mini {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--ember);
+  border-radius: 1px;
+}
+
+/* === ERROR STATE === */
+.trimtab-viewer .error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.trimtab-viewer .error-state .conviction {
+  color: var(--ember);
+  font-weight: 500;
+}
+
+/* === ANIMATIONS === */
+@keyframes trimtab-typeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes trimtab-cursorBlink { 50% { opacity: 0; } }
+
+@keyframes trimtab-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes trimtab-pageGlitch {
+  0%, 94%, 100% { transform: none; }
+  95% { transform: translateX(-1px) skewX(-0.15deg); }
+  96% { transform: translateX(1px); }
+  97% { transform: none; }
+}
+
+@keyframes trimtab-bandScroll {
+  0% { top: -1px; }
+  100% { top: 100%; }
+}
+
+@keyframes trimtab-lineFlicker {
+  0%, 98%, 100% { opacity: 1; }
+  98.5% { opacity: 0.3; }
+  99.5% { opacity: 0.5; }
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  .trimtab-viewer .shell { animation: none; }
+  .trimtab-viewer .h-band { animation: none; display: none; }
+  .trimtab-viewer .feed-line { animation: none; opacity: 1; }
+  .trimtab-viewer .feed-line.fade-1,
+  .trimtab-viewer .feed-line.fade-2,
+  .trimtab-viewer .feed-line.fade-3 { opacity: 0.3; }
+  .trimtab-viewer .feed-line.fade-4,
+  .trimtab-viewer .feed-line.fade-5,
+  .trimtab-viewer .feed-line.fade-6 { opacity: 0.5; }
+  .trimtab-viewer .feed-line.fade-7,
+  .trimtab-viewer .feed-line.fade-8,
+  .trimtab-viewer .feed-line.fade-9 { opacity: 0.7; }
+}

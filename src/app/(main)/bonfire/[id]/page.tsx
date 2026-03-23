@@ -20,6 +20,7 @@ import {
   usePurchaseAgent,
   useValidateToken,
 } from "@/hooks/useAgentDeploy";
+import { config } from "@/lib/config";
 import type { PurchaseAgentPayload, PurchaseAgentResult } from "@/hooks/useAgentDeploy";
 import { usePaymentHeader } from "@/hooks/web3/usePaymentHeader";
 import { AgentDeployWizard } from "@/components/dashboard/AgentDeployWizard";
@@ -573,6 +574,39 @@ export default function BonfirePage() {
           </>
         )}
       </div>
+
+      {/* Agents */}
+      {agentsData?.agents && agentsData.agents.length > 0 && (
+        <div className="card bg-base-200">
+          <div className="card-body">
+            <h2 className="card-title text-lg">Agents</h2>
+            <div className="space-y-2">
+              {agentsData.agents.map((agent) => (
+                <div
+                  key={agent.id}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-base-300/50"
+                >
+                  <div className="min-w-0">
+                    <span className="font-medium">{agent.name}</span>
+                    {agent.username && (
+                      <span className="text-base-content/50 ml-2 text-sm">
+                        @{agent.username}
+                      </span>
+                    )}
+                  </div>
+                  <a
+                    href={`/trimtab/?agent=${agent.id}&api=${encodeURIComponent(config.api.baseUrl)}`}
+                    className="btn btn-ghost btn-sm text-xs gap-1"
+                  >
+                    <span className="opacity-60">&#9679;</span>
+                    Trimtab
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Purchase section */}
       {isPurchasable && !isFull ? (

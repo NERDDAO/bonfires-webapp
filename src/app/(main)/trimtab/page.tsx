@@ -124,7 +124,7 @@ function parseLeaderboard(notes: TrimtabNote[]): LeaderboardEntry[] {
   for (const note of notes) {
     const match = note.content.match(/^LIGHT \| (.+?) \| (\d+)\/100/);
     if (match) {
-      projects.push({ name: match[1], score: parseInt(match[2], 10) });
+      projects.push({ name: match[1] ?? "", score: parseInt(match[2] ?? "0", 10) });
     }
   }
   projects.sort((a, b) => b.score - a.score);

@@ -134,14 +134,21 @@ export default function BonfireCard({
         )}
       </div>
 
-      {/* Explore Graph button */}
-      <a
-        href={graphUrl}
-        onClick={(e) => e.stopPropagation()}
-        className="shrink-0 hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-brand-primary/50 text-brand-primary text-sm font-medium transition-colors hover:bg-brand-primary/10 no-underline"
-      >
-        Explore Graph
-      </a>
+      {/* Actions */}
+      <div className="shrink-0 hidden sm:flex items-center gap-2">
+        {data.agent_count > 0 && (
+          <span className="text-xs text-dark-s-60 bg-dark-s-700/50 px-2.5 py-1 rounded-full">
+            {data.agent_count} agent{data.agent_count !== 1 ? "s" : ""}
+          </span>
+        )}
+        <a
+          href={graphUrl}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-brand-primary/50 text-brand-primary text-sm font-medium transition-colors hover:bg-brand-primary/10 no-underline"
+        >
+          Explore Graph
+        </a>
+      </div>
     </a>
   );
 }

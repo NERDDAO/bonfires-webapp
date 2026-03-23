@@ -100,15 +100,17 @@ export function ApplicantReviewsSection({
   const rubricListQuery = useRubricListQuery(bonfireId || null);
   const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId || null);
 
-  // Auto-select active/latest rubric on load
+  // Auto-select active/latest rubric on first load only
+  const [rubricAutoSelected, setRubricAutoSelected] = useState(false);
   useEffect(() => {
-    if (rubricListQuery.data?.items.length && !selectedRubricDocId) {
+    if (!rubricAutoSelected && rubricListQuery.data?.items.length) {
       const active = rubricListQuery.data.items.find(r => r.is_active);
       const latest = rubricListQuery.data.items[0];
       const selected = active ?? latest;
       if (selected) setSelectedRubricDocId(selected.id);
+      setRubricAutoSelected(true);
     }
-  }, [rubricListQuery.data, selectedRubricDocId]);
+  }, [rubricListQuery.data, rubricAutoSelected]);
 
   useEffect(() => {
     if (structuredRubricQuery.data) {

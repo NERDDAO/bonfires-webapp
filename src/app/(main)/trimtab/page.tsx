@@ -12,7 +12,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
-import { config } from "@/lib/config";
 
 import "./trimtab.css";
 
@@ -146,10 +145,6 @@ function TrimtabViewerInner() {
   const searchParams = useSearchParams();
   const agentId = searchParams.get("agent");
 
-  const apiBase = useMemo(
-    () => config.api.baseUrl.replace(/\/+$/, ""),
-    [],
-  );
 
   // --- State ---
   const [data, setData] = useState<TrimtabData | null>(null);
@@ -230,7 +225,7 @@ function TrimtabViewerInner() {
 
     async function fetchTrimtab() {
       try {
-        const res = await fetch(`${apiBase}/trimtabs/${agentId}`);
+        const res = await fetch(`/api/trimtab/${agentId}`);
         if (cancelled) return;
 
         if (!res.ok) {
@@ -292,7 +287,7 @@ function TrimtabViewerInner() {
     };
     // data is intentionally excluded — we only read it to check initial error state
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentId, apiBase, addNoteFeedLine]);
+  }, [agentId, addNoteFeedLine]);
 
   // --- Derived sidebar data ---
   const leaderboard = useMemo(

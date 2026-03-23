@@ -14,7 +14,7 @@ import { useSignTypedData } from "wagmi";
 import {
   buildPaymentTypedData,
   encodePaymentHeader,
-  resolveIntermediaryAddress,
+  fetchPaymentConfig,
 } from "@/lib/payment";
 import type { X402PaymentHeader } from "@/lib/payment";
 import { isE2EWalletEnabled, useWalletAccount } from "@/lib/wallet/e2e";
@@ -37,26 +37,17 @@ export interface UsePaymentHeaderReturn {
   reset: () => void;
 }
 
-// Payment configuration from environment
+// Static fallback config from environment (used if server fetch fails)
 const PAYMENT_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "base";
-const SOURCE_NETWORK =
-  process.env["NEXT_PUBLIC_PAYMENT_SOURCE_NETWORK"] ?? PAYMENT_NETWORK;
-const DESTINATION_NETWORK =
-  process.env["NEXT_PUBLIC_PAYMENT_DESTINATION_NETWORK"] ?? PAYMENT_NETWORK;
-const INTERMEDIARY_OVERRIDE =
-  process.env["NEXT_PUBLIC_ONCHAINFI_INTERMEDIARY_ADDRESS"] ?? null;
 
-const PAYMENT_CONFIG = {
+const FALLBACK_CONFIG = {
   tokenAddress:
     process.env["NEXT_PUBLIC_PAYMENT_TOKEN_ADDRESS"] ??
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  intermediaryAddress: resolveIntermediaryAddress({
-    sourceNetwork: SOURCE_NETWORK,
-    destinationNetwork: DESTINATION_NETWORK,
-    override: INTERMEDIARY_OVERRIDE,
-  }),
+  recipientAddress:
+    process.env["NEXT_PUBLIC_ONCHAINFI_INTERMEDIARY_ADDRESS"] ?? "",
   network: PAYMENT_NETWORK,
-  chainId: parseInt(process.env["NEXT_PUBLIC_CHAIN_ID"] ?? "11124", 10),
+  chainId: parseInt(process.env["NEXT_PUBLIC_CHAIN_ID"] ?? "8453", 10),
   amount: process.env["NEXT_PUBLIC_PAYMENT_DEFAULT_AMOUNT"] ?? "0.01",
 };
 
@@ -89,29 +80,45 @@ export function usePaymentHeader(): UsePaymentHeaderReturn {
           );
         }
 
-        const paymentAmount = amount || PAYMENT_CONFIG.amount;
+        // Fetch payment config from server (cached after first call)
+        let recipientAddress = FALLBACK_CONFIG.recipientAddress;
+        let tokenAddress = FALLBACK_CONFIG.tokenAddress;
+        let network = FALLBACK_CONFIG.network;
+        try {
+          const serverConfig = await fetchPaymentConfig();
+          recipientAddress = serverConfig.payTo;
+          tokenAddress = serverConfig.asset || tokenAddress;
+          network = serverConfig.network || network;
+        } catch (fetchErr) {
+          console.warn(
+            "Failed to fetch payment config from server, using fallback:",
+            fetchErr
+          );
+        }
+
+        const paymentAmount = amount || FALLBACK_CONFIG.amount;
         if (isE2EWalletEnabled()) {
           const typedData = buildPaymentTypedData({
-            tokenAddress: PAYMENT_CONFIG.tokenAddress,
-            recipientAddress: PAYMENT_CONFIG.intermediaryAddress,
+            tokenAddress,
+            recipientAddress,
             amount: paymentAmount,
-            network: PAYMENT_CONFIG.network,
-            chainId: PAYMENT_CONFIG.chainId,
+            network,
+            chainId: FALLBACK_CONFIG.chainId,
             userAddress: address,
           });
           return encodePaymentHeader(
             typedData.message,
             "0xe2e-signature",
-            PAYMENT_CONFIG.network
+            network
           );
         }
 
         const typedData = buildPaymentTypedData({
-          tokenAddress: PAYMENT_CONFIG.tokenAddress,
-          recipientAddress: PAYMENT_CONFIG.intermediaryAddress,
+          tokenAddress,
+          recipientAddress,
           amount: paymentAmount,
-          network: PAYMENT_CONFIG.network,
-          chainId: PAYMENT_CONFIG.chainId,
+          network,
+          chainId: FALLBACK_CONFIG.chainId,
           userAddress: address,
         });
 
@@ -122,11 +129,7 @@ export function usePaymentHeader(): UsePaymentHeaderReturn {
           message: typedData.message,
         } as unknown as SignTypedDataParameters);
 
-        return encodePaymentHeader(
-          typedData.message,
-          signature,
-          PAYMENT_CONFIG.network
-        );
+        return encodePaymentHeader(typedData.message, signature, network);
       } catch (err) {
         const error = new Error(
           err instanceof Error ? err.message : "Failed to build payment header"

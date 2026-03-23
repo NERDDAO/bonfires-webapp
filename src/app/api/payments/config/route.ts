@@ -13,9 +13,9 @@ export async function GET() {
     includeAuth: false,
   });
 
-  if (!result.ok) {
+  if (!result.success) {
     return createErrorResponse(
-      result.error ?? "Failed to fetch payment config",
+      result.error?.error ?? "Failed to fetch payment config",
       result.status ?? 502
     );
   }

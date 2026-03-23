@@ -210,10 +210,10 @@ function TrimtabViewerInner() {
       const lines = container.querySelectorAll(".feed-line");
       lines.forEach((line, i) => {
         const el = line as HTMLElement;
-        if ((i + 1) % 5 === 0 && !el.dataset.flickerApplied) {
+        if ((i + 1) % 5 === 0 && !el.dataset["flickerApplied"]) {
           el.style.animation =
             "trimtab-typeIn 0.4s forwards, trimtab-lineFlicker 17s 3s infinite";
-          el.dataset.flickerApplied = "true";
+          el.dataset["flickerApplied"] = "true";
         }
       });
     });

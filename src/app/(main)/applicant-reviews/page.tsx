@@ -27,7 +27,6 @@ export default function ApplicantReviewsPage() {
       {bonfireId && (
         <ApplicantReviewsSection
           bonfireId={bonfireId}
-          showAgentIdInput
         />
       )}
     </div>

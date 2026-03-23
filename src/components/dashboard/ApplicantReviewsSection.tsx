@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { apiClient } from "@/lib/api/client";
+import { useAgentsQuery } from "@/hooks/queries/useAgentsQuery";
 import {
   useApplicantReviewDetail,
   useApplicantReviewsQuery,
@@ -39,15 +40,14 @@ const PAGE_SIZE = 50;
 
 interface ApplicantReviewsSectionProps {
   bonfireId: string;
-  /** When true, show the agent ID input inline (standalone page mode). */
-  showAgentIdInput?: boolean;
 }
 
 export function ApplicantReviewsSection({
   bonfireId,
-  showAgentIdInput,
 }: ApplicantReviewsSectionProps) {
   const queryClient = useQueryClient();
+  const agentsQuery = useAgentsQuery({ bonfireId: bonfireId || null });
+  const agents = agentsQuery.data?.agents ?? [];
   const [agentId, setAgentId] = useState("");
   const [batchId, setBatchId] = useState<string | null>(null);
   const [tableText, setTableText] = useState("");
@@ -88,6 +88,15 @@ export function ApplicantReviewsSection({
       toastIdRef.current = null;
     }
   }, [applicationActions.reevaluateProgress, isActive]);
+
+  // Auto-select the first active agent when agents load
+  useEffect(() => {
+    if (!agentId && agents.length > 0) {
+      const active = agents.find((a) => a.is_active);
+      const fallback = agents[0];
+      setAgentId((active ?? fallback).id);
+    }
+  }, [agents, agentId]);
 
   const rubricListQuery = useRubricListQuery(bonfireId || null);
   const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId || null);
@@ -160,6 +169,10 @@ export function ApplicantReviewsSection({
       toast.error("Bonfire ID is required.");
       return;
     }
+    if (!agentId.trim()) {
+      toast.error("A review agent is required for research. Please select an agent.");
+      return;
+    }
     if (importMode === "tsv" && !tableText.trim()) {
       toast.error("Paste table text is required for TSV import.");
       return;
@@ -173,7 +186,7 @@ export function ApplicantReviewsSection({
     try {
       const payload = {
         bonfire_id: bonfireId.trim(),
-        agent_id: agentId.trim() || undefined,
+        agent_id: agentId.trim(),
         batch_name: `Applicant Batch ${new Date().toISOString()}`,
         source_name: importMode === "tsv" ? "manual-paste" : "json-import",
         ...(importMode === "tsv"
@@ -269,17 +282,27 @@ export function ApplicantReviewsSection({
             </div>
           </div>
 
-          {showAgentIdInput && (
-            <div style={{ marginBottom: 16 }}>
-              <span className="bf-label">Review Agent ID</span>
-              <input
+          <div style={{ marginBottom: 16 }}>
+            <span className="bf-label">Review Agent</span>
+            {agents.length > 0 ? (
+              <select
                 className="bf-input"
+                style={{ padding: '8px 12px' }}
                 value={agentId}
                 onChange={(event) => setAgentId(event.target.value)}
-                placeholder="Optional agent for stack / episode writeback"
-              />
-            </div>
-          )}
+              >
+                {agents.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name ?? a.id}{a.is_active ? " [active]" : ""}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span style={{ fontSize: 13, color: "var(--text-dim)", display: "block", marginTop: 4 }}>
+                {agentsQuery.isLoading ? "Loading agents..." : "No agents found for this bonfire."}
+              </span>
+            )}
+          </div>
 
           {importMode === "tsv" ? (
             <div style={{ marginBottom: 16 }}>

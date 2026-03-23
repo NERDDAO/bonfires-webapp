@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Modal } from "@/components/ui/modal";
 import type {
@@ -59,7 +59,6 @@ function ApplicationStatusRow({
   item: ApplicationStatusItem;
   onRetry?: (id: string) => void;
 }) {
-  // Show the most advanced phase
   const phase =
     item.evaluation_status !== "pending"
       ? item.evaluation_status
@@ -322,6 +321,16 @@ export function BatchProgressModal({
   onCancel,
   onRetryApplication,
 }: BatchProgressModalProps) {
+  const [appDetailsOpen, setAppDetailsOpen] = useState(false);
+  const hasFailures = batch?.application_items?.some(
+    (a) => a.research_status === "failed" || a.evaluation_status === "failed"
+  ) ?? false;
+
+  // Auto-open when failures first appear
+  useEffect(() => {
+    if (hasFailures) setAppDetailsOpen(true);
+  }, [hasFailures]);
+
   const total = batch?.imported_count ?? 0;
   const researchDone = batch?.research_completed_count ?? 0;
   const evalDone = batch?.evaluation_completed_count ?? 0;
@@ -395,9 +404,8 @@ export function BatchProgressModal({
         {/* Per-application status */}
         {batch?.application_items && batch.application_items.length > 0 && (
           <details
-            open={batch.application_items.some(
-              (a) => a.research_status === "failed" || a.evaluation_status === "failed"
-            )}
+            open={appDetailsOpen}
+            onToggle={(e) => setAppDetailsOpen((e.target as HTMLDetailsElement).open)}
             style={{ marginTop: 16 }}
           >
             <summary

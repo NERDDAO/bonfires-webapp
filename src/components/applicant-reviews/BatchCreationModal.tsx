@@ -110,7 +110,7 @@ export function BatchCreationModal({
       const basePayload = {
         bonfire_id: bonfireId,
         agent_id: agentId,
-        rubric_id: resolvedRubricId || undefined,
+        rubric_id: resolvedRubricId ?? undefined,
         batch_name: batchName,
         source_name: importMode === "tsv" ? "manual-paste" : "json-import",
       };
@@ -294,7 +294,7 @@ export function BatchCreationModal({
           type="button"
           className="bf-btn-primary"
           onClick={handleSubmit}
-          disabled={isImporting}
+          disabled={isImporting || (selectedRubricDocId !== null && structuredRubricQuery.isLoading)}
         >
           {isImporting ? "Importing..." : "Import Batch"}
         </button>

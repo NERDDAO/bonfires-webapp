@@ -257,15 +257,16 @@ export function ApplicantReviewsSection({
             ? () => handleReevaluateAll()
             : undefined
         }
-        onRetryApplication={async (appId) => {
-          try {
-            await apiClient.post(`/api/applicant-reviews/${appId}/retry-research`, {});
-            toast.success("Research retriggered.");
-            await refreshData();
-          } catch {
-            toast.error("Failed to retry research.");
-          }
-        }}
+        onRetryApplication={(appId) =>
+          void runAction(
+            appId,
+            () => apiClient.post<ApplicantReviewActionResponse>(
+              `/api/applicant-reviews/${appId}/retry-research`,
+              {},
+            ),
+            "Research retriggered.",
+          )
+        }
       />
 
       <FullProfileModal

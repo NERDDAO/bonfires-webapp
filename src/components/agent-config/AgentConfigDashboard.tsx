@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
+import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { useBonfireAgents } from "@/hooks/useAgentDeploy";
 import { AgentDeployWizard } from "@/components/dashboard/AgentDeployWizard";
 
@@ -33,7 +34,13 @@ export function AgentConfigDashboard({ orgId }: AgentConfigDashboardProps) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(agentParam);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  // Resolve org → bonfire mapping
+  // On a subdomain, use the bonfireId directly from subdomain context
+  const { isSubdomainScoped, subdomainConfig } = useSubdomainBonfire();
+  const subdomainBonfireId = isSubdomainScoped
+    ? subdomainConfig?.bonfireId ?? undefined
+    : undefined;
+
+  // Resolve org → bonfire mapping (only needed on root domain)
   const { data: mapping, isLoading: isMappingLoading } = useQuery({
     queryKey: ["org-bonfire-mapping", orgId],
     queryFn: async () => {
@@ -41,11 +48,11 @@ export function AgentConfigDashboard({ orgId }: AgentConfigDashboardProps) {
       if (!res.ok) throw new Error("Failed to resolve bonfire");
       return res.json() as Promise<OrgBonfireMapping>;
     },
-    enabled: !!orgId,
+    enabled: !!orgId && !subdomainBonfireId,
     staleTime: 5 * 60 * 1000,
   });
 
-  const bonfireId = mapping?.bonfire_id ?? undefined;
+  const bonfireId = subdomainBonfireId ?? mapping?.bonfire_id ?? undefined;
 
   // Load agents for bonfire
   const {
@@ -84,7 +91,7 @@ export function AgentConfigDashboard({ orgId }: AgentConfigDashboardProps) {
     refetchAgents();
   }, [refetchAgents]);
 
-  if (isMappingLoading) {
+  if (!subdomainBonfireId && isMappingLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <span className="loading loading-spinner loading-lg" />
@@ -134,7 +141,7 @@ export function AgentConfigDashboard({ orgId }: AgentConfigDashboardProps) {
       {bonfireId && (
         <AgentDeployWizard
           bonfireId={bonfireId}
-          bonfireName={mapping?.slug ?? bonfireId}
+          bonfireName={subdomainConfig?.slug ?? mapping?.slug ?? bonfireId}
           isOpen={isWizardOpen}
           onClose={handleWizardClose}
         />

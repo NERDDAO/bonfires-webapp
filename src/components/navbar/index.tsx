@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 
 import type { NavigationItem } from "@/config/sites";
 import { useSiteConfig } from "@/contexts";
+import { useAgentConfigAccess } from "@/hooks/useAgentConfigAccess";
 
 import ConnectWallet from "./connect-wallet";
 import Drawer from "./drawer";
@@ -19,8 +20,20 @@ export type { NavigationItem };
 export function Navbar() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { navigation: navigationItems } = useSiteConfig();
+  const { navigation: siteNavItems } = useSiteConfig();
+  const { canAccess: canAccessAgentConfig } = useAgentConfigAccess();
   const navRef = useRef<HTMLElement>(null);
+
+  const navigationItems = useMemo(() => {
+    if (!canAccessAgentConfig) return siteNavItems;
+    // Insert Agent Config before the last item (Docs)
+    const items = [...siteNavItems];
+    items.splice(items.length - 1, 0, {
+      label: "Agent Config",
+      href: "/agent-config",
+    });
+    return items;
+  }, [siteNavItems, canAccessAgentConfig]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -94,6 +107,7 @@ export function Navbar() {
       <Drawer
         drawerOpen={drawerOpen}
         closeDrawer={closeDrawer}
+        navigationItems={navigationItems}
       />
 
       {/* Auth and Wallet buttons */}

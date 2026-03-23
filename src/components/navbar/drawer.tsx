@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import type { NavigationItem } from "@/config/sites";
 import { useSiteConfig } from "@/contexts";
 
 import { Drawer as DrawerComponent } from "@/components/ui/drawer";
@@ -17,12 +18,15 @@ export default function Drawer({
   drawerOpen,
   closeDrawer,
   showSignin = false,
+  navigationItems: navigationItemsProp,
 }: {
   drawerOpen: boolean;
   closeDrawer: () => void;
   showSignin?: boolean;
+  navigationItems?: NavigationItem[];
 }) {
-  const { navigation: navigationItems } = useSiteConfig();
+  const { navigation: siteNavItems } = useSiteConfig();
+  const navigationItems = navigationItemsProp ?? siteNavItems;
 
   return (
     <DrawerComponent isOpen={drawerOpen} onClose={closeDrawer} side="right">

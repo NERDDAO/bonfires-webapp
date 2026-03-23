@@ -135,3 +135,9 @@ export {
   default as useAutoOrgSwitchDefault,
   type AccessStatus,
 } from "./useAutoOrgSwitch";
+
+// Agent Config Access
+export {
+  useAgentConfigAccess,
+  default as useAgentConfigAccessDefault,
+} from "./useAgentConfigAccess";

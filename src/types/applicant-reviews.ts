@@ -12,6 +12,18 @@ export interface ApplicantReviewBatchInfo {
   created_at: string;
   completed_at?: string | null;
   slot_config?: Record<string, unknown> | null;
+  rubric_id?: string | null;
+  failed_count?: number;
+  application_items?: ApplicationStatusItem[];
+}
+
+export interface ApplicationStatusItem {
+  id: string;
+  full_name: string;
+  research_status: string;
+  evaluation_status: string;
+  last_research_error?: string | null;
+  last_evaluation_error?: string | null;
 }
 
 export interface ApplicantReviewListItem {

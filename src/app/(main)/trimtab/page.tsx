@@ -3,40 +3,26 @@
 /**
  * Trimtab Viewer — Surveillance-noir live view into a Bonfires AI agent's mind.
  *
- * Reads ?agent=AGENT_ID from the URL and polls GET {apiBase}/trimtabs/{agentId}
- * every 5 seconds. The feed uses direct DOM manipulation via ref for staggered
- * typewriter animation; sidebar panels render declaratively with React.
+ * Single-agent mode: ?agent=AGENT_ID — polls GET {apiBase}/trimtabs/{agentId}
+ * Cluster mode: ?cluster=CLUSTER_ID — unified feed from multiple agents
+ *
+ * The feed uses direct DOM manipulation via ref for staggered typewriter
+ * animation; sidebar panels render declaratively with React.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { SignInButton, useUser } from "@clerk/nextjs";
 
+import { useClusterTrimtab } from "@/hooks/queries/useClusterTrimtab";
+import type { TrimtabData, TrimtabNote } from "@/hooks/queries/useClusterTrimtab";
 
 import "./trimtab.css";
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (single-agent mode uses local interfaces kept for backward compat)
 // ---------------------------------------------------------------------------
-
-interface TrimtabNote {
-  id?: string;
-  noteId?: string;
-  content: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-interface TrimtabData {
-  agentId: string;
-  agentName: string;
-  notes: TrimtabNote[];
-  quests: unknown[];
-  tasks: unknown[];
-  friends: unknown[];
-  updatedAt?: string;
-  createdAt?: string;
-}
 
 interface LeaderboardEntry {
   name: string;
@@ -51,9 +37,16 @@ const POLL_INTERVAL = 5000;
 const MAX_FEED_LINES = 20;
 const MAX_SIDEBAR_NOTES = 8;
 
+const AGENT_COLORS = ["#f5572a", "#4ecdc4", "#ffe66d", "#a8e6cf", "#ff6b6b", "#c4b5fd"];
+
 // ---------------------------------------------------------------------------
 // Helpers (pure functions ported from the HTML)
 // ---------------------------------------------------------------------------
+
+function getAgentColor(agents: { agentId: string }[], agentId: string): string {
+  const idx = agents.findIndex((a) => a.agentId === agentId);
+  return AGENT_COLORS[idx % AGENT_COLORS.length] ?? AGENT_COLORS[0]!;
+}
 
 function classifyNote(content: string): string {
   if (content.startsWith("STATUS")) return "signal-burst";
@@ -144,11 +137,26 @@ function escapeHtml(str: string): string {
 function TrimtabViewerInner() {
   const searchParams = useSearchParams();
   const agentId = searchParams.get("agent");
+  const clusterId = searchParams.get("cluster");
+  const isClusterMode = !!clusterId;
+  const { isSignedIn, isLoaded: userLoaded } = useUser();
 
+  // --- Cluster hook (always called, inactive when clusterId is null) ---
+  const cluster = useClusterTrimtab(isClusterMode && isSignedIn ? clusterId : null);
 
-  // --- State ---
+  // --- State (single-agent mode) ---
   const [data, setData] = useState<TrimtabData | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // --- State (cluster sidebar) ---
+  const [selectedSidebarAgent, setSelectedSidebarAgent] = useState<string | null>(null);
+
+  // Auto-select first agent when cluster agents resolve
+  useEffect(() => {
+    if (isClusterMode && cluster.agents.length > 0 && selectedSidebarAgent === null) {
+      setSelectedSidebarAgent(cluster.agents[0]!.agentId);
+    }
+  }, [isClusterMode, cluster.agents, selectedSidebarAgent]);
 
   // --- Refs ---
   const feedRef = useRef<HTMLDivElement>(null);
@@ -170,7 +178,7 @@ function TrimtabViewerInner() {
   }, []);
 
   const addNoteFeedLine = useCallback(
-    (note: TrimtabNote) => {
+    (note: TrimtabNote, agentBadgeHtml?: string) => {
       const container = feedRef.current;
       if (!container) return;
 
@@ -181,6 +189,7 @@ function TrimtabViewerInner() {
       const ts = formatTime(note.createdAt);
       let inner = "";
       if (ts) inner += `<span class="ts">${ts}</span>`;
+      if (agentBadgeHtml) inner += agentBadgeHtml;
       inner += `<span class="thought">${formatNoteContent(note.content)}</span>`;
       el.innerHTML = inner;
 
@@ -217,9 +226,9 @@ function TrimtabViewerInner() {
     return () => observer.disconnect();
   }, []);
 
-  // --- Polling ---
+  // --- Polling (single-agent mode only) ---
   useEffect(() => {
-    if (!agentId) return;
+    if (!agentId || isClusterMode) return;
 
     let cancelled = false;
 
@@ -287,53 +296,173 @@ function TrimtabViewerInner() {
     };
     // data is intentionally excluded — we only read it to check initial error state
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentId, addNoteFeedLine]);
+  }, [agentId, isClusterMode, addNoteFeedLine]);
+
+  // --- Cluster mode: feed rendering ---
+  useEffect(() => {
+    if (!isClusterMode) return;
+
+    const notes = cluster.mergedNotes;
+    if (notes.length === 0) return;
+
+    const container = feedRef.current;
+    if (!container) return;
+
+    // First load: show last N notes as initial burst
+    if (!initialLoadDone.current && container.children.length === 0) {
+      initialLoadDone.current = true;
+      const initial = notes.slice(-MAX_FEED_LINES);
+      let delay = 0;
+      for (const note of initial) {
+        const noteId = note.id || note.noteId;
+        if (noteId) seenNoteIds.current.add(noteId);
+        const color = note.agentId ? getAgentColor(cluster.agents, note.agentId) : AGENT_COLORS[0];
+        const badge = `<span class="agent-badge" style="color: ${color}">[${escapeHtml(note.agentName ?? "unknown")}]</span> `;
+        setTimeout(() => {
+          addNoteFeedLine(note, badge);
+        }, delay);
+        delay += 150;
+      }
+      return;
+    }
+
+    // Subsequent updates: inject only new notes
+    const newNotes: TrimtabNote[] = [];
+    for (const note of notes) {
+      const noteId = note.id || note.noteId;
+      if (noteId && !seenNoteIds.current.has(noteId)) {
+        seenNoteIds.current.add(noteId);
+        newNotes.push(note);
+      }
+    }
+
+    let delay = 0;
+    for (const note of newNotes) {
+      const color = note.agentId ? getAgentColor(cluster.agents, note.agentId) : AGENT_COLORS[0];
+      const badge = `<span class="agent-badge" style="color: ${color}">[${escapeHtml(note.agentName ?? "unknown")}]</span> `;
+      setTimeout(() => {
+        addNoteFeedLine(note, badge);
+      }, delay);
+      delay += 300;
+    }
+  }, [isClusterMode, cluster.mergedNotes, cluster.agents, addNoteFeedLine]);
 
   // --- Derived sidebar data ---
+  const sidebarData: TrimtabData | null = isClusterMode
+    ? (selectedSidebarAgent ? cluster.agentData.get(selectedSidebarAgent) ?? null : null)
+    : data;
+
   const leaderboard = useMemo(
-    () => (data ? parseLeaderboard(data.notes) : []),
-    [data],
+    () => (sidebarData ? parseLeaderboard(sidebarData.notes) : []),
+    [sidebarData],
   );
 
   const recentNotes = useMemo(
-    () => (data ? data.notes.slice(-MAX_SIDEBAR_NOTES).reverse() : []),
-    [data],
+    () => (sidebarData ? sidebarData.notes.slice(-MAX_SIDEBAR_NOTES).reverse() : []),
+    [sidebarData],
   );
 
   const phase = useMemo(() => {
-    if (!data) return null;
-    const statusNote = data.notes.find((n) => n.content.startsWith("STATUS"));
+    if (!sidebarData) return null;
+    const statusNote = sidebarData.notes.find((n) => n.content.startsWith("STATUS"));
     if (!statusNote) return null;
     const match = statusNote.content.match(/phase:(\w+)/);
     return match?.[1]?.replace(/_/g, " ") ?? null;
-  }, [data]);
+  }, [sidebarData]);
 
   const currentTrack = useMemo(() => {
-    if (!data) return null;
-    const statusNote = data.notes.find((n) => n.content.startsWith("STATUS"));
+    if (!sidebarData) return null;
+    const statusNote = sidebarData.notes.find((n) => n.content.startsWith("STATUS"));
     if (!statusNote) return null;
     const match = statusNote.content.match(/current:([^|]+)/);
     return match?.[1]?.trim() ?? null;
-  }, [data]);
+  }, [sidebarData]);
 
   const updatedTime = useMemo(() => {
-    if (!data?.updatedAt) return null;
-    return new Date(data.updatedAt).toLocaleString();
-  }, [data]);
+    if (!sidebarData?.updatedAt) return null;
+    return new Date(sidebarData.updatedAt).toLocaleString();
+  }, [sidebarData]);
 
   const shortAgentId = useMemo(() => {
     if (!agentId) return "";
     return agentId.substring(0, 6) + ".." + agentId.substring(agentId.length - 4);
   }, [agentId]);
 
-  // --- No agent ID error ---
-  if (!agentId) {
+  // --- Cluster stats ---
+  const clusterTotalNotes = useMemo(() => {
+    if (!isClusterMode) return 0;
+    let total = 0;
+    for (const [, agentTrimtab] of cluster.agentData) {
+      total += agentTrimtab.notes.length;
+    }
+    return total;
+  }, [isClusterMode, cluster.agentData]);
+
+  // --- No agent/cluster specified error ---
+  if (!agentId && !clusterId) {
     return (
       <div className="trimtab-viewer">
         <div className="error-state">
           <span className="thought">
             <span className="conviction">no agent specified.</span> add
-            ?agent=AGENT_ID to the URL
+            ?agent=AGENT_ID or ?cluster=CLUSTER_ID to the URL
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Cluster sign-in required ---
+  if (isClusterMode && (!userLoaded || !isSignedIn)) {
+    return (
+      <div className="trimtab-viewer">
+        <div className="error-state">
+          <span className="thought">
+            <span className="conviction">sign in required.</span> cluster view needs authentication.
+          </span>
+          {userLoaded && (
+            <SignInButton mode="modal">
+              <button
+                style={{
+                  marginTop: 16,
+                  background: "var(--ember)",
+                  color: "var(--text)",
+                  border: "none",
+                  padding: "8px 20px",
+                  fontFamily: "'Montserrat', sans-serif",
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                Sign In
+              </button>
+            </SignInButton>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Cluster loading state ---
+  if (isClusterMode && cluster.isLoading) {
+    return (
+      <div className="trimtab-viewer">
+        <div className="error-state">
+          <span className="thought">resolving cluster agents...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Cluster error state ---
+  if (isClusterMode && cluster.error) {
+    return (
+      <div className="trimtab-viewer">
+        <div className="error-state">
+          <span className="thought">
+            <span className="conviction">cluster error.</span> {cluster.error}
           </span>
         </div>
       </div>
@@ -350,12 +479,26 @@ function TrimtabViewerInner() {
         <div className="top-bar">
           <span className="brand">Trimtab</span>
           <span className="sep">{"\u2502"}</span>
-          <span className="agent-name">
-            {data?.agentName ?? "loading..."}
-          </span>
-          <span className="sep">{"\u2502"}</span>
-          <span className="meta">{currentTrack ?? ""}</span>
-          {phase && <span className="phase-badge">{phase}</span>}
+          {isClusterMode ? (
+            <>
+              <span className="agent-name">
+                {cluster.clusterName ?? "loading..."}
+              </span>
+              <span className="sep">{"\u2502"}</span>
+              <span className="meta">
+                Cluster &middot; {cluster.agents.length} agent{cluster.agents.length !== 1 ? "s" : ""}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="agent-name">
+                {data?.agentName ?? "loading..."}
+              </span>
+              <span className="sep">{"\u2502"}</span>
+              <span className="meta">{currentTrack ?? ""}</span>
+              {phase && <span className="phase-badge">{phase}</span>}
+            </>
+          )}
           <div className="live-indicator">
             <div className="live-dot" />
             <span className="live-text">Transmitting</span>
@@ -365,7 +508,7 @@ function TrimtabViewerInner() {
         {/* FEED */}
         <div className="feed-zone">
           <div className="feed-container" ref={feedRef}>
-            {fetchError && !data && (
+            {!isClusterMode && fetchError && !data && (
               <div className="feed-line" style={{ opacity: 1 }}>
                 <span className="thought">
                   <span className="uncertainty">{fetchError}</span>
@@ -380,6 +523,39 @@ function TrimtabViewerInner() {
 
         {/* RIGHT SIDEBAR */}
         <div className="sidebar">
+          {/* Cluster mode: Agent tabs + feed filters */}
+          {isClusterMode && cluster.agents.length > 0 && (
+            <>
+              <div className="panel" style={{ paddingBottom: 0 }}>
+                <div className="agent-tabs">
+                  {cluster.agents.map((agent, i) => (
+                    <button
+                      key={agent.agentId}
+                      className={`agent-tab ${selectedSidebarAgent === agent.agentId ? "active" : ""}`}
+                      style={{ borderBottomColor: selectedSidebarAgent === agent.agentId ? AGENT_COLORS[i % AGENT_COLORS.length] : "transparent" }}
+                      onClick={() => setSelectedSidebarAgent(agent.agentId)}
+                    >
+                      {agent.agentName}
+                    </button>
+                  ))}
+                </div>
+                <div className="feed-filters">
+                  <span className="bf-label" style={{ fontSize: 10, letterSpacing: 2, fontFamily: "'Montserrat', sans-serif", fontWeight: 700, textTransform: "uppercase", color: "var(--text-dim)" }}>FEED</span>
+                  {cluster.agents.map((agent, i) => (
+                    <label key={agent.agentId} className="feed-filter-item">
+                      <input
+                        type="checkbox"
+                        checked={cluster.enabledAgentIds.has(agent.agentId)}
+                        onChange={() => cluster.toggleAgent(agent.agentId)}
+                      />
+                      <span style={{ color: AGENT_COLORS[i % AGENT_COLORS.length] }}>{agent.agentName}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Mind */}
           <div className="panel">
             <div className="panel-header">
@@ -389,25 +565,25 @@ function TrimtabViewerInner() {
               <div className="mind-metric">
                 <span className="mind-label">Agent</span>
                 <span className="mind-value current-name">
-                  {data?.agentName ?? "loading..."}
+                  {sidebarData?.agentName ?? "loading..."}
                 </span>
               </div>
               <div className="mind-metric">
                 <span className="mind-label">Notes</span>
                 <span className="mind-value primary">
-                  {data ? data.notes.length : "\u2014"}
+                  {sidebarData ? sidebarData.notes.length : "\u2014"}
                 </span>
               </div>
               <div className="mind-metric">
                 <span className="mind-label">Quests</span>
                 <span className="mind-value" style={{ color: "var(--text)" }}>
-                  {data ? data.quests.length : 0}
+                  {sidebarData ? sidebarData.quests.length : 0}
                 </span>
               </div>
               <div className="mind-metric">
                 <span className="mind-label">Tasks</span>
                 <span className="mind-value" style={{ color: "var(--text)" }}>
-                  {data ? data.tasks.length : 0}
+                  {sidebarData ? sidebarData.tasks.length : 0}
                 </span>
               </div>
               <div className="mind-metric full">
@@ -456,7 +632,7 @@ function TrimtabViewerInner() {
           <div className="panel">
             <div className="panel-header">
               <span>Notes</span>
-              <span className="count">{data ? data.notes.length : 0}</span>
+              <span className="count">{sidebarData ? sidebarData.notes.length : 0}</span>
             </div>
             <div className="notes-list">
               {recentNotes.map((note, i) => {
@@ -488,25 +664,44 @@ function TrimtabViewerInner() {
 
         {/* STATUS BAR */}
         <div className="status-bar">
-          <span>AGENT {shortAgentId || "\u2014"}</span>
-          <span className="sep">{"\u2502"}</span>
-          <span>
-            {data?.updatedAt
-              ? `UPDATED ${formatTime(data.updatedAt)}`
-              : "\u2014"}
-          </span>
-          <span style={{ marginLeft: "auto" }}>
-            NOTES{" "}
-            <span className="s-val">{data ? data.notes.length : 0}</span>
-          </span>
-          <span>
-            QUESTS{" "}
-            <span className="s-val">{data ? data.quests.length : 0}</span>
-          </span>
-          <span>
-            TASKS{" "}
-            <span className="s-val">{data ? data.tasks.length : 0}</span>
-          </span>
+          {isClusterMode ? (
+            <>
+              <span>CLUSTER {cluster.clusterName?.toUpperCase() ?? "\u2014"}</span>
+              <span className="sep">{"\u2502"}</span>
+              <span>
+                AGENTS{" "}
+                <span className="s-val">
+                  {cluster.enabledAgentIds.size}/{cluster.agents.length}
+                </span>
+              </span>
+              <span style={{ marginLeft: "auto" }}>
+                NOTES{" "}
+                <span className="s-val">{clusterTotalNotes}</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <span>AGENT {shortAgentId || "\u2014"}</span>
+              <span className="sep">{"\u2502"}</span>
+              <span>
+                {data?.updatedAt
+                  ? `UPDATED ${formatTime(data.updatedAt)}`
+                  : "\u2014"}
+              </span>
+              <span style={{ marginLeft: "auto" }}>
+                NOTES{" "}
+                <span className="s-val">{data ? data.notes.length : 0}</span>
+              </span>
+              <span>
+                QUESTS{" "}
+                <span className="s-val">{data ? data.quests.length : 0}</span>
+              </span>
+              <span>
+                TASKS{" "}
+                <span className="s-val">{data ? data.tasks.length : 0}</span>
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

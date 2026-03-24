@@ -8,6 +8,6 @@ export async function GET(
   const { clusterId } = await params;
   return handleProxyRequest(`/clusters/${clusterId}`, {
     method: "GET",
-    includeAuth: true,
+    includeAuth: false,
   });
 }

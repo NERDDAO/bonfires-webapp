@@ -600,6 +600,52 @@ function TrimtabViewerInner() {
             </div>
           </div>
 
+          {/* Tasks */}
+          {sidebarData && sidebarData.tasks.length > 0 && (
+            <div className="panel">
+              <div className="panel-header">
+                <span>Tasks</span>
+                <span className="count">{sidebarData.tasks.length}</span>
+              </div>
+              <div className="notes-list">
+                {(sidebarData.tasks as Array<{ id?: string; title?: string; description?: string }>).slice(0, 8).map((task, i) => (
+                  <div key={task.id ?? `task-${i}`} className={`note-entry${i === 0 ? " active" : ""}`}>
+                    <div className="note-meta">
+                      <span className="note-type task">task</span>
+                    </div>
+                    <div className="note-content">
+                      {task.title ?? task.description?.slice(0, 120) ?? "\u2014"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quests */}
+          {sidebarData && sidebarData.quests.length > 0 && (
+            <div className="panel">
+              <div className="panel-header">
+                <span>Quests</span>
+                <span className="count">{sidebarData.quests.length}</span>
+              </div>
+              <div className="notes-list">
+                {(sidebarData.quests as Array<{ id?: string; description?: string; priority?: string }>).slice(0, 8).map((quest, i) => (
+                  <div key={quest.id ?? `quest-${i}`} className={`note-entry${i === 0 ? " active" : ""}`}>
+                    <div className="note-meta">
+                      <span className={`note-type ${quest.priority === "high" ? "status" : "note"}`}>
+                        {quest.priority ?? "quest"}
+                      </span>
+                    </div>
+                    <div className="note-content">
+                      {quest.description?.slice(0, 120) ?? "\u2014"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Leaderboard (from LIGHT notes) */}
           {leaderboard.length > 0 && (
             <div className="panel">

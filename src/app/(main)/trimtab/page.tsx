@@ -34,7 +34,7 @@ interface LeaderboardEntry {
 // ---------------------------------------------------------------------------
 
 const POLL_INTERVAL = 5000;
-const MAX_FEED_LINES = 20;
+const MAX_FEED_LINES = 200;
 const MAX_SIDEBAR_NOTES = 8;
 
 const AGENT_COLORS = ["#f5572a", "#4ecdc4", "#ffe66d", "#a8e6cf", "#ff6b6b", "#c4b5fd"];
@@ -160,8 +160,10 @@ function TrimtabViewerInner() {
 
   // --- Refs ---
   const feedRef = useRef<HTMLDivElement>(null);
+  const feedZoneRef = useRef<HTMLDivElement>(null);
   const seenNoteIds = useRef<Set<string>>(new Set());
   const initialLoadDone = useRef(false);
+  const userScrolledUp = useRef(false);
 
   // --- Feed DOM manipulation ---
   const updateFadeClasses = useCallback(() => {
@@ -220,6 +222,37 @@ function TrimtabViewerInner() {
           el.dataset["flickerApplied"] = "true";
         }
       });
+    });
+
+    observer.observe(container, { childList: true });
+    return () => observer.disconnect();
+  }, []);
+
+  // --- Scroll tracking: detect if user scrolled up ---
+  useEffect(() => {
+    const zone = feedZoneRef.current;
+    if (!zone) return;
+
+    function onScroll() {
+      if (!zone) return;
+      const atBottom = zone.scrollHeight - zone.scrollTop - zone.clientHeight < 50;
+      userScrolledUp.current = !atBottom;
+    }
+
+    zone.addEventListener("scroll", onScroll, { passive: true });
+    return () => zone.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // --- Auto-scroll to bottom when new notes arrive (unless user scrolled up) ---
+  useEffect(() => {
+    const zone = feedZoneRef.current;
+    const container = feedRef.current;
+    if (!zone || !container) return;
+
+    const observer = new MutationObserver(() => {
+      if (!userScrolledUp.current) {
+        zone.scrollTop = zone.scrollHeight;
+      }
     });
 
     observer.observe(container, { childList: true });
@@ -308,10 +341,10 @@ function TrimtabViewerInner() {
     const container = feedRef.current;
     if (!container) return;
 
-    // First load: show last N notes as initial burst
+    // First load: show newest N notes in chronological order (oldest→newest)
     if (!initialLoadDone.current && container.children.length === 0) {
       initialLoadDone.current = true;
-      const initial = notes.slice(-MAX_FEED_LINES);
+      const initial = notes.slice(0, MAX_FEED_LINES).reverse();
       let delay = 0;
       for (const note of initial) {
         const noteId = note.id || note.noteId;
@@ -506,7 +539,7 @@ function TrimtabViewerInner() {
         </div>
 
         {/* FEED */}
-        <div className="feed-zone">
+        <div className="feed-zone" ref={feedZoneRef}>
           <div className="feed-container" ref={feedRef}>
             {!isClusterMode && fetchError && !data && (
               <div className="feed-line" style={{ opacity: 1 }}>

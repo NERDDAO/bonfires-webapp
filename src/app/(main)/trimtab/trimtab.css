@@ -195,12 +195,23 @@
 /* === FEED === */
 .trimtab-viewer .feed-zone {
   background: var(--feed-bg);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   padding: 0 32px 24px;
+}
+
+.trimtab-viewer .feed-zone::-webkit-scrollbar {
+  width: 4px;
+}
+.trimtab-viewer .feed-zone::-webkit-scrollbar-track {
+  background: transparent;
+}
+.trimtab-viewer .feed-zone::-webkit-scrollbar-thumb {
+  background: var(--text-dim);
+  border-radius: 2px;
 }
 
 .trimtab-viewer .feed-zone::before {
@@ -230,7 +241,7 @@
 .trimtab-viewer .feed-container {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  margin-top: auto;
   min-height: 0;
   position: relative;
   z-index: 1;

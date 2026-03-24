@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { SignInButton, useUser } from "@clerk/nextjs";
 
 import { useClusterTrimtab } from "@/hooks/queries/useClusterTrimtab";
 import type { TrimtabData, TrimtabNote } from "@/hooks/queries/useClusterTrimtab";
@@ -138,9 +139,10 @@ function TrimtabViewerInner() {
   const agentId = searchParams.get("agent");
   const clusterId = searchParams.get("cluster");
   const isClusterMode = !!clusterId;
+  const { isSignedIn, isLoaded: userLoaded } = useUser();
 
   // --- Cluster hook (always called, inactive when clusterId is null) ---
-  const cluster = useClusterTrimtab(clusterId);
+  const cluster = useClusterTrimtab(isClusterMode && isSignedIn ? clusterId : null);
 
   // --- State (single-agent mode) ---
   const [data, setData] = useState<TrimtabData | null>(null);
@@ -405,6 +407,39 @@ function TrimtabViewerInner() {
             <span className="conviction">no agent specified.</span> add
             ?agent=AGENT_ID or ?cluster=CLUSTER_ID to the URL
           </span>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Cluster sign-in required ---
+  if (isClusterMode && (!userLoaded || !isSignedIn)) {
+    return (
+      <div className="trimtab-viewer">
+        <div className="error-state">
+          <span className="thought">
+            <span className="conviction">sign in required.</span> cluster view needs authentication.
+          </span>
+          {userLoaded && (
+            <SignInButton mode="modal">
+              <button
+                style={{
+                  marginTop: 16,
+                  background: "var(--ember)",
+                  color: "var(--text)",
+                  border: "none",
+                  padding: "8px 20px",
+                  fontFamily: "'Montserrat', sans-serif",
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                Sign In
+              </button>
+            </SignInButton>
+          )}
         </div>
       </div>
     );

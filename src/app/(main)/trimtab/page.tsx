@@ -523,26 +523,33 @@ function TrimtabViewerInner() {
 
         {/* RIGHT SIDEBAR */}
         <div className="sidebar">
-          {/* Cluster mode: Agent tabs + feed filters */}
+          {/* Cluster mode: Agent selector + feed filters */}
           {isClusterMode && cluster.agents.length > 0 && (
-            <>
-              <div className="panel" style={{ paddingBottom: 0 }}>
-                <div className="agent-tabs">
+            <div className="panel cluster-controls">
+              <div className="cluster-agent-select">
+                <span className="cluster-label">SIDEBAR</span>
+                <select
+                  className="cluster-dropdown"
+                  value={selectedSidebarAgent ?? ""}
+                  onChange={(e) => setSelectedSidebarAgent(e.target.value || null)}
+                >
                   {cluster.agents.map((agent, i) => (
-                    <button
-                      key={agent.agentId}
-                      className={`agent-tab ${selectedSidebarAgent === agent.agentId ? "active" : ""}`}
-                      style={{ borderBottomColor: selectedSidebarAgent === agent.agentId ? AGENT_COLORS[i % AGENT_COLORS.length] : "transparent" }}
-                      onClick={() => setSelectedSidebarAgent(agent.agentId)}
-                    >
+                    <option key={agent.agentId} value={agent.agentId}>
                       {agent.agentName}
-                    </button>
+                    </option>
                   ))}
-                </div>
-                <div className="feed-filters">
-                  <span className="bf-label" style={{ fontSize: 10, letterSpacing: 2, fontFamily: "'Montserrat', sans-serif", fontWeight: 700, textTransform: "uppercase", color: "var(--text-dim)" }}>FEED</span>
+                </select>
+              </div>
+              <details className="cluster-feed-details">
+                <summary className="cluster-feed-summary">
+                  <span className="cluster-label">FEED</span>
+                  <span className="cluster-feed-count">
+                    {cluster.enabledAgentIds.size}/{cluster.agents.length} agents
+                  </span>
+                </summary>
+                <div className="cluster-feed-list">
                   {cluster.agents.map((agent, i) => (
-                    <label key={agent.agentId} className="feed-filter-item">
+                    <label key={agent.agentId} className="cluster-feed-item">
                       <input
                         type="checkbox"
                         checked={cluster.enabledAgentIds.has(agent.agentId)}
@@ -552,8 +559,8 @@ function TrimtabViewerInner() {
                     </label>
                   ))}
                 </div>
-              </div>
-            </>
+              </details>
+            </div>
           )}
 
           {/* Mind */}

@@ -182,8 +182,15 @@ export function useClusterTrimtab(clusterId: string | null) {
     if (agents.length === 0) return;
 
     async function pollAll() {
-      const nextData = new Map(agentData);
-      let changed = false;
+      // Collect fetch results first, then apply atomically via functional updater
+      // to avoid stale closure over agentData (which is frozen from when agents resolved)
+      type FetchResult = {
+        agentId: string;
+        data: TrimtabData;
+        taggedNotes: TrimtabNote[];
+        hadSince: boolean;
+      };
+      const results: FetchResult[] = [];
 
       const fetches = agents.map(async (agent) => {
         try {
@@ -204,30 +211,9 @@ export function useClusterTrimtab(clusterId: string | null) {
             agentName: agent.agentName,
           }));
 
-          const existing = nextData.get(agent.agentId);
+          results.push({ agentId: agent.agentId, data, taggedNotes, hadSince: !!since });
 
-          if (since && existing) {
-            // Incremental: merge new notes into existing data
-            const existingIds = new Set(
-              existing.notes.map((n) => n.id ?? n.noteId),
-            );
-            const newNotes = taggedNotes.filter(
-              (n) => !existingIds.has(n.id ?? n.noteId),
-            );
-            if (newNotes.length > 0) {
-              nextData.set(agent.agentId, {
-                ...data,
-                notes: [...existing.notes, ...newNotes],
-              });
-              changed = true;
-            }
-          } else {
-            // Full load
-            nextData.set(agent.agentId, { ...data, notes: taggedNotes });
-            changed = true;
-          }
-
-          // Track the latest note timestamp for incremental polling
+          // Update sinceRef outside updater (refs are always current)
           if (data.updatedAt) {
             sinceRef.current.set(agent.agentId, data.updatedAt);
           }
@@ -238,9 +224,39 @@ export function useClusterTrimtab(clusterId: string | null) {
 
       await Promise.all(fetches);
 
-      if (changed) {
-        setAgentData(new Map(nextData));
-      }
+      if (results.length === 0) return;
+
+      setAgentData((prev) => {
+        const next = new Map(prev);
+        let changed = false;
+
+        for (const { agentId, data, taggedNotes, hadSince } of results) {
+          const existing = next.get(agentId);
+
+          if (hadSince && existing) {
+            // Incremental: merge new notes into existing data
+            const existingIds = new Set(
+              existing.notes.map((n) => n.id ?? n.noteId),
+            );
+            const newNotes = taggedNotes.filter(
+              (n) => !existingIds.has(n.id ?? n.noteId),
+            );
+            if (newNotes.length > 0) {
+              next.set(agentId, {
+                ...data,
+                notes: [...existing.notes, ...newNotes],
+              });
+              changed = true;
+            }
+          } else {
+            // Full load
+            next.set(agentId, { ...data, notes: taggedNotes });
+            changed = true;
+          }
+        }
+
+        return changed ? next : prev;
+      });
     }
 
     // Initial fetch immediately
@@ -254,8 +270,8 @@ export function useClusterTrimtab(clusterId: string | null) {
         pollingRef.current = null;
       }
     };
-    // agentData intentionally excluded — we read it inside pollAll via closure
-    // over the Map reference and only use setAgentData for writes
+    // agentData excluded — pollAll uses setAgentData(prev => ...) functional
+    // updater so it always reads the latest state, no closure dependency needed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agents]);
 

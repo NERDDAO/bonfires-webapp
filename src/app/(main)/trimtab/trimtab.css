@@ -636,61 +636,93 @@
   opacity: 0.85;
 }
 
-/* === CLUSTER MODE: Agent tab bar === */
-.trimtab-viewer .agent-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
-  overflow-x: auto;
+/* === CLUSTER MODE: Controls panel === */
+.trimtab-viewer .cluster-controls {
+  padding: 10px 14px;
 }
 
-.trimtab-viewer .agent-tab {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-dim);
-  padding: 6px 12px;
-  font-size: 11px;
+.trimtab-viewer .cluster-label {
+  font-size: 9px;
   font-family: "Montserrat", sans-serif;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.2s, border-color 0.2s;
+  letter-spacing: 2px;
+  color: var(--text-dim);
 }
 
-.trimtab-viewer .agent-tab:hover {
+.trimtab-viewer .cluster-agent-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.trimtab-viewer .cluster-dropdown {
+  flex: 1;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  font-size: 11px;
+  font-family: "JetBrains Mono", monospace;
+  outline: none;
+  cursor: pointer;
+}
+
+.trimtab-viewer .cluster-dropdown:focus {
+  border-color: var(--ember);
+}
+
+/* Feed filter — collapsible */
+.trimtab-viewer .cluster-feed-details {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.trimtab-viewer .cluster-feed-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.trimtab-viewer .cluster-feed-summary::-webkit-details-marker {
+  display: none;
+}
+
+.trimtab-viewer .cluster-feed-count {
+  font-size: 10px;
+  font-family: "JetBrains Mono", monospace;
   color: var(--text-secondary);
 }
 
-.trimtab-viewer .agent-tab.active {
-  color: var(--text);
-  border-bottom-color: currentColor;
+.trimtab-viewer .cluster-feed-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  padding: 8px 0 4px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
-/* === CLUSTER MODE: Feed filter checkboxes === */
-.trimtab-viewer .feed-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 0;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.trimtab-viewer .feed-filter-item {
+.trimtab-viewer .cluster-feed-item {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 10px;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.trimtab-viewer .feed-filter-item input[type="checkbox"] {
+.trimtab-viewer .cluster-feed-item input[type="checkbox"] {
   accent-color: var(--ember);
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
 }
 
 /* === REDUCED MOTION === */

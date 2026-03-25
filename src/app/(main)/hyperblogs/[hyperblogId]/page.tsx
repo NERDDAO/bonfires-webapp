@@ -446,9 +446,13 @@ export default function HyperBlogDetailPage() {
             </div>
           )}
 
-          {/* Taxonomy keywords - same badge style as card */}
+          {/* Taxonomy keywords */}
           {blog.taxonomy_keywords && blog.taxonomy_keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-6">
+            <div className="mt-6">
+              <p className="font-montserrat text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8da8af] mb-2">
+                Keywords
+              </p>
+              <div className="flex flex-wrap gap-2">
               {blog.taxonomy_keywords.map((keyword, idx) => (
                 <span
                   key={idx}
@@ -457,6 +461,7 @@ export default function HyperBlogDetailPage() {
                   {keyword}
                 </span>
               ))}
+              </div>
             </div>
           )}
 

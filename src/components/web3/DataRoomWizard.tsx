@@ -587,8 +587,7 @@ export function DataRoomWizard({
                           className="relative text-left p-5 transition-colors duration-200 cursor-pointer"
                           style={{
                             background: isSelected ? ds.surface2 : ds.surface,
-                            outline: isSelected ? `2px solid ${ds.ember}` : "none",
-                            outlineOffset: "-2px",
+                            boxShadow: isSelected ? `inset 0 0 0 2px ${ds.ember}` : "none",
                             borderRadius: isSelected ? ds.radius : undefined,
                             zIndex: isSelected ? 1 : 0,
                           }}
@@ -902,8 +901,7 @@ export function DataRoomWizard({
                             className="relative text-left p-4 transition-colors duration-200 cursor-pointer"
                             style={{
                               background: isSelected ? ds.surface2 : ds.surface,
-                              outline: isSelected ? `2px solid ${ds.ember}` : "none",
-                              outlineOffset: "-2px",
+                              boxShadow: isSelected ? `inset 0 0 0 2px ${ds.ember}` : "none",
                               borderRadius: isSelected ? ds.radius : undefined,
                               zIndex: isSelected ? 1 : 0,
                             }}

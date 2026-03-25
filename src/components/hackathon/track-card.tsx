@@ -80,16 +80,9 @@ export default function TrackCard({ track, compact, className }: TrackCardProps)
       <div className="mt-3 flex items-center gap-4 text-xs">
         <div>
           <span className={cn("text-lg font-bold", style.color)}>
-            {formatUSD(track.prize_pool_usd)}
+            {track.submission_count}
           </span>
-          <span className="block text-dark-s-80 mt-0.5">Prize Pool</span>
-        </div>
-        <div className="h-8 w-px bg-[#333333]" />
-        <div>
-          <span className="text-lg font-bold text-dark-s-0">
-            {track.entry_count}
-          </span>
-          <span className="block text-dark-s-80 mt-0.5">Entries</span>
+          <span className="block text-dark-s-80 mt-0.5">Submissions</span>
         </div>
         {track.current_entry_price_usd != null && (
           <>

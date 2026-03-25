@@ -70,7 +70,7 @@ export default function SubmitEntryPage({
             </span>
           </div>
           <p className="text-xs text-dark-s-80 mt-2">
-            This is review #{track.entry_count + 1} for this track. Price increases with each review.
+            Submission #{track.submission_count + 1} for this track. Price increases with each review.
           </p>
         </div>
 
@@ -82,7 +82,7 @@ export default function SubmitEntryPage({
           Pay & Submit Entry
         </button>
         <p className="text-xs text-dark-s-80 text-center mt-3">
-          Payment via x402 (USDC). Connect your wallet to proceed.
+          Payment via x402 (USDC) to escrow contract. Funds the prize pool directly.
         </p>
       </div>
     </main>

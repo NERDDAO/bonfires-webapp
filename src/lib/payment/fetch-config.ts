@@ -20,12 +20,24 @@ export interface ServerPaymentConfig {
 }
 
 let cachedConfig: ServerPaymentConfig | null = null;
+let cachedTrackId: string | null = null;
 
-export async function fetchPaymentConfig(): Promise<ServerPaymentConfig> {
-  if (cachedConfig) return cachedConfig;
+/**
+ * Fetch payment config. When hackathonTrackId is provided, payTo is overridden
+ * to the track's escrow address so payments fund the hackathon prize pool.
+ */
+export async function fetchPaymentConfig(
+  hackathonTrackId?: string,
+): Promise<ServerPaymentConfig> {
+  // Return cached if same context
+  if (cachedConfig && cachedTrackId === (hackathonTrackId ?? null)) {
+    return cachedConfig;
+  }
 
-  // Use the Next.js API route to avoid CORS (server-side proxy)
-  const response = await fetch("/api/payments/config");
+  const params = hackathonTrackId
+    ? `?hackathon_track_id=${encodeURIComponent(hackathonTrackId)}`
+    : "";
+  const response = await fetch(`/api/payments/config${params}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch payment config: ${response.status}`);
   }
@@ -33,9 +45,11 @@ export async function fetchPaymentConfig(): Promise<ServerPaymentConfig> {
   const body = await response.json();
   // The proxy wraps in {data: ...} via createSuccessResponse
   cachedConfig = (body.data ?? body) as ServerPaymentConfig;
+  cachedTrackId = hackathonTrackId ?? null;
   return cachedConfig;
 }
 
 export function clearPaymentConfigCache(): void {
   cachedConfig = null;
+  cachedTrackId = null;
 }

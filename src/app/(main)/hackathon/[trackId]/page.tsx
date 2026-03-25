@@ -93,10 +93,10 @@ export default function TrackDetailPage({
       {/* Stats bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Prize Pool", value: `$${track.prize_pool_usd.toLocaleString()}`, accent: true },
-          { label: "Entries", value: String(track.entry_count) },
+          { label: "Escrow", value: `${track.escrow_address.slice(0, 6)}...${track.escrow_address.slice(-4)}`, accent: true },
+          { label: "Submissions", value: String(track.submission_count) },
           { label: "Next Review", value: track.current_entry_price_usd != null ? `$${track.current_entry_price_usd.toFixed(2)}` : "--" },
-          { label: "Sponsors", value: String(track.sponsor_topups.length) },
+          { label: "Fee", value: `${(track.platform_fee_bps / 100).toFixed(1)}%` },
         ].map((stat) => (
           <div
             key={stat.label}

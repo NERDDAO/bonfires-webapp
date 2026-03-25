@@ -23,8 +23,8 @@ export default function HackathonPage() {
     {} as Record<(typeof CADENCES)[number], HackathonTrackInfo[]>,
   );
 
-  const totalPool = (tracks ?? []).reduce(
-    (sum: number, t: HackathonTrackInfo) => sum + t.prize_pool_usd,
+  const totalSubmissions = (tracks ?? []).reduce(
+    (sum: number, t: HackathonTrackInfo) => sum + t.submission_count,
     0,
   );
 
@@ -39,11 +39,11 @@ export default function HackathonPage() {
           Submit your project, get an AI-powered review, and compete across parallel tracks.
           Every review is an entry. Every entry funds the prize pool.
         </p>
-        {totalPool > 0 && (
+        {totalSubmissions > 0 && (
           <div className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FFFFFF05] border border-[#333333]">
-            <span className="text-dark-s-80 text-sm">Total Prize Pools</span>
+            <span className="text-dark-s-80 text-sm">Total Submissions</span>
             <span className="text-2xl font-bold text-brand-primary font-mono">
-              ${totalPool.toLocaleString()}
+              {totalSubmissions.toLocaleString()}
             </span>
           </div>
         )}

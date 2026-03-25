@@ -630,45 +630,49 @@ export interface HackathonTrackInfo {
   status: "upcoming" | "active" | "judging" | "completed";
   bonfire_ref: string;
   dataroom_ref: string;
+  rubric_ref: string;
+  escrow_address: string;
+  platform_fee_bps: number;
   starts_at: string;
   ends_at: string;
   judging_ends_at?: string;
-  prize_pool_usd: number;
-  entry_count: number;
   current_entry_price_usd: number | null;
-  review_revenue_share: number;
-  mentor_revenue_share: number;
+  submission_count: number;
   description?: string;
-  sponsor_topups: SponsorTopupInfo[];
-  winner_refs: string[];
+  judging_proposal?: JudgingProposal;
   created_at: string;
   updated_at: string;
 }
 
-export interface SponsorTopupInfo {
-  sponsor_name: string;
-  amount_usd: number;
-  tx_hash?: string;
-  created_at: string;
+export interface JudgingProposal {
+  rankings: Array<{
+    wallet: string;
+    project_url?: string;
+    weighted_score?: number;
+    review_count?: number;
+    total_votes?: number;
+    rank: number;
+    reasoning: string;
+  }>;
+  distributions: Array<{
+    wallet: string;
+    amount_usd: number;
+    percentage: number;
+  }>;
+  platform_fee_usd: number;
+  rationale: string;
 }
 
-export interface HackathonEntryInfo {
-  id: string;
-  track_ref: string;
-  hyperblog_ref: string;
-  dataroom_ref: string;
-  entrant_wallet: string;
-  tx_hash: string;
-  price_paid_usd: number;
-  review_number: number;
+/** Aggregated submission — one per wallet, from HyperBlog data */
+export interface AggregatedSubmission {
+  wallet: string;
   project_url?: string;
-  agentic_score?: number;
-  agentic_recommendation?: string;
-  shortlisted: boolean;
-  community_votes: number;
-  final_rank?: number;
-  prize_amount_usd?: number;
-  created_at: string;
+  latest_hyperblog_id: string;
+  latest_hyperblog_title?: string;
+  weighted_score?: number;
+  review_count: number;
+  total_votes: number;
+  latest_review_at?: string;
 }
 
 export interface MentorInfo {
@@ -687,7 +691,7 @@ export interface MentorInfo {
 }
 
 export interface LeaderboardResponse {
-  entries: HackathonEntryInfo[];
+  entries: AggregatedSubmission[];
   total: number;
   page: number;
   per_page: number;

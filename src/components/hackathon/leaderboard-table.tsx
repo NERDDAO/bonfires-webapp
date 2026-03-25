@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/cn";
-import type { HackathonEntryInfo } from "@/types";
+import type { AggregatedSubmission } from "@/types";
 import { useLeaderboard } from "@/hooks";
 
-type SortKey = "agentic_score" | "community_votes" | "recent";
+type SortKey = "weighted_score" | "community_votes" | "recent";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "agentic_score", label: "AI Score" },
+  { key: "weighted_score", label: "AI Score" },
   { key: "community_votes", label: "Votes" },
   { key: "recent", label: "Newest" },
 ];
@@ -23,7 +23,7 @@ interface LeaderboardTableProps {
 }
 
 export default function LeaderboardTable({ trackId, className }: LeaderboardTableProps) {
-  const [sortBy, setSortBy] = useState<SortKey>("agentic_score");
+  const [sortBy, setSortBy] = useState<SortKey>("weighted_score");
   const [page, setPage] = useState(1);
   const { data, isLoading } = useLeaderboard(trackId, sortBy, page);
 
@@ -61,7 +61,7 @@ export default function LeaderboardTable({ trackId, className }: LeaderboardTabl
               <th className="text-left py-2 pr-3">Wallet</th>
               <th className="text-right py-2 pr-3">Score</th>
               <th className="text-right py-2 pr-3">Votes</th>
-              <th className="text-right py-2">Paid</th>
+              <th className="text-right py-2">Reviews</th>
             </tr>
           </thead>
           <tbody>
@@ -78,7 +78,7 @@ export default function LeaderboardTable({ trackId, className }: LeaderboardTabl
                 ))
               : entries.map((entry, idx) => (
                   <tr
-                    key={entry.id}
+                    key={entry.wallet}
                     className="border-b border-[#222222] hover:bg-[#FFFFFF05] transition-colors"
                   >
                     <td className="py-3 pr-3 text-dark-s-80 font-mono">
@@ -86,7 +86,7 @@ export default function LeaderboardTable({ trackId, className }: LeaderboardTabl
                     </td>
                     <td className="py-3 pr-3">
                       <span className="text-dark-s-0 font-medium">
-                        Review #{entry.review_number}
+                        {entry.latest_hyperblog_title ?? "Untitled"}
                       </span>
                       {entry.project_url && (
                         <span className="block text-xs text-dark-s-80 truncate max-w-[200px]">
@@ -95,22 +95,22 @@ export default function LeaderboardTable({ trackId, className }: LeaderboardTabl
                       )}
                     </td>
                     <td className="py-3 pr-3 text-dark-s-60 font-mono text-xs">
-                      {truncateWallet(entry.entrant_wallet)}
+                      {truncateWallet(entry.wallet)}
                     </td>
                     <td className="py-3 pr-3 text-right">
-                      {entry.agentic_score != null ? (
+                      {entry.weighted_score != null ? (
                         <span className="text-dark-s-0 font-semibold">
-                          {entry.agentic_score.toFixed(1)}
+                          {entry.weighted_score.toFixed(1)}
                         </span>
                       ) : (
                         <span className="text-dark-s-80">--</span>
                       )}
                     </td>
                     <td className="py-3 pr-3 text-right text-dark-s-60">
-                      {entry.community_votes}
+                      {entry.total_votes}
                     </td>
                     <td className="py-3 text-right text-dark-s-80 text-xs">
-                      ${entry.price_paid_usd.toFixed(2)}
+                      {entry.review_count}
                     </td>
                   </tr>
                 ))}

@@ -55,6 +55,12 @@ export type {
   TaxonomyLabel,
   VectorSearchRequest,
   VectorSearchResponse,
+  HackathonTrackInfo,
+  SponsorTopupInfo,
+  HackathonEntryInfo,
+  MentorInfo,
+  LeaderboardResponse,
+  HackathonTrackListResponse,
 } from "./api";
 
 // Graph Types

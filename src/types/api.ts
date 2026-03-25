@@ -620,3 +620,79 @@ export interface PaymentStatusResponse {
   confirmed_at?: string;
   error?: string;
 }
+
+// ─── Hackathon Types ─────────────────────────────────────────────────────────
+
+export interface HackathonTrackInfo {
+  id: string;
+  name: string;
+  cadence: "weekly" | "monthly" | "yearly";
+  status: "upcoming" | "active" | "judging" | "completed";
+  bonfire_ref: string;
+  dataroom_ref: string;
+  starts_at: string;
+  ends_at: string;
+  judging_ends_at?: string;
+  prize_pool_usd: number;
+  entry_count: number;
+  current_entry_price_usd: number | null;
+  review_revenue_share: number;
+  mentor_revenue_share: number;
+  description?: string;
+  sponsor_topups: SponsorTopupInfo[];
+  winner_refs: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SponsorTopupInfo {
+  sponsor_name: string;
+  amount_usd: number;
+  tx_hash?: string;
+  created_at: string;
+}
+
+export interface HackathonEntryInfo {
+  id: string;
+  track_ref: string;
+  hyperblog_ref: string;
+  dataroom_ref: string;
+  entrant_wallet: string;
+  tx_hash: string;
+  price_paid_usd: number;
+  review_number: number;
+  project_url?: string;
+  agentic_score?: number;
+  agentic_recommendation?: string;
+  shortlisted: boolean;
+  community_votes: number;
+  final_rank?: number;
+  prize_amount_usd?: number;
+  created_at: string;
+}
+
+export interface MentorInfo {
+  id: string;
+  mentor_wallet: string;
+  mentor_name: string;
+  bonfire_ref: string;
+  dataroom_ref: string;
+  track_refs: string[];
+  session_count: number;
+  total_earned_usd: number;
+  bio?: string;
+  specialties: string[];
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LeaderboardResponse {
+  entries: HackathonEntryInfo[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface HackathonTrackListResponse {
+  tracks: HackathonTrackInfo[];
+}

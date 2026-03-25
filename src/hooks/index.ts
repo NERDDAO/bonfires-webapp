@@ -95,6 +95,12 @@ export {
   useDashboardData,
   useDashboardRequiresWallet,
   useRefreshDashboard,
+  // Hackathon
+  useHackathonTracks,
+  useHackathonTrack,
+  useLeaderboard,
+  useMentors,
+  hackathonTracksQueryKey,
 } from "./queries";
 
 // Mutation Hooks

@@ -12,7 +12,9 @@ export interface BonfireInfo {
   name: string;
   description?: string;
   created_at: string;
+  updated_at?: string;
   agent_count: number;
+  total_episodes?: number;
   is_public?: boolean;
   latest_taxonomies?: TaxonomyInfo[];
   /**

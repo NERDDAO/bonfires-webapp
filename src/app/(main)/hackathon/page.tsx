@@ -1,7 +1,9 @@
 "use client";
 
-import { useHackathonTracks } from "@/hooks";
+import { useState } from "react";
+import { useHackathonTracks, useAuth } from "@/hooks";
 import TrackCard, { TrackCardSkeleton } from "@/components/hackathon/track-card";
+import CreateTrackModal from "@/components/hackathon/create-track-modal";
 import type { HackathonTrackInfo } from "@/types";
 
 const CADENCES = ["weekly", "monthly", "yearly"] as const;
@@ -13,7 +15,9 @@ const CADENCE_META: Record<(typeof CADENCES)[number], { title: string; descripti
 };
 
 export default function HackathonPage() {
-  const { data: tracks, isLoading } = useHackathonTracks();
+  const { data: tracks, isLoading, refetch } = useHackathonTracks();
+  const { isSignedIn } = useAuth();
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const grouped = CADENCES.reduce(
     (acc, c) => {
@@ -47,7 +51,23 @@ export default function HackathonPage() {
             </span>
           </div>
         )}
+        {isSignedIn && (
+          <div className="mt-6">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-5 py-2.5 rounded-lg bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90 transition-colors"
+            >
+              Create Track
+            </button>
+          </div>
+        )}
       </div>
+
+      <CreateTrackModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => { setShowCreateModal(false); refetch(); }}
+      />
 
       {/* Tracks by cadence */}
       {CADENCES.map((cadence) => (

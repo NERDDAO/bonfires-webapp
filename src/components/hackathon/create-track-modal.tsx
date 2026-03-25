@@ -27,7 +27,7 @@ interface RubricInfo {
 /*  Contract constants                                                 */
 /* ------------------------------------------------------------------ */
 
-const FACTORY_ADDRESS = "0x..." as `0x${string}`;
+const FACTORY_ADDRESS = "0xb4081b1dd431699A3FA9f607a734A3939F05A827" as `0x${string}`;
 
 const FACTORY_ABI = [
   {

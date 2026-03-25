@@ -10,10 +10,12 @@ import { useWalletAccount } from "@/lib/wallet/e2e";
 
 import { HyperBlogInfo } from "@/types";
 
-import HyperBlogsHeader from "./header";
+import { hyperblogsCopy } from "@/content/hyperblogs";
+
 import HyperBlogCard from "./hyperblog-card";
 import DataroomFeed from "./dataroom-feed";
 import { DataRoomWizard } from "../web3/DataRoomWizard";
+import { Button } from "../ui/button";
 
 type Tab = "hyperblogs" | "datarooms";
 
@@ -71,12 +73,7 @@ export function HyperblogsTabbedView() {
 
   return (
     <>
-      <HyperBlogsHeader
-        showCreateButton={activeTab === "datarooms"}
-        onCreateClick={() => setWizardOpen(true)}
-      />
-
-      <div role="tablist" className="grid grid-cols-2 mt-6 border-b border-[#333333]">
+      <div role="tablist" className="grid grid-cols-2 border-b border-[#333333]">
         <button
           role="tab"
           className={`pb-3 text-sm font-montserrat font-bold uppercase tracking-wide transition-colors text-center ${activeTab === "hyperblogs" ? "border-b-2 border-[#f5572a] text-white" : "text-dark-s-500 hover:text-dark-s-200"}`}
@@ -93,9 +90,31 @@ export function HyperblogsTabbedView() {
         </button>
       </div>
 
-      {activeTab === "hyperblogs" && <HyperblogsFlatFeed />}
+      {activeTab === "hyperblogs" && (
+        <>
+          <div className="font-montserrat mt-4 text-base lg:text-lg text-[#8da8af]">
+            {hyperblogsCopy.description}
+          </div>
+          <HyperblogsFlatFeed />
+        </>
+      )}
+
       {activeTab === "datarooms" && (
-        <DataroomFeed sortBy="total_purchases" />
+        <>
+          <div className="mt-4 flex items-center justify-between">
+            <div className="font-montserrat text-base lg:text-lg text-[#8da8af]">
+              {hyperblogsCopy.dataroomDescription}
+            </div>
+            <Button
+              variant="primary"
+              className="shrink-0 ml-4"
+              onClick={() => setWizardOpen(true)}
+            >
+              Create Dataroom
+            </Button>
+          </div>
+          <DataroomFeed sortBy="total_purchases" />
+        </>
       )}
 
       <DataRoomWizard

@@ -30,7 +30,7 @@ export default function HyperBlogsHeader({
         )}
       </div>
 
-      <div className="font-laro-soft mt-2 lg:mt-4 text-sm lg:text-base">
+      <div className="font-montserrat mt-2 lg:mt-4 text-base lg:text-lg text-[#8da8af]">
         {description}
       </div>
     </div>

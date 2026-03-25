@@ -12,6 +12,7 @@ import { HyperBlogInfo } from "@/types";
 
 import { hyperblogsCopy } from "@/content/hyperblogs";
 
+import { InfoTooltip } from "@/components/ui/tooltip";
 import HyperBlogCard from "./hyperblog-card";
 import DataroomFeed from "./dataroom-feed";
 import { DataRoomWizard } from "../web3/DataRoomWizard";
@@ -92,7 +93,17 @@ export function HyperblogsTabbedView() {
 
       {activeTab === "hyperblogs" && (
         <>
-          <div className="font-montserrat mt-4 text-base lg:text-lg text-[#8da8af]">
+          <div className="flex items-center gap-2 mt-6 font-montserrat text-lg lg:text-[2rem] font-black lg:font-bold">
+            <span>{hyperblogsCopy.title}</span>
+            <InfoTooltip
+              content={hyperblogsCopy.tooltipContent}
+              side="right"
+              sideAtLg="right"
+              iconSize="sm"
+              tooltipClassName="max-w-60"
+            />
+          </div>
+          <div className="mt-1 font-montserrat text-sm lg:text-base text-[#8da8af]">
             {hyperblogsCopy.description}
           </div>
           <HyperblogsFlatFeed />

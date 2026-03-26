@@ -17,6 +17,8 @@ export interface BonfireInfo {
   total_episodes?: number;
   is_public?: boolean;
   latest_taxonomies?: TaxonomyInfo[];
+  latest_episode_id?: string | null;
+  latest_episode?: { created_at?: string; updated_at?: string; [key: string]: unknown } | null;
   /**
    * URL-safe slug for subdomain routing (e.g. "eth-boulder").
    * When present, used to build subdomain URLs: `{slug}.app.bonfires.ai`.

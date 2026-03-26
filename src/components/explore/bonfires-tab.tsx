@@ -29,11 +29,12 @@ function sortBonfires(list: BonfireInfo[], key: SortKey): BonfireInfo[] {
           new Date(a.created_at ?? 0).getTime(),
       );
     case "updated":
-      return sorted.sort(
-        (a, b) =>
-          new Date(b.updated_at ?? b.created_at ?? 0).getTime() -
-          new Date(a.updated_at ?? a.created_at ?? 0).getTime(),
-      );
+      return sorted.sort((a, b) => {
+        // Use latest episode creation time — reflects actual activity, not bonfire metadata changes
+        const aTime = a.latest_episode?.created_at ?? a.updated_at ?? a.created_at ?? 0;
+        const bTime = b.latest_episode?.created_at ?? b.updated_at ?? b.created_at ?? 0;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      });
     case "episodes":
       return sorted.sort(
         (a, b) => (b.total_episodes ?? 0) - (a.total_episodes ?? 0),

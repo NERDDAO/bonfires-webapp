@@ -79,13 +79,18 @@ export default function LeaderboardTable({ trackId, className }: LeaderboardTabl
               : entries.map((entry, idx) => (
                   <tr
                     key={entry.wallet}
-                    className="border-b border-[#222222] hover:bg-[#FFFFFF05] transition-colors"
+                    className="border-b border-[#222222] hover:bg-[#FFFFFF05] transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (entry.latest_hyperblog_id) {
+                        window.location.href = `/hyperblogs/${entry.latest_hyperblog_id}`;
+                      }
+                    }}
                   >
                     <td className="py-3 pr-3 text-dark-s-80 font-mono">
                       {(page - 1) * 20 + idx + 1}
                     </td>
                     <td className="py-3 pr-3">
-                      <span className="text-dark-s-0 font-medium">
+                      <span className="text-brand-primary font-medium hover:underline">
                         {entry.latest_hyperblog_title ?? "Untitled"}
                       </span>
                       {entry.project_url && (

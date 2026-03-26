@@ -158,7 +158,8 @@ export default function DataroomCard({
   const sourceBonfireName = data?.source_bonfire_name ? cleanBonfireName(data.source_bonfire_name) : undefined;
   const showSourceBadge = sourceBonfireName && sourceBonfireName !== bonfireName;
   const creatorWallet = data?.creator_wallet ? truncateAddress(data.creator_wallet, 4) : "";
-  const cost = `Cost: $${data?.price_usd || 0}`;
+  const displayPrice = data?.current_hyperblog_price_usd ?? String(data?.price_usd || 0);
+  const cost = `Cost: $${displayPrice}`;
   return (
     <div
       className={cn(

@@ -454,6 +454,8 @@ export interface DataRoomInfo {
   source_bonfire_name?: string | null;
   htn_template_id?: string | null;
   htn_template_type?: string | null;
+  /** Dynamic price with floor enforcement — use this for display instead of price_usd */
+  current_hyperblog_price_usd?: string | null;
 }
 
 export interface DataRoomListResponse {

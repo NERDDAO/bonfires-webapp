@@ -79,6 +79,9 @@ export function CreateBlogModal({
   const [txStep, setTxStep] = useState<TxStep>("idle");
   const [error, setError] = useState<string | null>(null);
 
+  // Dynamic price — fetched when modal opens
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
   // Template input state
   const [requiredInputs, setRequiredInputs] = useState<TemplateInput[]>([]);
   const [templateInputValues, setTemplateInputValues] = useState<Record<string, string>>({});
@@ -89,7 +92,28 @@ export function CreateBlogModal({
 
   const { isConnected } = useWalletAccount();
   const { openConnectModal } = useConnectModal();
-  const { buildAndSignPaymentHeader } = usePaymentHeader();
+  const { buildAndSignPaymentHeader } = usePaymentHeader(dataroomId);
+
+  // Fetch current dynamic price when modal opens
+  useEffect(() => {
+    if (!isOpen || !dataroomId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const dr = await apiClient.get<DataRoomInfo & { current_hyperblog_price_usd?: string }>(
+          `/api/datarooms/${dataroomId}`
+        );
+        if (cancelled) return;
+        const price = dr.current_hyperblog_price_usd
+          ? parseFloat(dr.current_hyperblog_price_usd)
+          : dr.price_usd;
+        setCurrentPrice(price);
+      } catch {
+        if (!cancelled) setCurrentPrice(dataroomPriceUsd ?? null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, dataroomId, dataroomPriceUsd]);
 
   // Fetch template required_inputs when modal opens with a template
   const fetchTemplate = useCallback(async () => {
@@ -175,17 +199,13 @@ export function CreateBlogModal({
     setTxStep("signing");
 
     try {
-      // 1. Fetch current price for this DataRoom (current_hyperblog_price_usd or price_usd)
-      let priceUsd = dataroomPriceUsd;
-      if (priceUsd == null) {
-        const dataroom = await apiClient.get<DataRoomInfo>(
-          `/api/datarooms/${dataroomId}`
-        );
-        const info = dataroom as DataRoomInfo & {
-          current_hyperblog_price_usd?: number;
-        };
-        priceUsd = info.current_hyperblog_price_usd ?? info.price_usd ?? 0;
-      }
+      // 1. Always fetch current dynamic price — don't trust the prop (may be stale base price)
+      const dataroom = await apiClient.get<DataRoomInfo & { current_hyperblog_price_usd?: string }>(
+        `/api/datarooms/${dataroomId}`
+      );
+      const priceUsd = dataroom.current_hyperblog_price_usd
+        ? parseFloat(dataroom.current_hyperblog_price_usd)
+        : dataroom.price_usd ?? dataroomPriceUsd ?? 0;
 
       const expectedAmount = priceUsd.toFixed(2);
 
@@ -281,10 +301,10 @@ export function CreateBlogModal({
 
       <div className="flex gap-2 flex-wrap mt-2">
         {dataroomTitle != null && dataroomTitle !== "" && (
-          <Badge variant="filled">Dataroom: {dataroomTitle}</Badge>
+          <Badge variant="filled" className="whitespace-normal break-words max-w-full">Dataroom: {dataroomTitle}</Badge>
         )}
         {isEvaluation && <Badge variant="filled">Evaluation</Badge>}
-        <Badge variant="outline">Cost: ${dataroomPriceUsd ?? 0}</Badge>
+        <Badge variant="outline">Cost: ${currentPrice != null ? currentPrice.toFixed(2) : (dataroomPriceUsd ?? 0)}</Badge>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col mt-3">
         {/* Dynamic template inputs (e.g. source URLs for evaluation) */}

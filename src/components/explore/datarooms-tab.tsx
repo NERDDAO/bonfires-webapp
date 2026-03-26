@@ -1,18 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef } from "react";
 import Fuse, { type IFuseOptions } from "fuse.js";
 
 import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { useDataRoomsInfiniteQuery } from "@/hooks";
-import { useCreateDataRoom } from "@/hooks/mutations/useCreateDataRoom";
-import { useWalletAccount } from "@/lib/wallet/e2e";
 import type { DataRoomInfo } from "@/types/api";
 
 import DataroomCard from "@/components/hyperblogs/dataroom-card";
-import { DataRoomWizard } from "@/components/web3/DataRoomWizard";
-import { Button } from "@/components/ui/button";
 
 const PAGE_SIZE = 12;
 
@@ -32,11 +27,6 @@ interface DataRoomsTabProps {
 }
 
 export default function DataRoomsTab({ search }: DataRoomsTabProps) {
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const createDataRoom = useCreateDataRoom();
-  const { address } = useWalletAccount();
-  const router = useRouter();
-
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
 
@@ -45,7 +35,6 @@ export default function DataRoomsTab({ search }: DataRoomsTabProps) {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Flatten pages — response shape is { datarooms: DataRoomInfo[] }
   const allDatarooms: DataRoomInfo[] = useMemo(
     () =>
       data?.pages.flatMap(
@@ -77,64 +66,8 @@ export default function DataRoomsTab({ search }: DataRoomsTabProps) {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handleWizardComplete = (config: {
-    bonfireId: string;
-    description: string;
-    systemPrompt?: string;
-    centerNodeUuid: string;
-    priceUsd: number;
-    queryLimit: number;
-    expirationDays: number;
-    dynamicPricingEnabled?: boolean;
-    priceStepUsd?: number;
-    priceDecayRate?: number;
-    imageModel?: "schnell" | "dev" | "pro" | "realism";
-    htnTemplateId?: string;
-  }) => {
-    createDataRoom.mutate(
-      {
-        bonfire_id: config.bonfireId,
-        description: config.description,
-        system_prompt: config.systemPrompt ?? "",
-        center_node_uuid: config.centerNodeUuid,
-        price_usd: config.priceUsd,
-        query_limit: config.queryLimit,
-        expiration_days: config.expirationDays,
-        dynamic_pricing_enabled: config.dynamicPricingEnabled,
-        price_step_usd: config.priceStepUsd,
-        price_decay_rate: config.priceDecayRate,
-        image_model: config.imageModel,
-        htn_template_id: config.htnTemplateId,
-        creator_wallet: address ?? "",
-      },
-      {
-        onSuccess: (mutationData) => {
-          const dataroomId = mutationData.dataroom?.id;
-          if (dataroomId) {
-            router.push(`/hyperblogs/dataroom/${dataroomId}`);
-          } else {
-            setWizardOpen(false);
-          }
-        },
-      },
-    );
-  };
-
   return (
     <div>
-      {/* Create Dataroom button */}
-      {address && (
-        <div className="flex justify-end mb-4">
-          <Button
-            variant="primary"
-            className="shrink-0"
-            onClick={() => setWizardOpen(true)}
-          >
-            Create Dataroom
-          </Button>
-        </div>
-      )}
-
       {/* Dataroom grid */}
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
         {Array.from({ length: totalCount || PAGE_SIZE }, (_, index) => {
@@ -162,15 +95,6 @@ export default function DataRoomsTab({ search }: DataRoomsTabProps) {
           {error instanceof Error ? error.message : "Failed to load data rooms"}
         </div>
       )}
-
-      {/* Wizard modal */}
-      <DataRoomWizard
-        isOpen={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        onComplete={handleWizardComplete}
-        publicOnly
-        defaultPriceUsd={1.0}
-      />
     </div>
   );
 }

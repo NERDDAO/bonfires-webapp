@@ -183,11 +183,11 @@ function ExplorePageInner() {
   const router = useRouter();
 
   // URL-synced state
-  const tab = (searchParams.get("tab") as ExploreTab) || "hyperblogs";
+  const tab = (searchParams.get("tab") as ExploreTab) || "bonfires";
   const urlSearch = searchParams.get("q") || "";
   const [search, setSearch] = useState(urlSearch);
   const [bonfireSortKey, setBonfireSortKey] = useState<SortKey>("newest");
-  const [hyperblogSortKey, setHyperblogSortKey] = useState<HyperBlogSortKey>("upvotes");
+  const [hyperblogSortKey, setHyperblogSortKey] = useState<HyperBlogSortKey>("created_at");
   const [dataroomSortKey, setDataroomSortKey] = useState<DataRoomSortKey>("total_purchases");
 
   // HyperBlog creation: picker → create modal
@@ -200,7 +200,7 @@ function ExplorePageInner() {
   const updateUrl = useCallback(
     (newTab: ExploreTab, newSearch: string) => {
       const params = new URLSearchParams();
-      if (newTab !== "hyperblogs") params.set("tab", newTab);
+      if (newTab !== "bonfires") params.set("tab", newTab);
       if (newSearch.trim()) params.set("q", newSearch.trim());
       const qs = params.toString();
       router.replace(`/explore${qs ? `?${qs}` : ""}`, { scroll: false });

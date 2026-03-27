@@ -167,8 +167,8 @@ export default function BonfireCard({
           {data.created_at && (
             <span>Created {formatRelativeDate(data.created_at)}</span>
           )}
-          {data.updated_at && (
-            <span>Updated {formatRelativeDate(data.updated_at)}</span>
+          {(data.latest_episode?.created_at ?? data.updated_at) && (
+            <span>Updated {formatRelativeDate(data.latest_episode?.created_at ?? data.updated_at ?? "")}</span>
           )}
         </div>
       </div>

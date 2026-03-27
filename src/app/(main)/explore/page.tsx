@@ -236,8 +236,11 @@ function ExplorePageInner() {
       <div className="flex flex-col-reverse lg:flex-row gap-8">
         {/* Main content */}
         <div className="flex-1 min-w-0">
-          {/* Search */}
-          <div className="relative max-w-md mb-5">
+          {/* Tabs */}
+          <ExploreTabs activeTab={tab} onTabChange={handleTabChange} />
+
+          {/* Search — below tab banner, above filters */}
+          <div className="relative max-w-md mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark-s-80 pointer-events-none" />
             <input
               type="text"
@@ -253,9 +256,6 @@ function ExplorePageInner() {
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#FFFFFF08] border border-[#333333] text-sm text-dark-s-0 placeholder:text-dark-s-80 focus:outline-none focus:border-brand-primary/50 transition-colors"
             />
           </div>
-
-          {/* Tabs */}
-          <ExploreTabs activeTab={tab} onTabChange={handleTabChange} />
 
           {/* Tab content */}
           {tab === "hyperblogs" && (

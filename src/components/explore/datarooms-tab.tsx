@@ -96,7 +96,13 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
       {/* Sort pills */}
       <div className="flex items-center gap-1.5 mb-4 mt-1">
         {DATAROOM_SORT_OPTIONS
-          .filter((opt) => !opt.toggle || sortBy === opt.key)
+          .filter((opt) => {
+            if (!opt.toggle) return true;
+            // Show price_low as default, or whichever price variant is active
+            if (opt.key === "price_low") return sortBy !== "price_high";
+            if (opt.key === "price_high") return sortBy === "price_high";
+            return true;
+          })
           .map((opt) => (
             <button
               key={opt.key}

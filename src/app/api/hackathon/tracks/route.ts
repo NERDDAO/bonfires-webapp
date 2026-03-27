@@ -1,7 +1,8 @@
 /**
  * Hackathon Tracks API Route
  *
- * GET /api/hackathon/tracks - List active/upcoming hackathon tracks
+ * GET  /api/hackathon/tracks - List active/upcoming hackathon tracks
+ * POST /api/hackathon/tracks - Create a new hackathon track (admin)
  */
 import type { HackathonTrackInfo } from "@/types";
 
@@ -34,6 +35,26 @@ export async function GET(request: Request) {
       result.error?.error ?? "Failed to fetch hackathon tracks",
       result.status,
       result.error?.details
+    );
+  }
+
+  return createSuccessResponse(result.data);
+}
+
+export async function POST(request: Request) {
+  const body = await request.json();
+
+  const result = await proxyToBackend<HackathonTrackInfo>("/hackathon/tracks", {
+    method: "POST",
+    body,
+    includeAuth: true,
+  });
+
+  if (!result.success || !result.data) {
+    return createErrorResponse(
+      result.error?.error ?? "Failed to create track",
+      result.status,
+      result.error?.details,
     );
   }
 

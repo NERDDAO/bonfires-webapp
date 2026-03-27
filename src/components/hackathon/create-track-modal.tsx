@@ -19,8 +19,10 @@ import type { BonfireInfo, HackathonTrackInfo } from "@/types";
 interface RubricInfo {
   id: string;
   name: string;
-  description: string;
-  categories: Array<{ name: string; display_name: string; weight: number }>;
+  description?: string;
+  version?: string | number;
+  is_active?: boolean;
+  categories?: Array<{ name: string; display_name: string; weight: number }>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -164,11 +166,13 @@ export default function CreateTrackModal({
     setRubricLoading(true);
     setRubrics([]);
     try {
-      const data = await apiClient.get<RubricInfo[]>(
+      const data = await apiClient.get<{ items: RubricInfo[] } | RubricInfo[]>(
         `/api/hackathon/rubrics?bonfire_id=${bonfireId}`,
         { cache: false },
       );
-      setRubrics(data);
+      // Backend returns {items: [...]} wrapper
+      const items = Array.isArray(data) ? data : (data?.items ?? []);
+      setRubrics(items);
     } catch {
       setRubrics([]);
     } finally {
@@ -370,7 +374,7 @@ export default function CreateTrackModal({
                 </span>
               )}
               <span className="block text-xs text-dark-s-80 mt-2">
-                {r.categories.length} categor{r.categories.length === 1 ? "y" : "ies"}
+                {r.categories?.length ?? 0} categor{(r.categories?.length ?? 0) === 1 ? "y" : "ies"}{r.version ? ` · v${r.version}` : ""}
               </span>
             </button>
           ))}
@@ -584,24 +588,84 @@ export default function CreateTrackModal({
           <Row label="Fee" value={`${feeBps} bps (${(parseInt(feeBps, 10) / 100).toFixed(1)}%)`} />
         </div>
 
-        {/* Deploy button */}
-        <button
-          type="button"
-          disabled={deploying || !isConnected}
-          onClick={handleDeploy}
-          className={cn(
-            "w-full py-3 text-sm rounded-lg font-semibold transition-colors",
-            deploying || !isConnected
-              ? "bg-[#FFFFFF10] text-dark-s-80 cursor-not-allowed"
-              : "bg-brand-primary text-white hover:bg-brand-primary/90",
+        {/* Deploy or use existing */}
+        <div className="space-y-3">
+          <button
+            type="button"
+            disabled={deploying || !isConnected}
+            onClick={handleDeploy}
+            className={cn(
+              "w-full py-3 text-sm rounded-lg font-semibold transition-colors",
+              deploying || !isConnected
+                ? "bg-[#FFFFFF10] text-dark-s-80 cursor-not-allowed"
+                : "bg-brand-primary text-white hover:bg-brand-primary/90",
+            )}
+          >
+            {!isConnected
+              ? "Connect wallet to deploy"
+              : deploying
+                ? "Deploying..."
+                : "Deploy Escrow & Create Track"}
+          </button>
+
+          {error && (
+          <>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#333333]" />
+            <span className="text-xs text-dark-s-80">or use existing escrow</span>
+            <div className="flex-1 h-px bg-[#333333]" />
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="0x... escrow address"
+              id="existing-escrow"
+              className="flex-1 px-3 py-2 rounded-lg bg-[#FFFFFF08] border border-[#333333] text-xs text-dark-s-0 placeholder:text-dark-s-80 focus:outline-none focus:border-brand-primary/50 font-mono"
+            />
+            <button
+              type="button"
+              disabled={deploying}
+              onClick={async () => {
+                const input = document.getElementById("existing-escrow") as HTMLInputElement;
+                const addr = input?.value?.trim();
+                if (!addr?.startsWith("0x") || addr.length !== 42) {
+                  setError("Invalid address");
+                  return;
+                }
+                setDeploying(true);
+                setError(null);
+                try {
+                  const body = {
+                    name,
+                    cadence,
+                    rubric_id: selectedRubric?.id,
+                    bonfire_ref: selectedBonfire?.id,
+                    escrow_address: addr,
+                    starts_at: startsAt || new Date().toISOString(),
+                    ends_at: endsAt || new Date(Date.now() + 7 * 86400000).toISOString(),
+                    base_price_usd: parseFloat(basePrice),
+                    price_step_usd: parseFloat(priceStep),
+                    price_decay_rate: parseFloat(decayRate),
+                    platform_fee_bps: parseInt(feeBps, 10),
+                  };
+                  const track = await apiClient.post<HackathonTrackInfo>("/api/hackathon/tracks", body);
+                  setCreatedTrack(track);
+                  onCreated?.(track);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to create track");
+                } finally {
+                  setDeploying(false);
+                }
+              }}
+              className="px-4 py-2 rounded-lg bg-[#FFFFFF08] border border-[#333333] text-xs text-dark-s-60 hover:border-brand-primary/50 hover:text-dark-s-0 transition-colors"
+            >
+              Create Track
+            </button>
+          </div>
+          </>
           )}
-        >
-          {!isConnected
-            ? "Connect wallet to deploy"
-            : deploying
-              ? "Deploying..."
-              : "Deploy Escrow & Create Track"}
-        </button>
+        </div>
 
         {/* Error */}
         {error && (

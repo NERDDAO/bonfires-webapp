@@ -11,9 +11,11 @@ import { proxyToBackend, createSuccessResponse, createErrorResponse } from "@/li
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const hackathonTrackId = searchParams.get("hackathon_track_id");
+  const dataroomId = searchParams.get("dataroom_id");
 
   const queryParams: Record<string, string> = {};
   if (hackathonTrackId) queryParams["hackathon_track_id"] = hackathonTrackId;
+  if (dataroomId) queryParams["dataroom_id"] = dataroomId;
 
   const result = await proxyToBackend("/payment/config", {
     method: "GET",

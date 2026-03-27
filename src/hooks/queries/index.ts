@@ -103,3 +103,12 @@ export {
   useHTNTemplatesQuery,
   htnTemplatesQueryKey,
 } from "./useHTNTemplatesQuery";
+
+// Hackathon
+export {
+  useHackathonTracks,
+  useHackathonTrack,
+  useLeaderboard,
+  useMentors,
+  hackathonTracksQueryKey,
+} from "./useHackathonQuery";

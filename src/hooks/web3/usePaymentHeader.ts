@@ -54,7 +54,7 @@ const FALLBACK_CONFIG = {
 /**
  * Hook for building and signing X402 payment headers.
  */
-export function usePaymentHeader(): UsePaymentHeaderReturn {
+export function usePaymentHeader(dataroomId?: string): UsePaymentHeaderReturn {
   const { address, isConnected } = useWalletAccount();
   const { signTypedDataAsync, isPending } = useSignTypedData();
   const [error, setError] = useState<Error | null>(null);
@@ -85,7 +85,7 @@ export function usePaymentHeader(): UsePaymentHeaderReturn {
         let tokenAddress = FALLBACK_CONFIG.tokenAddress;
         let network = FALLBACK_CONFIG.network;
         try {
-          const serverConfig = await fetchPaymentConfig();
+          const serverConfig = await fetchPaymentConfig(undefined, dataroomId);
           recipientAddress = serverConfig.payTo;
           tokenAddress = serverConfig.asset || tokenAddress;
           network = serverConfig.network || network;

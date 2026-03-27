@@ -176,13 +176,16 @@ export default function BonfireCard({
       {/* Actions */}
       <div className="shrink-0 hidden sm:flex items-center gap-2">
         {data.slug && (
-          <a
-            href={graphUrl}
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-brand-primary/50 text-brand-primary text-sm font-medium transition-colors hover:bg-brand-primary/10 no-underline"
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.location.href = graphUrl;
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-brand-primary/50 text-brand-primary text-sm font-medium transition-colors hover:bg-brand-primary/10"
           >
             Explore Graph
-          </a>
+          </button>
         )}
       </div>
     </a>

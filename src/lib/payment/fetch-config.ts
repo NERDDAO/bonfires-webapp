@@ -20,12 +20,30 @@ export interface ServerPaymentConfig {
 }
 
 let cachedConfig: ServerPaymentConfig | null = null;
+let cachedKey: string | null = null;
 
-export async function fetchPaymentConfig(): Promise<ServerPaymentConfig> {
-  if (cachedConfig) return cachedConfig;
+/**
+ * Fetch payment config. When hackathonTrackId or dataroomId is provided,
+ * payTo is overridden to the track's escrow address so payments fund
+ * the hackathon prize pool.
+ */
+export async function fetchPaymentConfig(
+  hackathonTrackId?: string,
+  dataroomId?: string,
+): Promise<ServerPaymentConfig> {
+  const cacheKey = hackathonTrackId ?? dataroomId ?? null;
 
-  // Use the Next.js API route to avoid CORS (server-side proxy)
-  const response = await fetch("/api/payments/config");
+  // Return cached if same context
+  if (cachedConfig && cachedKey === cacheKey) {
+    return cachedConfig;
+  }
+
+  const params = new URLSearchParams();
+  if (hackathonTrackId) params.set("hackathon_track_id", hackathonTrackId);
+  if (dataroomId) params.set("dataroom_id", dataroomId);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+
+  const response = await fetch(`/api/payments/config${qs}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch payment config: ${response.status}`);
   }
@@ -33,9 +51,11 @@ export async function fetchPaymentConfig(): Promise<ServerPaymentConfig> {
   const body = await response.json();
   // The proxy wraps in {data: ...} via createSuccessResponse
   cachedConfig = (body.data ?? body) as ServerPaymentConfig;
+  cachedKey = cacheKey;
   return cachedConfig;
 }
 
 export function clearPaymentConfigCache(): void {
   cachedConfig = null;
+  cachedKey = null;
 }

@@ -141,7 +141,7 @@ export function HyperBlogsSection({
       emptyMessage="No HyperBlogs yet. Create one from a Data Room!"
       skeletonRows={3}
       headerAction={
-        <Link href="/hyperblogs" className="btn btn-sm btn-primary">
+        <Link href="/explore?tab=hyperblogs" className="btn btn-sm btn-primary">
           Browse All
         </Link>
       }

@@ -50,7 +50,7 @@ export const hyperblogsPreviewSectionCopy = {
   tooltipIcon: "/icons/tooltip.svg",
   tooltipAlt: "Hyperblogs Info",
   cta: "Create your own",
-  ctaHref: "/hyperblogs",
+  ctaHref: "/explore?tab=hyperblogs",
   tooltipContent: [
     "Hyperblogs are a novel product ecosystem from Bonfires. They provide users an avenue to generate static content from the dynamically updating graph.",
     "When creating Hyperblogs, users may choose a Topic (a focus node on the graph, through which the Hyperblog context is retrieved) and a Prompt. The Prompt tells the system the narrative of the Hyperblog, informing which data is retrieved from the graph to populate the blog content.",
@@ -60,7 +60,7 @@ export const hyperblogsPreviewSectionCopy = {
   featuredBlogTitle: "Featured Hyperblog",
   latestBlogsTitle: "Latest Hyperblogs",
   viewMoreCtaTitle: "View More",
-  viewMoreCtaHref: "/hyperblogs",
+  viewMoreCtaHref: "/explore?tab=hyperblogs",
 };
 
 export const howItWorksSectionCopy = {

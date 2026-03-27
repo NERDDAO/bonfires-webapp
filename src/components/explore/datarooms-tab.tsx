@@ -8,6 +8,7 @@ import { useDataRoomsInfiniteQuery } from "@/hooks";
 import type { DataRoomInfo } from "@/types/api";
 
 import DataroomCard from "@/components/hyperblogs/dataroom-card";
+import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 12;
 
@@ -22,16 +23,25 @@ const FUSE_OPTIONS: IFuseOptions<DataRoomInfo> = {
   minMatchCharLength: 2,
 };
 
+export type DataRoomSortKey = "total_purchases" | "created_at";
+
+export const DATAROOM_SORT_OPTIONS: { key: DataRoomSortKey; label: string }[] = [
+  { key: "total_purchases", label: "Most Popular" },
+  { key: "created_at", label: "Newest" },
+];
+
 interface DataRoomsTabProps {
   search: string;
+  sortBy: DataRoomSortKey;
+  onSortChange: (key: DataRoomSortKey) => void;
 }
 
-export default function DataRoomsTab({ search }: DataRoomsTabProps) {
+export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRoomsTabProps) {
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
 
   const { data, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId, sortBy: "total_purchases" });
+    useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId, sortBy });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -68,8 +78,26 @@ export default function DataRoomsTab({ search }: DataRoomsTabProps) {
 
   return (
     <div>
+      {/* Sort pills */}
+      <div className="flex items-center gap-1.5 mb-4 mt-1">
+        {DATAROOM_SORT_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            onClick={() => onSortChange(opt.key)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+              sortBy === opt.key
+                ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/40"
+                : "bg-[#FFFFFF08] text-dark-s-60 border border-transparent hover:border-[#444444]",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {/* Dataroom grid */}
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {Array.from({ length: totalCount || PAGE_SIZE }, (_, index) => {
           const dataroom = filtered[index];
           return index < filtered.length && dataroom ? (

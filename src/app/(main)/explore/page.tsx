@@ -9,11 +9,11 @@ import { useAuth, useHackathonTracks } from "@/hooks";
 import { Search } from "lucide-react";
 
 import BonfiresTab, { type SortKey } from "@/components/explore/bonfires-tab";
-import DataRoomsTab from "@/components/explore/datarooms-tab";
+import DataRoomsTab, { type DataRoomSortKey } from "@/components/explore/datarooms-tab";
 import ExploreTabs, {
   type ExploreTab,
 } from "@/components/explore/explore-tabs";
-import HyperBlogsTab from "@/components/explore/hyperblogs-tab";
+import HyperBlogsTab, { type HyperBlogSortKey } from "@/components/explore/hyperblogs-tab";
 import TrackCard, {
   TrackCardSkeleton,
 } from "@/components/hackathon/track-card";
@@ -185,6 +185,8 @@ function ExplorePageInner() {
   const urlSearch = searchParams.get("q") || "";
   const [search, setSearch] = useState(urlSearch);
   const [bonfireSortKey, setBonfireSortKey] = useState<SortKey>("newest");
+  const [hyperblogSortKey, setHyperblogSortKey] = useState<HyperBlogSortKey>("upvotes");
+  const [dataroomSortKey, setDataroomSortKey] = useState<DataRoomSortKey>("total_purchases");
 
   // HyperBlog creation: picker → create modal
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -254,8 +256,12 @@ function ExplorePageInner() {
           <ExploreTabs activeTab={tab} onTabChange={handleTabChange} />
 
           {/* Tab content */}
-          {tab === "hyperblogs" && <HyperBlogsTab search={search} />}
-          {tab === "datarooms" && <DataRoomsTab search={search} />}
+          {tab === "hyperblogs" && (
+            <HyperBlogsTab search={search} sortBy={hyperblogSortKey} onSortChange={setHyperblogSortKey} />
+          )}
+          {tab === "datarooms" && (
+            <DataRoomsTab search={search} sortBy={dataroomSortKey} onSortChange={setDataroomSortKey} />
+          )}
           {tab === "bonfires" && (
             <BonfiresTab
               search={search}

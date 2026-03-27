@@ -7,6 +7,7 @@ import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { usePublicHyperBlogsInfiniteQuery } from "@/hooks/queries/useHyperBlogsQuery";
 import type { HyperBlogInfo } from "@/types";
 import HyperBlogCard from "@/components/hyperblogs/hyperblog-card";
+import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 8;
 
@@ -22,22 +23,30 @@ const FUSE_OPTIONS: IFuseOptions<HyperBlogInfo> = {
   minMatchCharLength: 2,
 };
 
+export type HyperBlogSortKey = "upvotes" | "created_at";
+
+export const HYPERBLOG_SORT_OPTIONS: { key: HyperBlogSortKey; label: string }[] = [
+  { key: "upvotes", label: "Most Upvoted" },
+  { key: "created_at", label: "Newest" },
+];
+
 interface HyperBlogsTabProps {
   search: string;
+  sortBy: HyperBlogSortKey;
+  onSortChange: (key: HyperBlogSortKey) => void;
 }
 
-export default function HyperBlogsTab({ search }: HyperBlogsTabProps) {
+export default function HyperBlogsTab({ search, sortBy, onSortChange }: HyperBlogsTabProps) {
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isError, error } =
     usePublicHyperBlogsInfiniteQuery({
       bonfireId,
-      sortBy: "upvotes",
+      sortBy,
       pageSize: PAGE_SIZE,
     });
 
-  // Flatten all pages into a single array — response shape is { hyperblogs: HyperBlogInfo[] }
   const allBlogs: HyperBlogInfo[] = useMemo(
     () =>
       data?.pages.flatMap(
@@ -48,7 +57,6 @@ export default function HyperBlogsTab({ search }: HyperBlogsTabProps) {
 
   const placeholderCount = isFetchingNextPage ? PAGE_SIZE : 0;
 
-  // Fuse search
   const fuse = useMemo(() => new Fuse(allBlogs, FUSE_OPTIONS), [allBlogs]);
   const filtered: HyperBlogInfo[] = useMemo(() => {
     const trimmed = search.trim();
@@ -58,7 +66,6 @@ export default function HyperBlogsTab({ search }: HyperBlogsTabProps) {
 
   const totalCount = filtered.length + placeholderCount;
 
-  // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -75,7 +82,25 @@ export default function HyperBlogsTab({ search }: HyperBlogsTabProps) {
 
   return (
     <>
-      <div className="mt-4 flex flex-col gap-4 max-w-2xl mx-auto w-full">
+      {/* Sort pills */}
+      <div className="flex items-center gap-1.5 mb-4 mt-1">
+        {HYPERBLOG_SORT_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            onClick={() => onSortChange(opt.key)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+              sortBy === opt.key
+                ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/40"
+                : "bg-[#FFFFFF08] text-dark-s-60 border border-transparent hover:border-[#444444]",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full">
         {Array.from({ length: totalCount || PAGE_SIZE }, (_, index) => {
           const blog = filtered[index];
           return index < filtered.length && blog ? (

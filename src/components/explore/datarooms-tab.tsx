@@ -25,11 +25,11 @@ const FUSE_OPTIONS: IFuseOptions<DataRoomInfo> = {
 
 export type DataRoomSortKey = "total_purchases" | "created_at" | "price_low" | "price_high";
 
-export const DATAROOM_SORT_OPTIONS: { key: DataRoomSortKey; label: string }[] = [
+export const DATAROOM_SORT_OPTIONS: { key: DataRoomSortKey; label: string; toggle?: DataRoomSortKey }[] = [
   { key: "total_purchases", label: "Most Popular" },
   { key: "created_at", label: "Newest" },
-  { key: "price_low", label: "Price: Low" },
-  { key: "price_high", label: "Price: High" },
+  { key: "price_low", label: "Price ↑", toggle: "price_high" },
+  { key: "price_high", label: "Price ↓", toggle: "price_low" },
 ];
 
 interface DataRoomsTabProps {
@@ -95,20 +95,28 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
     <div>
       {/* Sort pills */}
       <div className="flex items-center gap-1.5 mb-4 mt-1">
-        {DATAROOM_SORT_OPTIONS.map((opt) => (
-          <button
-            key={opt.key}
-            onClick={() => onSortChange(opt.key)}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
-              sortBy === opt.key
-                ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/40"
-                : "bg-[#FFFFFF08] text-dark-s-60 border border-transparent hover:border-[#444444]",
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
+        {DATAROOM_SORT_OPTIONS
+          .filter((opt) => !opt.toggle || sortBy === opt.key)
+          .map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => {
+                if (sortBy === opt.key && opt.toggle) {
+                  onSortChange(opt.toggle);
+                } else {
+                  onSortChange(opt.key);
+                }
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+                sortBy === opt.key
+                  ? "bg-brand-primary/20 text-brand-primary border border-brand-primary/40"
+                  : "bg-[#FFFFFF08] text-dark-s-60 border border-transparent hover:border-[#444444]",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
       </div>
 
       {/* Dataroom grid */}

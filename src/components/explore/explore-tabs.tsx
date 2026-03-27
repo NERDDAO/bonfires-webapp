@@ -6,8 +6,8 @@ export type ExploreTab = "bonfires" | "datarooms" | "hyperblogs";
 
 const TABS: { key: ExploreTab; label: string; description: string }[] = [
   { key: "bonfires", label: "Bonfires", description: "Community-driven knowledge spaces with AI agents and knowledge graphs" },
-  { key: "datarooms", label: "Data Rooms", description: "Curated data access points with dynamic pricing and AI-generated content" },
-  { key: "hyperblogs", label: "Hyperblogs", description: "AI-generated articles and evaluations from knowledge graph insights" },
+  { key: "datarooms", label: "Data Rooms", description: "Curated access points into bonfire knowledge graphs with dynamic pricing" },
+  { key: "hyperblogs", label: "Hyperblogs", description: "AI-generated articles and evaluations produced from data rooms" },
 ];
 
 interface ExploreTabsProps {

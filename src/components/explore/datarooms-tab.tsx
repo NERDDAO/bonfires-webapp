@@ -23,11 +23,13 @@ const FUSE_OPTIONS: IFuseOptions<DataRoomInfo> = {
   minMatchCharLength: 2,
 };
 
-export type DataRoomSortKey = "total_purchases" | "created_at";
+export type DataRoomSortKey = "total_purchases" | "created_at" | "price_low" | "price_high";
 
 export const DATAROOM_SORT_OPTIONS: { key: DataRoomSortKey; label: string }[] = [
   { key: "total_purchases", label: "Most Popular" },
   { key: "created_at", label: "Newest" },
+  { key: "price_low", label: "Price: Low" },
+  { key: "price_high", label: "Price: High" },
 ];
 
 interface DataRoomsTabProps {
@@ -40,8 +42,11 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
 
+  // Price sorts are client-side; API only supports total_purchases and created_at
+  const apiSortBy = sortBy === "price_low" || sortBy === "price_high" ? "created_at" : sortBy;
+
   const { data, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId, sortBy });
+    useDataRoomsInfiniteQuery({ pageSize: PAGE_SIZE, bonfireId, sortBy: apiSortBy });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -56,9 +61,19 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
   const fuse = useMemo(() => new Fuse(allDatarooms, FUSE_OPTIONS), [allDatarooms]);
   const filtered: DataRoomInfo[] = useMemo(() => {
     const trimmed = search.trim();
-    if (!trimmed) return allDatarooms;
-    return fuse.search(trimmed).map((r) => r.item);
-  }, [allDatarooms, fuse, search]);
+    let results = trimmed ? fuse.search(trimmed).map((r) => r.item) : allDatarooms;
+
+    // Client-side price sort
+    if (sortBy === "price_low" || sortBy === "price_high") {
+      const getPrice = (dr: DataRoomInfo) =>
+        dr.current_hyperblog_price_usd ? parseFloat(dr.current_hyperblog_price_usd) : dr.price_usd;
+      results = [...results].sort((a, b) =>
+        sortBy === "price_low" ? getPrice(a) - getPrice(b) : getPrice(b) - getPrice(a),
+      );
+    }
+
+    return results;
+  }, [allDatarooms, fuse, search, sortBy]);
 
   const placeholderCount = isFetchingNextPage ? PAGE_SIZE : 0;
   const totalCount = filtered.length + placeholderCount;

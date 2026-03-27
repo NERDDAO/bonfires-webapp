@@ -107,32 +107,34 @@ function ExploreSidebar({ onCreateDataRoom, onCreateHyperBlog }: { onCreateDataR
           </div>
         )}
 
-        {/* Actions */}
-        {isSignedIn && (
-          <div className="space-y-2">
-            <h2 className="font-montserrat text-sm font-bold text-dark-s-0 uppercase tracking-wider">
-              Create
-            </h2>
-            <button
-              onClick={onCreateHyperBlog}
-              className="w-full text-left px-3 py-2.5 rounded-lg bg-brand-primary/10 border border-brand-primary/30 text-sm text-brand-primary hover:bg-brand-primary/20 transition-colors"
-            >
-              + HyperBlog
-            </button>
-            <button
-              onClick={onCreateDataRoom}
-              className="w-full text-left px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors"
-            >
-              + Data Room
-            </button>
-            <Link
-              href="/hackathon"
-              className="block w-full px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors no-underline"
-            >
-              + Hackathon Track
-            </Link>
-          </div>
-        )}
+        {/* Create — HyperBlog always visible, others require sign-in */}
+        <div className="space-y-2">
+          <h2 className="font-montserrat text-sm font-bold text-dark-s-0 uppercase tracking-wider">
+            Create
+          </h2>
+          <button
+            onClick={onCreateHyperBlog}
+            className="w-full text-left px-3 py-2.5 rounded-lg bg-brand-primary/10 border border-brand-primary/30 text-sm text-brand-primary hover:bg-brand-primary/20 transition-colors"
+          >
+            + HyperBlog
+          </button>
+          {isSignedIn && (
+            <>
+              <button
+                onClick={onCreateDataRoom}
+                className="w-full text-left px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors"
+              >
+                + Data Room
+              </button>
+              <Link
+                href="/hackathon"
+                className="block w-full px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors no-underline"
+              >
+                + Hackathon Track
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </aside>
   );

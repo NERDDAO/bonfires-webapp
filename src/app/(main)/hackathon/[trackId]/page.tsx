@@ -1,10 +1,11 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useHackathonTrack } from "@/hooks";
 import LeaderboardTable from "@/components/hackathon/leaderboard-table";
 import CountdownTimer from "@/components/hackathon/countdown-timer";
+import { CreateBlogModal } from "@/components/hyperblogs/create-blog";
 import { cn } from "@/lib/cn";
 
 const CADENCE_COLORS = {
@@ -20,6 +21,7 @@ export default function TrackDetailPage({
 }) {
   const { trackId } = use(params);
   const { data: track, isLoading, isError } = useHackathonTrack(trackId);
+  const [createBlogOpen, setCreateBlogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -114,7 +116,7 @@ export default function TrackDetailPage({
       </div>
 
       {/* Submit CTA */}
-      {track.status === "active" && (
+      {(track.status === "active" || track.status === "upcoming") && (
         <div className="mb-8 flex items-center gap-4 p-4 rounded-xl bg-brand-primary/5 border border-brand-primary/20">
           <div className="flex-1">
             <span className="text-dark-s-0 font-semibold">Ready to compete?</span>
@@ -122,14 +124,27 @@ export default function TrackDetailPage({
               Submit your project for an AI review. Cost: ${track.current_entry_price_usd?.toFixed(2) ?? "..."} (increases with each review).
             </span>
           </div>
-          <Link
-            href={`/hackathon/${trackId}/submit`}
-            className="shrink-0 inline-flex items-center px-5 py-2.5 rounded-lg bg-brand-primary text-white text-sm font-semibold no-underline hover:bg-brand-primary/90 transition-colors"
+          <button
+            onClick={() => setCreateBlogOpen(true)}
+            className="shrink-0 inline-flex items-center px-5 py-2.5 rounded-lg bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90 transition-colors"
           >
             Submit Entry
-          </Link>
+          </button>
         </div>
       )}
+
+      {/* Create Blog Modal */}
+      <CreateBlogModal
+        isOpen={createBlogOpen}
+        onClose={() => setCreateBlogOpen(false)}
+        dataroomId={track.dataroom_ref}
+        dataroomTitle={track.name}
+        htnTemplateType="hackathon_review"
+        onSuccess={(hyperblogId) => {
+          setCreateBlogOpen(false);
+          window.location.href = `/hyperblogs/${hyperblogId}`;
+        }}
+      />
 
       {/* Leaderboard */}
       <h2 className="font-montserrat text-lg font-bold text-dark-s-0 mb-4">

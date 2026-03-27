@@ -6,8 +6,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth, useHackathonTracks } from "@/hooks";
-import { useCreateDataRoom } from "@/hooks/mutations/useCreateDataRoom";
-import { useWalletAccount } from "@/lib/wallet/e2e";
 import { Search } from "lucide-react";
 
 import BonfiresTab, { type SortKey } from "@/components/explore/bonfires-tab";
@@ -194,49 +192,6 @@ function ExplorePageInner() {
 
   // DataRoom wizard
   const [wizardOpen, setWizardOpen] = useState(false);
-  const createDataRoom = useCreateDataRoom();
-  const { address } = useWalletAccount();
-
-  const handleWizardComplete = useCallback(
-    (config: {
-      bonfireId: string;
-      description: string;
-      systemPrompt?: string;
-      centerNodeUuid: string;
-      priceUsd: number;
-      queryLimit: number;
-      expirationDays: number;
-      dynamicPricingEnabled?: boolean;
-      priceStepUsd?: number;
-      priceDecayRate?: number;
-      imageModel?: "schnell" | "dev" | "pro" | "realism";
-      htnTemplateId?: string;
-    }) => {
-      createDataRoom.mutate(
-        {
-          bonfire_id: config.bonfireId,
-          description: config.description,
-          system_prompt: config.systemPrompt ?? "",
-          center_node_uuid: config.centerNodeUuid,
-          price_usd: config.priceUsd,
-          query_limit: config.queryLimit,
-          expiration_days: config.expirationDays,
-          dynamic_pricing_enabled: config.dynamicPricingEnabled,
-          price_step_usd: config.priceStepUsd,
-          price_decay_rate: config.priceDecayRate,
-          image_model: config.imageModel,
-          htn_template_id: config.htnTemplateId,
-        },
-        {
-          onSuccess: (data) => {
-            setWizardOpen(false);
-            if (data?.id) router.push(`/hyperblogs/dataroom/${data.id}`);
-          },
-        },
-      );
-    },
-    [createDataRoom, router],
-  );
 
   const updateUrl = useCallback(
     (newTab: ExploreTab, newSearch: string) => {
@@ -321,8 +276,8 @@ function ExplorePageInner() {
       <DataRoomWizard
         isOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
-        onComplete={handleWizardComplete}
-        creatorWallet={address ?? ""}
+        onComplete={() => setWizardOpen(false)}
+        publicOnly
       />
 
       {/* DataRoom picker → Create Blog flow */}

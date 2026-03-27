@@ -676,6 +676,10 @@ export interface AggregatedSubmission {
   latest_hyperblog_id: string;
   latest_hyperblog_title?: string;
   weighted_score?: number;
+  recommendation?: string;
+  summary?: string;
+  strengths?: string[];
+  concerns?: string[];
   review_count: number;
   total_votes: number;
   latest_review_at?: string;

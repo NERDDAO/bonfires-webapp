@@ -94,7 +94,10 @@ export function CreateBlogModal({
   const { openConnectModal } = useConnectModal();
   const { buildAndSignPaymentHeader } = usePaymentHeader(dataroomId);
 
-  // Fetch current dynamic price when modal opens
+  // Resolved template ID — from prop or fetched from dataroom
+  const [resolvedHtnTemplateId, setResolvedHtnTemplateId] = useState<string | null>(htnTemplateId ?? null);
+
+  // Fetch current dynamic price + resolve template ID when modal opens
   useEffect(() => {
     if (!isOpen || !dataroomId) return;
     let cancelled = false;
@@ -108,20 +111,25 @@ export function CreateBlogModal({
           ? parseFloat(dr.current_hyperblog_price_usd)
           : dr.price_usd;
         setCurrentPrice(price);
+        // Resolve template ID from dataroom if not provided as prop
+        if (!htnTemplateId && dr.htn_template_id) {
+          setResolvedHtnTemplateId(dr.htn_template_id);
+        }
       } catch {
         if (!cancelled) setCurrentPrice(dataroomPriceUsd ?? null);
       }
     })();
     return () => { cancelled = true; };
-  }, [isOpen, dataroomId, dataroomPriceUsd]);
+  }, [isOpen, dataroomId, dataroomPriceUsd, htnTemplateId]);
 
   // Fetch template required_inputs when modal opens with a template
   const fetchTemplate = useCallback(async () => {
-    if (!htnTemplateId || !isOpen) return;
+    const templateId = resolvedHtnTemplateId;
+    if (!templateId || !isOpen) return;
     setTemplateLoading(true);
     try {
       const template = await apiClient.get<HTNTemplateInfo>(
-        `/api/htn-templates/${htnTemplateId}`
+        `/api/htn-templates/${templateId}`
       );
       // Resolve template type from fetched data (backend doesn't send htn_template_type on datarooms)
       if (template.template_type) {
@@ -141,7 +149,7 @@ export function CreateBlogModal({
     } finally {
       setTemplateLoading(false);
     }
-  }, [htnTemplateId, isOpen]);
+  }, [resolvedHtnTemplateId, isOpen]);
 
   useEffect(() => {
     fetchTemplate();

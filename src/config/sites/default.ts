@@ -27,7 +27,7 @@ export const defaultSiteConfig: SiteConfig = {
 
   features: {
     graphExplorer: true,
-    exploreBonfires: false,
+    exploreBonfires: true,
     homePage: false,
   },
 };

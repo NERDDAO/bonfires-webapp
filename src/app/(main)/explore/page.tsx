@@ -2,10 +2,9 @@
 
 import { Suspense, useCallback, useState } from "react";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { useAuth, useHackathonTracks } from "@/hooks";
+import { useAuth } from "@/hooks";
 import { Search } from "lucide-react";
 
 import BonfiresTab, { type SortKey } from "@/components/explore/bonfires-tab";
@@ -14,14 +13,11 @@ import ExploreTabs, {
   type ExploreTab,
 } from "@/components/explore/explore-tabs";
 import HyperBlogsTab, { type HyperBlogSortKey } from "@/components/explore/hyperblogs-tab";
-import TrackCard, {
-  TrackCardSkeleton,
-} from "@/components/hackathon/track-card";
 import { useDataRoomsQuery } from "@/hooks";
 import type { DataRoomInfo } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { cleanBonfireName } from "@/lib/utils/bonfire-name";
-import { truncateAddress } from "@/lib/utils";
+
 import { CreateBlogModal } from "@/components/hyperblogs/create-blog";
 import { Modal } from "@/components/ui/modal";
 import { DataRoomWizard } from "@/components/web3/DataRoomWizard";
@@ -65,47 +61,56 @@ function DataRoomMiniCard({
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
-function ExploreSidebar({ onCreateDataRoom, onCreateHyperBlog }: { onCreateDataRoom: () => void; onCreateHyperBlog: () => void }) {
-  const { data: tracks, isLoading: tracksLoading } = useHackathonTracks();
-  const { isSignedIn } = useAuth();
+const FEATURED_LINKS: { label: string; href: string; accent?: boolean }[] = [
+  {
+    label: "Vote on People's Prize",
+    href: "https://confetti.win/contest/mainnet/0x5fc82ac435ab66d0cbd9db0eff11b7ee8ba89121",
+    accent: true,
+  },
+  {
+    label: "Mint Bonfires NFT",
+    href: "https://mint.bonfires.ai",
+    accent: true,
+  },
+  {
+    label: "Telegram",
+    href: "https://t.me/bonfiresai",
+  },
+  {
+    label: "Twitter / X",
+    href: "https://x.com/bonfiresai",
+  },
+];
 
-  const activeTracks = (tracks ?? []).filter(
-    (t) => t.status === "active" || t.status === "upcoming",
-  );
+function ExploreSidebar({ onCreateDataRoom, onCreateHyperBlog }: { onCreateDataRoom: () => void; onCreateHyperBlog: () => void }) {
+  const { isSignedIn } = useAuth();
 
   return (
     <aside className="w-full lg:w-72 xl:w-80 shrink-0">
       <div className="lg:sticky lg:top-24 space-y-6">
-        {/* Hackathon tracks */}
-        {(tracksLoading || activeTracks.length > 0) && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-montserrat text-sm font-bold text-dark-s-0 uppercase tracking-wider">
-                Hackathon Tracks
-              </h2>
-              <Link
-                href="/hackathon"
-                className="text-brand-primary text-xs hover:underline no-underline"
+        {/* Featured */}
+        <div>
+          <h2 className="font-montserrat text-sm font-bold text-dark-s-0 uppercase tracking-wider mb-3">
+            Featured
+          </h2>
+          <div className="space-y-2">
+            {FEATURED_LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`block w-full px-3 py-2.5 rounded-lg text-sm transition-colors no-underline ${
+                  link.accent
+                    ? "bg-brand-primary/10 border border-brand-primary/30 text-brand-primary hover:bg-brand-primary/20"
+                    : "bg-[#FFFFFF05] border border-[#333333] text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0"
+                }`}
               >
-                View all
-              </Link>
-            </div>
-            <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-              {tracksLoading
-                ? Array.from({ length: 2 }, (_, i) => (
-                    <TrackCardSkeleton key={`skel-${i}`} className="min-w-[240px] lg:min-w-0" />
-                  ))
-                : activeTracks.map((track) => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      compact
-                      className="min-w-[240px] lg:min-w-0"
-                    />
-                  ))}
-            </div>
+                {link.label}
+              </a>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* Create — HyperBlog always visible, others require sign-in */}
         <div className="space-y-2">
@@ -119,20 +124,12 @@ function ExploreSidebar({ onCreateDataRoom, onCreateHyperBlog }: { onCreateDataR
             + HyperBlog
           </button>
           {isSignedIn && (
-            <>
-              <button
-                onClick={onCreateDataRoom}
-                className="w-full text-left px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors"
-              >
-                + Data Room
-              </button>
-              <Link
-                href="/hackathon"
-                className="block w-full px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors no-underline"
-              >
-                + Hackathon Track
-              </Link>
-            </>
+            <button
+              onClick={onCreateDataRoom}
+              className="w-full text-left px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors"
+            >
+              + Data Room
+            </button>
           )}
         </div>
       </div>

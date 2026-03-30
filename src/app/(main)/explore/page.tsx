@@ -2,11 +2,11 @@
 
 import { Suspense, useCallback, useState } from "react";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { useAuth, useHackathonTracks } from "@/hooks";
-import { Search } from "lucide-react";
+import { useAuth } from "@/hooks";
+import { useBonfiresMint } from "@/hooks/web3/useBonfiresMint";
+import { Search, ExternalLink } from "lucide-react";
 
 import BonfiresTab, { type SortKey } from "@/components/explore/bonfires-tab";
 import DataRoomsTab, { type DataRoomSortKey } from "@/components/explore/datarooms-tab";
@@ -14,14 +14,11 @@ import ExploreTabs, {
   type ExploreTab,
 } from "@/components/explore/explore-tabs";
 import HyperBlogsTab, { type HyperBlogSortKey } from "@/components/explore/hyperblogs-tab";
-import TrackCard, {
-  TrackCardSkeleton,
-} from "@/components/hackathon/track-card";
 import { useDataRoomsQuery } from "@/hooks";
 import type { DataRoomInfo } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { cleanBonfireName } from "@/lib/utils/bonfire-name";
-import { truncateAddress } from "@/lib/utils";
+
 import { CreateBlogModal } from "@/components/hyperblogs/create-blog";
 import { Modal } from "@/components/ui/modal";
 import { DataRoomWizard } from "@/components/web3/DataRoomWizard";
@@ -65,47 +62,119 @@ function DataRoomMiniCard({
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
-function ExploreSidebar({ onCreateDataRoom, onCreateHyperBlog }: { onCreateDataRoom: () => void; onCreateHyperBlog: () => void }) {
-  const { data: tracks, isLoading: tracksLoading } = useHackathonTracks();
-  const { isSignedIn } = useAuth();
-
-  const activeTracks = (tracks ?? []).filter(
-    (t) => t.status === "active" || t.status === "upcoming",
+function ConfettiCard() {
+  return (
+    <a
+      href="https://confetti.win/contest/mainnet/0x5fc82ac435ab66d0cbd9db0eff11b7ee8ba89121"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded-xl overflow-hidden border border-[#6C3CE1]/40 bg-gradient-to-br from-[#6C3CE1]/15 via-[#1a1a2e] to-[#0a0a1a] hover:border-[#6C3CE1]/60 transition-all no-underline group"
+    >
+      <div className="px-4 py-3">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-lg">🎊</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#6C3CE1]">
+            Confetti
+          </span>
+          <ExternalLink className="h-3 w-3 text-[#6C3CE1]/60 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <h3 className="text-sm font-semibold text-dark-s-0">
+          Vote on People&apos;s Prize
+        </h3>
+        <p className="text-[11px] text-dark-s-60 mt-1 leading-relaxed">
+          Cast your vote for the best projects in the Synthesis contest on Confetti.
+        </p>
+      </div>
+    </a>
   );
+}
+
+function MintCard() {
+  const { totalMinted, maxSupply, priceEth, isLoading } = useBonfiresMint();
+
+  return (
+    <a
+      href="https://mint.bonfires.ai"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded-xl overflow-hidden border border-brand-primary/30 bg-gradient-to-br from-brand-primary/10 via-[#1a1210] to-[#0a0a0a] hover:border-brand-primary/50 transition-all no-underline group"
+    >
+      <div className="px-4 py-3">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-lg">🔥</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
+            Bonfires NFT
+          </span>
+          <ExternalLink className="h-3 w-3 text-brand-primary/60 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <h3 className="text-sm font-semibold text-dark-s-0">
+          Mint on Ethereum
+        </h3>
+        {isLoading ? (
+          <div className="flex gap-3 mt-2">
+            <span className="h-4 w-16 bg-[#FFFFFF10] rounded animate-pulse" />
+            <span className="h-4 w-12 bg-[#FFFFFF10] rounded animate-pulse" />
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 mt-2 text-[11px]">
+            <span className="text-dark-s-60">
+              <span className="text-dark-s-0 font-medium">{totalMinted.toLocaleString()}</span>
+              {maxSupply > 0 && <span> / {maxSupply.toLocaleString()}</span>} minted
+            </span>
+            <span className="text-dark-s-0 font-medium">
+              {priceEth} ETH
+            </span>
+          </div>
+        )}
+      </div>
+    </a>
+  );
+}
+
+function SocialLinks() {
+  return (
+    <div className="flex gap-2">
+      <a
+        href="https://x.com/bonfiresai"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-dark-s-60 hover:border-dark-s-0/30 hover:text-dark-s-0 transition-colors no-underline text-xs font-medium"
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+        <span>Twitter</span>
+      </a>
+      <a
+        href="https://t.me/bonfiresai"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-dark-s-60 hover:border-[#26A5E4]/40 hover:text-[#26A5E4] transition-colors no-underline text-xs font-medium"
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></svg>
+        <span>Telegram</span>
+      </a>
+    </div>
+  );
+}
+
+function ExploreSidebar({ onCreateDataRoom, onCreateHyperBlog }: { onCreateDataRoom: () => void; onCreateHyperBlog: () => void }) {
+  const { isSignedIn } = useAuth();
 
   return (
     <aside className="w-full lg:w-72 xl:w-80 shrink-0">
-      <div className="lg:sticky lg:top-24 space-y-6">
-        {/* Hackathon tracks */}
-        {(tracksLoading || activeTracks.length > 0) && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-montserrat text-sm font-bold text-dark-s-0 uppercase tracking-wider">
-                Hackathon Tracks
-              </h2>
-              <Link
-                href="/hackathon"
-                className="text-brand-primary text-xs hover:underline no-underline"
-              >
-                View all
-              </Link>
-            </div>
-            <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-              {tracksLoading
-                ? Array.from({ length: 2 }, (_, i) => (
-                    <TrackCardSkeleton key={`skel-${i}`} className="min-w-[240px] lg:min-w-0" />
-                  ))
-                : activeTracks.map((track) => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      compact
-                      className="min-w-[240px] lg:min-w-0"
-                    />
-                  ))}
-            </div>
+      <div className="lg:sticky lg:top-24 space-y-4">
+        {/* Featured cards */}
+        <div>
+          <h2 className="font-montserrat text-sm font-bold text-dark-s-0 uppercase tracking-wider mb-3">
+            Featured
+          </h2>
+          <div className="space-y-3">
+            <ConfettiCard />
+            <MintCard />
           </div>
-        )}
+        </div>
+
+        {/* Social row */}
+        <SocialLinks />
 
         {/* Create — HyperBlog always visible, others require sign-in */}
         <div className="space-y-2">
@@ -119,20 +188,12 @@ function ExploreSidebar({ onCreateDataRoom, onCreateHyperBlog }: { onCreateDataR
             + HyperBlog
           </button>
           {isSignedIn && (
-            <>
-              <button
-                onClick={onCreateDataRoom}
-                className="w-full text-left px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors"
-              >
-                + Data Room
-              </button>
-              <Link
-                href="/hackathon"
-                className="block w-full px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors no-underline"
-              >
-                + Hackathon Track
-              </Link>
-            </>
+            <button
+              onClick={onCreateDataRoom}
+              className="w-full text-left px-3 py-2.5 rounded-lg bg-[#FFFFFF05] border border-[#333333] text-sm text-dark-s-60 hover:border-brand-primary/40 hover:text-dark-s-0 transition-colors"
+            >
+              + Data Room
+            </button>
           )}
         </div>
       </div>

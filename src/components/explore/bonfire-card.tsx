@@ -87,12 +87,14 @@ function BonfireCardSkeleton({ className }: { className?: string }) {
 interface BonfireCardProps {
   data?: BonfireInfo;
   isLoading?: boolean;
+  isHighlighted?: boolean;
   className?: string;
 }
 
 export default function BonfireCard({
   data,
   isLoading,
+  isHighlighted,
   className,
 }: BonfireCardProps) {
   if (isLoading || !data) {
@@ -107,7 +109,9 @@ export default function BonfireCard({
       href={baseUrl}
       className={cn(
         "group rounded-2xl w-full flex items-center gap-5 p-4 lg:p-5",
-        "bg-[#FFFFFF05] border border-[#333333]",
+        isHighlighted
+          ? "bg-brand-primary/5 border border-brand-primary/60"
+          : "bg-[#FFFFFF05] border border-[#333333]",
         "transition-all hover:border-brand-primary/40 hover:bg-[#FFFFFF08] no-underline",
         className,
       )}
@@ -126,9 +130,16 @@ export default function BonfireCard({
       {/* Content: name + description + taxonomy badges + stats */}
       <div className="flex-1 min-w-0">
         {/* Name */}
-        <h3 className="text-base lg:text-lg font-semibold text-dark-s-0 truncate">
-          {data.name}
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-base lg:text-lg font-semibold text-dark-s-0 truncate">
+            {data.name}
+          </h3>
+          {isHighlighted && (
+            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded">
+              Current
+            </span>
+          )}
+        </div>
 
         {/* Description */}
         {data.description && (

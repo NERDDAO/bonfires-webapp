@@ -180,60 +180,57 @@ function GraphExplorerBody({
 
   return (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
-      <h1 className="sr-only">Graph Explorer</h1>
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left sidebar — docked on desktop, overlay on mobile */}
-        <GraphExplorerPanelProvider
-          searchQuery={searchQuery}
-          onSearchQueryChange={onSearchQueryChange}
-          onSearch={onSearch}
-          isSearching={isGraphLoading}
-          episodes={episodes}
-          selectedEpisodeId={selectedEpisodeId}
-          onEpisodeSelect={handleEpisodeSelect}
-          episodesLoading={isGraphLoading}
-          graphVisible={elements.length > 0}
-          hideGraphSelector={hideGraphSelector}
-          onOpenChat={!embedded ? () => openChatRef.current?.() : undefined}
-        >
-          <GraphExplorerPanel />
-        </GraphExplorerPanelProvider>
-
-        {/* Graph canvas */}
-        <div className="flex-1 relative min-w-0">
-          {graphError && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
-              <ErrorMessage
-                message={
-                  (graphError as Error | null)?.message ??
-                  "Failed to load graph"
-                }
-                onRetry={onRetry}
-                variant="card"
-              />
-            </div>
+      <GraphExplorerPanelProvider
+        searchQuery={searchQuery}
+        onSearchQueryChange={onSearchQueryChange}
+        onSearch={onSearch}
+        isSearching={isGraphLoading}
+        episodes={episodes}
+        selectedEpisodeId={selectedEpisodeId}
+        onEpisodeSelect={handleEpisodeSelect}
+        episodesLoading={isGraphLoading}
+        graphVisible={elements.length > 0}
+        hideGraphSelector={hideGraphSelector}
+        onOpenChat={!embedded ? () => openChatRef.current?.() : undefined}
+      >
+        <GraphExplorerPanel />
+      </GraphExplorerPanelProvider>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <h1 className="sr-only">Graph Explorer</h1>
+        <div className="flex-1 flex overflow-hidden relative">
+          <div className="flex-1 relative">
+            {graphError && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80">
+                <ErrorMessage
+                  message={
+                    (graphError as Error | null)?.message ??
+                    "Failed to load graph"
+                  }
+                  onRetry={onRetry}
+                  variant="card"
+                />
+              </div>
+            )}
+            <GraphWrapper
+              elements={elements}
+              loading={isGraphLoading}
+              error={graphError}
+              selectedNodeId={selection.selectedNodeId}
+              selectedEdgeId={selection.selectedEdgeId}
+              highlightedNodeIds={highlightedNodeIds}
+              centerNodeId={effectiveCenterNode}
+              panToNodeId={panToNodeId}
+              onPanToNodeComplete={() => setPanToNodeId(null)}
+              onNodeClick={wiki.handleNodeClick}
+              onEdgeClick={wiki.handleEdgeClick}
+              onBackgroundClick={handleBackgroundClick}
+            />
+          </div>
+          {panel.rightPanelMode === "wiki" && (
+            <WikiPanelContainer {...wikiPanelContainerProps} />
           )}
-          <GraphWrapper
-            elements={elements}
-            loading={isGraphLoading}
-            error={graphError}
-            selectedNodeId={selection.selectedNodeId}
-            selectedEdgeId={selection.selectedEdgeId}
-            highlightedNodeIds={highlightedNodeIds}
-            centerNodeId={effectiveCenterNode}
-            panToNodeId={panToNodeId}
-            onPanToNodeComplete={() => setPanToNodeId(null)}
-            onNodeClick={wiki.handleNodeClick}
-            onEdgeClick={wiki.handleEdgeClick}
-            onBackgroundClick={handleBackgroundClick}
-          />
         </div>
-
-        {/* Right sidebar — wiki panel */}
-        {panel.rightPanelMode === "wiki" && (
-          <WikiPanelContainer {...wikiPanelContainerProps} />
-        )}
-      </div>
+      </main>
       {!embedded && (
         <Chat
           agentId={agentSelection.selectedAgentId ?? undefined}

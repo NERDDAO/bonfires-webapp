@@ -13,7 +13,7 @@ import * as d3 from "d3";
 import { Cloud, Type } from "lucide-react";
 
 import { IconButton } from "../ui/icon-button";
-import { buildWordClouds, type WordCloudState } from "./word-cloud-renderer";
+import { buildWordClouds, isAnimating, type WordCloudState } from "./word-cloud-renderer";
 import {
   ALPHA_DECAY,
   CENTER_STRENGTH,
@@ -667,6 +667,19 @@ export default function ForceGraph({
       wordCloudStateRef.current = null;
     }
     redraw();
+
+    // Animation loop for text block fade-in and highlight pulse
+    if (renderMode !== "wordcloud") return;
+    let rafId: number;
+    const animate = () => {
+      const state = wordCloudStateRef.current;
+      if (state && isAnimating(state)) {
+        redraw();
+        rafId = requestAnimationFrame(animate);
+      }
+    };
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
   }, [renderMode, elementDataMap, redraw]);
 
   useEffect(() => {

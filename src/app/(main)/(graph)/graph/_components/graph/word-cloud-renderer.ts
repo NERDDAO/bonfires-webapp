@@ -33,6 +33,8 @@ type NodeTextBlock = {
   bounds: BoundingBox;
   wordMap: Map<string, number>;
   highlightedWords: Set<string>;
+  /** Timestamp when this block was created (for fade-in animation) */
+  createdAt: number;
 };
 
 export type WordCloudState = {
@@ -40,10 +42,10 @@ export type WordCloudState = {
   font: string;
   blockWidth: number;
   lineHeight: number;
-  /** Cached token widths for highlight rendering */
   _tokenWidths: Map<string, number>;
-  /** Tracks whether positions changed since last highlight computation */
   _lastPositionHash: number;
+  /** Timestamp when state was built (for animation timing) */
+  _createdAt: number;
 };
 
 // --- Constants ---
@@ -57,6 +59,9 @@ const BLOCK_WIDTH = 140;
 const MAX_LINES = 12;
 const HIGHLIGHT_COLOR = "#f5572a";
 const MAX_TEXT_LENGTH = 800;
+const FADE_IN_DURATION = 1200; // ms for full fade-in
+const FADE_STAGGER_PER_LINE = 60; // ms delay between consecutive lines
+const HIGHLIGHT_PULSE_SPEED = 0.003; // radians per ms for pulse oscillation
 
 // --- Build ---
 
@@ -64,6 +69,7 @@ export function buildWordClouds(
   nodes: ViewNode[],
   elementDataMap: Map<string, Record<string, unknown>>,
 ): WordCloudState {
+  const now = performance.now();
   const blocks = new Map<string, NodeTextBlock>();
 
   for (const node of nodes) {
@@ -108,6 +114,7 @@ export function buildWordClouds(
       bounds,
       wordMap: tokenize(text),
       highlightedWords: new Set(),
+      createdAt: now,
     });
   }
 
@@ -118,6 +125,7 @@ export function buildWordClouds(
     lineHeight: LINE_HEIGHT,
     _tokenWidths: new Map(),
     _lastPositionHash: 0,
+    _createdAt: now,
   };
 }
 
@@ -209,12 +217,14 @@ export function renderTextBlocks(
 ): void {
   updateBlockPositions(state, nodes);
 
-  // Only recompute highlights when positions changed
   const hash = computePositionHash(nodes, state.blocks);
   if (hash !== state._lastPositionHash) {
     state._lastPositionHash = hash;
     markHighlights(state, nodes);
   }
+
+  const now = performance.now();
+  const pulseAlpha = 0.8 + 0.2 * Math.sin(now * HIGHLIGHT_PULSE_SPEED);
 
   ctx.font = state.font;
   ctx.textAlign = "left";
@@ -223,11 +233,20 @@ export function renderTextBlocks(
   for (const block of state.blocks.values()) {
     const blockLeft = block.bounds.x;
     const hasHighlights = block.highlightedWords.size > 0;
+    const blockAge = now - block.createdAt;
 
-    for (const line of block.lines) {
+    for (let lineIdx = 0; lineIdx < block.lines.length; lineIdx++) {
+      const line = block.lines[lineIdx]!;
+
+      // Staggered fade-in: each line fades in slightly after the previous
+      const lineDelay = lineIdx * FADE_STAGGER_PER_LINE;
+      const lineAge = blockAge - lineDelay;
+      const fadeProgress = Math.min(1, Math.max(0, lineAge / FADE_IN_DURATION));
+      if (fadeProgress <= 0) continue;
+
       if (!hasHighlights) {
         ctx.fillStyle = block.color;
-        ctx.globalAlpha = 0.7;
+        ctx.globalAlpha = 0.7 * fadeProgress;
         ctx.fillText(line.text, blockLeft, line.y);
       } else {
         const words = line.text.split(/(\s+)/);
@@ -239,10 +258,10 @@ export function renderTextBlocks(
 
           if (isWord && block.highlightedWords.has(normalized)) {
             ctx.fillStyle = HIGHLIGHT_COLOR;
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = pulseAlpha * fadeProgress;
           } else {
             ctx.fillStyle = block.color;
-            ctx.globalAlpha = 0.7;
+            ctx.globalAlpha = 0.7 * fadeProgress;
           }
 
           ctx.fillText(token, xOffset, line.y);
@@ -253,4 +272,14 @@ export function renderTextBlocks(
   }
 
   ctx.globalAlpha = 1;
+}
+
+/** Returns true if any block is still animating (fade-in not complete). */
+export function isAnimating(state: WordCloudState): boolean {
+  const now = performance.now();
+  for (const block of state.blocks.values()) {
+    const totalDuration = block.lines.length * FADE_STAGGER_PER_LINE + FADE_IN_DURATION;
+    if (now - block.createdAt < totalDuration) return true;
+  }
+  return false;
 }

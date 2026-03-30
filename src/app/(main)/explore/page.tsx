@@ -82,7 +82,7 @@ function ConfettiCard() {
           Vote on People&apos;s Prize
         </h3>
         <p className="text-[11px] text-dark-s-60 mt-1 leading-relaxed">
-          Cast your vote for the best projects in the Bonfires contest on Confetti.
+          Cast your vote for the best projects in the Synthesis contest on Confetti.
         </p>
       </div>
     </a>

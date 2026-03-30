@@ -34,10 +34,11 @@ export function GraphExplorerPanel({ className }: { className?: string } = {}) {
 
   return (
     <>
+      {/* Desktop: docked sidebar */}
       <div
         className={cn(
-          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] lg:max-h-[calc(100dvh-7.5rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
-          !panel.isRecentActivityCollapsed && "h-full",
+          "hidden lg:flex flex-col shrink-0 h-full overflow-hidden border-r border-[#333333] bg-[#0a1216] transition-[width] duration-200",
+          effectiveExpanded ? "w-80" : "w-14",
           className
         )}
         role="group"
@@ -48,8 +49,8 @@ export function GraphExplorerPanel({ className }: { className?: string } = {}) {
             type="button"
             onClick={() => panel.setIsCollapsed(true)}
             className={cn(
-              "z-10 items-center justify-center hidden lg:flex",
-              "h-7 rounded-full gap-1 py-2 pl-2 pr-3 w-fit bg-[#22252B]",
+              "z-10 flex items-center justify-center",
+              "h-7 rounded-full gap-1 py-2 pl-2 pr-3 w-fit m-3 bg-[#22252B]",
               border,
               "hover:bg-[#22252B]/80 transition-colors duration-200"
             )}
@@ -74,6 +75,50 @@ export function GraphExplorerPanel({ className }: { className?: string } = {}) {
             </div>
 
             {!panel.isRecentActivityCollapsed && (
+              <div className="relative z-0 min-h-0 flex-1 overflow-hidden">
+                <EpisodesList />
+              </div>
+            )}
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => panel.setIsCollapsed(false)}
+            className={cn(
+              "flex flex-col items-center gap-3 py-4 px-3 min-w-[56px]",
+              "hover:bg-[#22252B]/80 transition-colors duration-200"
+            )}
+            aria-label="Expand panel"
+            title="Expand panel"
+          >
+            <Image
+              src="/icons/collapsed-graph-select.svg"
+              alt=""
+              width={20}
+              height={20}
+              className="opacity-80"
+            />
+          </button>
+        )}
+      </div>
+
+      {/* Mobile: overlay panel */}
+      <div
+        className={cn(
+          "flex lg:hidden flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] w-full max-w-[calc(100vw-2rem)]",
+          !panel.isRecentActivityCollapsed && "h-full",
+          className
+        )}
+        role="group"
+        aria-label="Graph explorer controls (mobile)"
+      >
+        {effectiveExpanded ? (
+          <>
+            <div className="relative z-10">
+              <PanelHeader />
+            </div>
+
+            {!panel.isRecentActivityCollapsed && (
               <div className="relative z-0 min-h-0">
                 <EpisodesList />
               </div>
@@ -84,9 +129,9 @@ export function GraphExplorerPanel({ className }: { className?: string } = {}) {
             type="button"
             onClick={() => panel.setIsCollapsed(false)}
             className={cn(
-              "flex flex-col items-center gap-3 py-4 px-3 rounded-lg min-w-[56px] absolute z-50",
+              "flex flex-col items-center gap-3 py-4 px-3 rounded-lg min-w-[56px]",
               border,
-              " hover:bg-[#22252B]/80 transition-colors duration-200"
+              "hover:bg-[#22252B]/80 transition-colors duration-200"
             )}
             aria-label="Expand panel"
             title="Expand panel"

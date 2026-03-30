@@ -20,6 +20,7 @@ import {
   getEdgeLabel,
   truncateLabel,
 } from "./force-graph-utils";
+import { renderTextBlocks, type WordCloudState } from "./word-cloud-renderer";
 
 export function drawNode(
   ctx: CanvasRenderingContext2D,
@@ -138,7 +139,9 @@ export function draw(
   selectedEdgeId: string | null,
   selectedNodeId: string | null,
   highlightedNodeIds: Set<string>,
-  transform: { x: number; y: number; k: number }
+  transform: { x: number; y: number; k: number },
+  renderMode: "labels" | "wordcloud" = "labels",
+  wordCloudState?: WordCloudState,
 ): void {
   ctx.clearRect(0, 0, width, height);
   ctx.save();
@@ -287,18 +290,31 @@ export function draw(
   });
 
   // —— 5. Nodes (non-dimmed)
-  for (const node of nodes) {
-    const isDimmed = hasFocus && !connectedNodeIds.has(node.id);
-    if (isDimmed) continue;
-    const isHighlighted = highlightedNodeIds.has(node.id);
-    drawNode(
-      ctx,
-      node,
-      GRAPH_COLORS,
-      node.id === hoveredNodeId,
-      isHighlighted,
-      false
-    );
+  if (renderMode === "wordcloud" && wordCloudState) {
+    // In word cloud mode, render text blocks instead of normal node labels
+    renderTextBlocks(ctx, wordCloudState, nodes);
+    // Still draw non-cloud nodes normally
+    for (const node of nodes) {
+      const isDimmed = hasFocus && !connectedNodeIds.has(node.id);
+      if (isDimmed) continue;
+      if (wordCloudState.blocks.has(node.id)) continue; // rendered as text block
+      const isHighlighted = highlightedNodeIds.has(node.id);
+      drawNode(ctx, node, GRAPH_COLORS, node.id === hoveredNodeId, isHighlighted, false);
+    }
+  } else {
+    for (const node of nodes) {
+      const isDimmed = hasFocus && !connectedNodeIds.has(node.id);
+      if (isDimmed) continue;
+      const isHighlighted = highlightedNodeIds.has(node.id);
+      drawNode(
+        ctx,
+        node,
+        GRAPH_COLORS,
+        node.id === hoveredNodeId,
+        isHighlighted,
+        false
+      );
+    }
   }
 
   // —— 6. Edge labels (normal, from-hovered, active)

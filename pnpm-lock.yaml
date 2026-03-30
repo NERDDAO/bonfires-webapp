@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@chenglou/pretext':
+        specifier: ^0.0.3
+        version: 0.0.3
       '@clerk/nextjs':
         specifier: ^6.36.10
         version: 6.37.0(next@16.1.6(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -397,6 +400,9 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@chenglou/pretext@0.0.3':
+    resolution: {integrity: sha512-RQmqMqUAPRCyv4R3LlRi/ao6KbNWYclqLA+V1HS7sWgyUUbjn3JmmlfXZSY/BjM4rbmIaMSyIVisYocYGYftiQ==}
 
   '@clerk/backend@2.29.6':
     resolution: {integrity: sha512-92I3/BA2d7zOl1y8IaKdDTYXm0UCskkhamhLT5fkOV+2oyxWQ2In/yK8FhO73pPyeCi2K/ZoXMSO4gBcoF9AAg==}
@@ -6639,6 +6645,8 @@ snapshots:
       - zod
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@chenglou/pretext@0.0.3': {}
 
   '@clerk/backend@2.29.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:

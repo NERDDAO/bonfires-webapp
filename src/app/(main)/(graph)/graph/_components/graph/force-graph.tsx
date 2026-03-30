@@ -7,13 +7,13 @@
  * node size by type, d3 force layout, drag/pan/zoom. Accepts GraphElement[]
  * and callbacks so it plugs into GraphVisualization without changing core logic.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import * as d3 from "d3";
-
-
+import { Cloud, Type } from "lucide-react";
 
 import { IconButton } from "../ui/icon-button";
+import { buildWordClouds, type WordCloudState } from "./word-cloud-renderer";
 import {
   ALPHA_DECAY,
   CENTER_STRENGTH,
@@ -101,6 +101,8 @@ export default function ForceGraph({
   } | null>(null);
   const TOUCH_PAN_THRESHOLD_PX = 10;
   const [, setTick] = useState(0);
+  const [renderMode, setRenderMode] = useState<"labels" | "wordcloud">("labels");
+  const wordCloudStateRef = useRef<WordCloudState | null>(null);
 
   const highlightedSet = useRef(new Set<string>());
   highlightedSet.current = new Set(
@@ -109,6 +111,20 @@ export default function ForceGraph({
   if (selectedNodeId) {
     highlightedSet.current.add(selectedNodeId.replace(/^n:/, ""));
   }
+
+  // Build element data map for word cloud text extraction
+  const elementDataMap = useMemo(() => {
+    const map = new Map<string, Record<string, unknown>>();
+    for (const el of elements) {
+      if (!el.data) continue;
+      const data = el.data as Record<string, unknown>;
+      const id = String(data["id"] ?? data["uuid"] ?? "").replace(/^n:/, "");
+      if (id && typeof data["node_type"] === "string") {
+        map.set(id, data);
+      }
+    }
+    return map;
+  }, [elements]);
 
   const onNodeClickRef = useRef(onNodeClick);
   const onEdgeClickRef = useRef(onEdgeClick);
@@ -283,7 +299,9 @@ export default function ForceGraph({
         null,
         selectedNode,
         highlightedSet.current,
-        transformRef.current
+        transformRef.current,
+        renderMode,
+        wordCloudStateRef.current ?? undefined,
       );
     };
 
@@ -641,6 +659,16 @@ export default function ForceGraph({
     };
   }, [elements, centerNodeId, redraw]);
 
+  // Separate effect: build word clouds when mode or elements change (no simulation rebuild)
+  useEffect(() => {
+    if (renderMode === "wordcloud" && nodesRef.current) {
+      wordCloudStateRef.current = buildWordClouds(nodesRef.current, elementDataMap);
+    } else {
+      wordCloudStateRef.current = null;
+    }
+    redraw();
+  }, [renderMode, elementDataMap, redraw]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const nodes = nodesRef.current;
@@ -666,7 +694,9 @@ export default function ForceGraph({
       selectedEdge,
       selectedNode,
       highlightedSet.current,
-      transformRef.current
+      transformRef.current,
+      renderMode,
+      wordCloudStateRef.current ?? undefined,
     );
 
     const el = canvasRef.current;
@@ -700,8 +730,19 @@ export default function ForceGraph({
       <div
         className="absolute top-3 right-3 z-10 hidden lg:flex flex-col gap-1 rounded-md border border-neutral-700 bg-neutral-900/90 p-1 shadow-md"
         role="group"
-        aria-label="Zoom controls"
+        aria-label="Graph controls"
       >
+        <IconButton
+          onClick={() => setRenderMode((m) => m === "labels" ? "wordcloud" : "labels")}
+          aria-label={renderMode === "labels" ? "Switch to text block view" : "Switch to label view"}
+          title={renderMode === "labels" ? "Text block view" : "Label view"}
+        >
+          {renderMode === "labels" ? (
+            <Cloud className="w-4 h-4" />
+          ) : (
+            <Type className="w-4 h-4" />
+          )}
+        </IconButton>
         <IconButton
           onClick={() => zoomBy(1.25)}
           aria-label="Zoom in"

@@ -25,6 +25,7 @@
     "lhci": "lhci autorun"
   },
   "dependencies": {
+    "@chenglou/pretext": "^0.0.3",
     "@clerk/nextjs": "^6.36.10",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@rainbow-me/rainbowkit": "2.2.8",

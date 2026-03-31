@@ -37,16 +37,12 @@ export interface UsePaymentHeaderReturn {
   reset: () => void;
 }
 
-// Static fallback config from environment (used if server fetch fails)
-const PAYMENT_NETWORK = process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "base";
-
+// Static fallback config from environment (server is sole source of payTo)
 const FALLBACK_CONFIG = {
   tokenAddress:
     process.env["NEXT_PUBLIC_PAYMENT_TOKEN_ADDRESS"] ??
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  recipientAddress:
-    process.env["NEXT_PUBLIC_ONCHAINFI_INTERMEDIARY_ADDRESS"] ?? "",
-  network: PAYMENT_NETWORK,
+  network: process.env["NEXT_PUBLIC_PAYMENT_NETWORK"] ?? "base",
   chainId: parseInt(process.env["NEXT_PUBLIC_CHAIN_ID"] ?? "8453", 10),
   amount: process.env["NEXT_PUBLIC_PAYMENT_DEFAULT_AMOUNT"] ?? "0.01",
 };
@@ -80,21 +76,11 @@ export function usePaymentHeader(dataroomId?: string): UsePaymentHeaderReturn {
           );
         }
 
-        // Fetch payment config from server (cached after first call)
-        let recipientAddress = FALLBACK_CONFIG.recipientAddress;
-        let tokenAddress = FALLBACK_CONFIG.tokenAddress;
-        let network = FALLBACK_CONFIG.network;
-        try {
-          const serverConfig = await fetchPaymentConfig(undefined, dataroomId);
-          recipientAddress = serverConfig.payTo;
-          tokenAddress = serverConfig.asset || tokenAddress;
-          network = serverConfig.network || network;
-        } catch (fetchErr) {
-          console.warn(
-            "Failed to fetch payment config from server, using fallback:",
-            fetchErr
-          );
-        }
+        // Fetch payment config from server — server is sole source of payTo
+        const serverConfig = await fetchPaymentConfig(undefined, dataroomId);
+        const recipientAddress = serverConfig.payTo;
+        const tokenAddress = serverConfig.asset || FALLBACK_CONFIG.tokenAddress;
+        const network = serverConfig.network || FALLBACK_CONFIG.network;
 
         const paymentAmount = amount || FALLBACK_CONFIG.amount;
         if (isE2EWalletEnabled()) {

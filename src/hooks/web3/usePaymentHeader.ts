@@ -13,6 +13,7 @@ import { useSignTypedData } from "wagmi";
 
 import {
   buildPaymentTypedData,
+  clearPaymentConfigCache,
   encodePaymentHeader,
   fetchPaymentConfig,
 } from "@/lib/payment";
@@ -76,8 +77,17 @@ export function usePaymentHeader(dataroomId?: string): UsePaymentHeaderReturn {
           );
         }
 
-        // Fetch payment config from server — server is sole source of payTo
-        const serverConfig = await fetchPaymentConfig(undefined, dataroomId);
+        // Fetch payment config from server — server is sole source of payTo.
+        // Try with dataroomId first (resolves hackathon escrow); if the
+        // backend 404s (dataroom not in a hackathon track), retry without
+        // dataroomId to get the default platform address.
+        let serverConfig: Awaited<ReturnType<typeof fetchPaymentConfig>>;
+        try {
+          serverConfig = await fetchPaymentConfig(undefined, dataroomId);
+        } catch {
+          clearPaymentConfigCache();
+          serverConfig = await fetchPaymentConfig();
+        }
         const recipientAddress = serverConfig.payTo;
         const tokenAddress = serverConfig.asset || FALLBACK_CONFIG.tokenAddress;
         const network = serverConfig.network || FALLBACK_CONFIG.network;

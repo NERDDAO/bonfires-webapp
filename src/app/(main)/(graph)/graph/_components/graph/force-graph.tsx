@@ -357,7 +357,7 @@ export default function ForceGraph({
       pointerDownOnCanvasRef.current = true;
       const { x, y } = toLogical(e);
       lastLogicalRef.current = { x, y };
-      const node = nodeUnderPoint(nodes, x, y);
+      const node = nodeUnderPoint(nodes, x, y, wordCloudStateRef.current ?? undefined);
       if (node) {
         draggedNodeRef.current = node;
         didDragRef.current = false;
@@ -421,7 +421,7 @@ export default function ForceGraph({
       } else {
         lastLogicalRef.current = { x, y };
         const edgeUnder = edgeUnderPoint(links, x, y);
-        const nodeUnder = nodeUnderPoint(nodes, x, y);
+        const nodeUnder = nodeUnderPoint(nodes, x, y, wordCloudStateRef.current ?? undefined);
         hoveredEdgeRef.current = edgeUnder?.id ?? null;
         hoveredNodeRef.current = nodeUnder?.id ?? null;
         redraw();
@@ -451,7 +451,7 @@ export default function ForceGraph({
           if (edgeUnder) {
             onEdgeClickRef.current?.(edgeUnder.id);
           } else if (wasPanning && !didPan && nodesRef.current) {
-            const nodeUnder = nodeUnderPoint(nodesRef.current, x, y);
+            const nodeUnder = nodeUnderPoint(nodesRef.current, x, y, wordCloudStateRef.current ?? undefined);
             if (!nodeUnder) {
               onBackgroundClickRef.current?.();
             }
@@ -524,7 +524,7 @@ export default function ForceGraph({
       const coords = getTouchCoords(e);
       if (!coords) return;
       const { x, y } = toLogical(coords);
-      const node = nodeUnderPoint(nodes, x, y);
+      const node = nodeUnderPoint(nodes, x, y, wordCloudStateRef.current ?? undefined);
       const edge = edgeUnderPoint(links, x, y);
       touchStartRef.current = {
         clientX: coords.clientX,

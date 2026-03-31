@@ -20,7 +20,7 @@ import {
   getEdgeLabel,
   truncateLabel,
 } from "./force-graph-utils";
-import { renderTextBlocks, type WordCloudState } from "./word-cloud-renderer";
+import { renderTextBlocks, nodeUnderBlock, type WordCloudState } from "./word-cloud-renderer";
 
 export function drawNode(
   ctx: CanvasRenderingContext2D,
@@ -389,8 +389,14 @@ export function edgeUnderPoint(
 export function nodeUnderPoint(
   nodes: ViewNode[],
   x: number,
-  y: number
+  y: number,
+  wordCloudState?: WordCloudState,
 ): ViewNode | null {
+  // In word cloud mode, check text block bounds first (larger hit area)
+  if (wordCloudState) {
+    const blockHit = nodeUnderBlock(wordCloudState, nodes, x, y);
+    if (blockHit) return blockHit;
+  }
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     if (node === undefined) continue;

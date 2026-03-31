@@ -1,12 +1,14 @@
 /**
  * Text block renderer: uses pretext to lay out node content as wrapped
  * paragraphs on canvas. When two text blocks overlap, shared words
- * are highlighted.
+ * are highlighted and text deforms toward the neighbor (membrane effect).
  */
 
 import {
   prepareWithSegments,
-  layoutWithLines,
+  layoutNextLine,
+  type PreparedTextWithSegments,
+  type LayoutCursor,
 } from "@chenglou/pretext";
 
 import type { ViewNode } from "./force-graph-types";
@@ -24,16 +26,28 @@ type TextBlockLine = {
   text: string;
   width: number;
   y: number;
+  /** X offset from blockLeft (0 = normal, positive = shifted right) */
+  xShift: number;
+};
+
+type OverlapInfo = {
+  neighborNodeId: string;
+  /** Direction toward neighbor: -1 = neighbor is left, +1 = neighbor is right */
+  dirX: number;
+  /** Squeeze factor 0..1 (how much to narrow on the facing side) */
+  squeeze: number;
+  sharedWords: Set<string>;
 };
 
 type NodeTextBlock = {
   nodeId: string;
   color: string;
+  prepared: PreparedTextWithSegments;
   lines: TextBlockLine[];
   bounds: BoundingBox;
   wordMap: Map<string, number>;
   highlightedWords: Set<string>;
-  /** Timestamp when this block was created (for fade-in animation) */
+  overlaps: OverlapInfo[];
   createdAt: number;
 };
 
@@ -44,7 +58,6 @@ export type WordCloudState = {
   lineHeight: number;
   _tokenWidths: Map<string, number>;
   _lastPositionHash: number;
-  /** Timestamp when state was built (for animation timing) */
   _createdAt: number;
 };
 
@@ -59,11 +72,29 @@ const BLOCK_WIDTH = 140;
 const MAX_LINES = 12;
 const HIGHLIGHT_COLOR = "#f5572a";
 const MAX_TEXT_LENGTH = 800;
-const FADE_IN_DURATION = 1200; // ms for full fade-in
-const FADE_STAGGER_PER_LINE = 60; // ms delay between consecutive lines
-const HIGHLIGHT_PULSE_SPEED = 0.003; // radians per ms for pulse oscillation
+const FADE_IN_DURATION = 1200;
+const FADE_STAGGER_PER_LINE = 60;
+const HIGHLIGHT_PULSE_SPEED = 0.003;
+const MAX_SQUEEZE = 0.35; // max 35% width reduction on facing side
+const SQUEEZE_RANGE = 200; // px distance at which squeeze starts
+const SHARED_WORD_PULL = 12; // px offset toward neighbor for shared words
 
 // --- Build ---
+
+function layoutBlock(
+  prepared: PreparedTextWithSegments,
+  maxWidth: number,
+): { text: string; width: number }[] {
+  const lines: { text: string; width: number }[] = [];
+  let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 0 };
+  for (let i = 0; i < MAX_LINES; i++) {
+    const line = layoutNextLine(prepared, cursor, maxWidth);
+    if (!line) break;
+    lines.push({ text: line.text, width: line.width });
+    cursor = line.end;
+  }
+  return lines;
+}
 
 export function buildWordClouds(
   nodes: ViewNode[],
@@ -79,41 +110,33 @@ export function buildWordClouds(
     let text = extractNodeText(data);
     if (!text.trim()) continue;
 
-    // Truncate very long content to keep prepare() fast
     if (text.length > MAX_TEXT_LENGTH) text = text.slice(0, MAX_TEXT_LENGTH) + "...";
 
     const prepared = prepareWithSegments(text, FONT);
-    const result = layoutWithLines(prepared, BLOCK_WIDTH, LINE_HEIGHT);
+    const rawLines = layoutBlock(prepared, BLOCK_WIDTH);
 
     const cx = node.x ?? 0;
     const cy = node.y ?? 0;
-
-    const lineCount = Math.min(result.lines.length, MAX_LINES);
-    const blockHeight = lineCount * LINE_HEIGHT;
-
+    const blockHeight = rawLines.length * LINE_HEIGHT;
     const blockTop = cy - blockHeight / 2;
     const blockLeft = cx - BLOCK_WIDTH / 2;
 
-    const lines: TextBlockLine[] = result.lines.slice(0, MAX_LINES).map((line, i) => ({
+    const lines: TextBlockLine[] = rawLines.map((line, i) => ({
       text: line.text,
       width: line.width,
       y: blockTop + i * LINE_HEIGHT,
+      xShift: 0,
     }));
-
-    const bounds: BoundingBox = {
-      x: blockLeft,
-      y: blockTop,
-      w: BLOCK_WIDTH,
-      h: blockHeight,
-    };
 
     blocks.set(node.id, {
       nodeId: node.id,
       color: node.color,
+      prepared,
       lines,
-      bounds,
+      bounds: { x: blockLeft, y: blockTop, w: BLOCK_WIDTH, h: blockHeight },
       wordMap: tokenize(text),
       highlightedWords: new Set(),
+      overlaps: [],
       createdAt: now,
     });
   }
@@ -129,54 +152,39 @@ export function buildWordClouds(
   };
 }
 
-// --- Update positions when nodes move ---
+// --- Update positions + membrane deformation ---
 
-export function updateBlockPositions(
-  state: WordCloudState,
-  nodes: ViewNode[],
-): void {
-  for (const node of nodes) {
-    const block = state.blocks.get(node.id);
-    if (!block) continue;
-
-    const cx = node.x ?? 0;
-    const cy = node.y ?? 0;
-    const blockHeight = block.lines.length * state.lineHeight;
-    const blockTop = cy - blockHeight / 2;
-    const blockLeft = cx - state.blockWidth / 2;
-
-    // Update line positions
-    for (let i = 0; i < block.lines.length; i++) {
-      block.lines[i]!.y = blockTop + i * state.lineHeight;
-    }
-
-    block.bounds = {
-      x: blockLeft,
-      y: blockTop,
-      w: state.blockWidth,
-      h: blockHeight,
-    };
-  }
-}
-
-// --- Detect overlap and mark shared words ---
-
-function markHighlights(state: WordCloudState, nodes: ViewNode[]): void {
-  // Reset
+function computeOverlaps(state: WordCloudState, nodes: ViewNode[]): void {
   for (const block of state.blocks.values()) {
+    block.overlaps = [];
     block.highlightedWords = new Set();
   }
 
   const nodeArr = nodes.filter((n) => state.blocks.has(n.id));
   for (let i = 0; i < nodeArr.length; i++) {
     for (let j = i + 1; j < nodeArr.length; j++) {
-      const a = state.blocks.get(nodeArr[i]!.id)!;
-      const b = state.blocks.get(nodeArr[j]!.id)!;
+      const ni = nodeArr[i]!;
+      const nj = nodeArr[j]!;
+      const a = state.blocks.get(ni.id)!;
+      const b = state.blocks.get(nj.id)!;
 
-      if (!boundsOverlap(a.bounds, b.bounds)) continue;
+      // Check proximity (not just AABB overlap — we want gradual deformation)
+      const ax = ni.x ?? 0;
+      const ay = ni.y ?? 0;
+      const bx = nj.x ?? 0;
+      const by = nj.y ?? 0;
+      const dist = Math.hypot(bx - ax, by - ay);
+      if (dist > SQUEEZE_RANGE) continue;
 
       const shared = findSharedWords(a.wordMap, b.wordMap);
       if (shared.size === 0) continue;
+
+      const squeeze = Math.max(0, 1 - dist / SQUEEZE_RANGE) * MAX_SQUEEZE;
+      const dirX = bx - ax;
+      const normalizedDirX = dirX === 0 ? 1 : dirX / Math.abs(dirX);
+
+      a.overlaps.push({ neighborNodeId: nj.id, dirX: normalizedDirX, squeeze, sharedWords: shared });
+      b.overlaps.push({ neighborNodeId: ni.id, dirX: -normalizedDirX, squeeze, sharedWords: shared });
 
       for (const word of shared) {
         a.highlightedWords.add(word);
@@ -186,7 +194,52 @@ function markHighlights(state: WordCloudState, nodes: ViewNode[]): void {
   }
 }
 
-// --- Position hash for dirty tracking ---
+function relayoutDeformed(state: WordCloudState, nodes: ViewNode[]): void {
+  for (const node of nodes) {
+    const block = state.blocks.get(node.id);
+    if (!block) continue;
+
+    const cx = node.x ?? 0;
+    const cy = node.y ?? 0;
+
+    // Compute effective squeeze from all overlaps
+    let maxSqueeze = 0;
+    let squeezeDir = 0;
+    for (const overlap of block.overlaps) {
+      if (overlap.squeeze > maxSqueeze) {
+        maxSqueeze = overlap.squeeze;
+        squeezeDir = overlap.dirX;
+      }
+    }
+
+    // Re-layout with variable width if squeezed
+    const effectiveWidth = state.blockWidth * (1 - maxSqueeze);
+    const rawLines = layoutBlock(block.prepared, effectiveWidth);
+
+    const blockHeight = rawLines.length * LINE_HEIGHT;
+    const blockTop = cy - blockHeight / 2;
+    const blockLeft = cx - effectiveWidth / 2;
+
+    // Shift block toward neighbor side when squeezed (membrane bulge)
+    const bulgeShift = maxSqueeze * squeezeDir * 10;
+
+    block.lines = rawLines.map((line, i) => ({
+      text: line.text,
+      width: line.width,
+      y: blockTop + i * LINE_HEIGHT,
+      xShift: bulgeShift,
+    }));
+
+    block.bounds = {
+      x: blockLeft + bulgeShift,
+      y: blockTop,
+      w: effectiveWidth,
+      h: blockHeight,
+    };
+  }
+}
+
+// --- Position hash ---
 
 function computePositionHash(nodes: ViewNode[], blocks: Map<string, NodeTextBlock>): number {
   let hash = 0;
@@ -197,7 +250,7 @@ function computePositionHash(nodes: ViewNode[], blocks: Map<string, NodeTextBloc
   return hash;
 }
 
-// --- Cached token width measurement ---
+// --- Cached token width ---
 
 function getTokenWidth(token: string, ctx: CanvasRenderingContext2D, cache: Map<string, number>): number {
   let w = cache.get(token);
@@ -208,6 +261,25 @@ function getTokenWidth(token: string, ctx: CanvasRenderingContext2D, cache: Map<
   return w;
 }
 
+// --- Hit test: is a point inside any text block? ---
+
+export function nodeUnderBlock(
+  state: WordCloudState,
+  nodes: ViewNode[],
+  x: number,
+  y: number,
+): ViewNode | null {
+  for (const node of nodes) {
+    const block = state.blocks.get(node.id);
+    if (!block) continue;
+    const b = block.bounds;
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+      return node;
+    }
+  }
+  return null;
+}
+
 // --- Render ---
 
 export function renderTextBlocks(
@@ -215,12 +287,11 @@ export function renderTextBlocks(
   state: WordCloudState,
   nodes: ViewNode[],
 ): void {
-  updateBlockPositions(state, nodes);
-
   const hash = computePositionHash(nodes, state.blocks);
   if (hash !== state._lastPositionHash) {
     state._lastPositionHash = hash;
-    markHighlights(state, nodes);
+    computeOverlaps(state, nodes);
+    relayoutDeformed(state, nodes);
   }
 
   const now = performance.now();
@@ -235,36 +306,48 @@ export function renderTextBlocks(
     const hasHighlights = block.highlightedWords.size > 0;
     const blockAge = now - block.createdAt;
 
+    // Compute pull direction for shared words
+    let pullX = 0;
+    if (hasHighlights && block.overlaps.length > 0) {
+      for (const overlap of block.overlaps) {
+        pullX += overlap.dirX * SHARED_WORD_PULL * overlap.squeeze / MAX_SQUEEZE;
+      }
+    }
+
     for (let lineIdx = 0; lineIdx < block.lines.length; lineIdx++) {
       const line = block.lines[lineIdx]!;
 
-      // Staggered fade-in: each line fades in slightly after the previous
       const lineDelay = lineIdx * FADE_STAGGER_PER_LINE;
       const lineAge = blockAge - lineDelay;
       const fadeProgress = Math.min(1, Math.max(0, lineAge / FADE_IN_DURATION));
       if (fadeProgress <= 0) continue;
 
+      const lineX = blockLeft + line.xShift;
+
       if (!hasHighlights) {
         ctx.fillStyle = block.color;
         ctx.globalAlpha = 0.7 * fadeProgress;
-        ctx.fillText(line.text, blockLeft, line.y);
+        ctx.fillText(line.text, lineX, line.y);
       } else {
         const words = line.text.split(/(\s+)/);
-        let xOffset = blockLeft;
+        let xOffset = lineX;
 
         for (const token of words) {
           const isWord = /\S/.test(token);
           const normalized = token.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const isShared = isWord && block.highlightedWords.has(normalized);
 
-          if (isWord && block.highlightedWords.has(normalized)) {
+          if (isShared) {
             ctx.fillStyle = HIGHLIGHT_COLOR;
             ctx.globalAlpha = pulseAlpha * fadeProgress;
+            // Pull shared words toward neighbor
+            ctx.fillText(token, xOffset + pullX, line.y);
           } else {
             ctx.fillStyle = block.color;
             ctx.globalAlpha = 0.7 * fadeProgress;
+            ctx.fillText(token, xOffset, line.y);
           }
 
-          ctx.fillText(token, xOffset, line.y);
           xOffset += getTokenWidth(token, ctx, state._tokenWidths);
         }
       }
@@ -274,7 +357,7 @@ export function renderTextBlocks(
   ctx.globalAlpha = 1;
 }
 
-/** Returns true if any block is still animating (fade-in not complete). */
+/** Returns true if any block is still animating. */
 export function isAnimating(state: WordCloudState): boolean {
   const now = performance.now();
   for (const block of state.blocks.values()) {

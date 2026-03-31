@@ -293,7 +293,7 @@ export function draw(
   // —— 5. Nodes (non-dimmed)
   if (renderMode === "wordcloud" && wordCloudState) {
     // In word cloud mode, render text blocks instead of normal node labels
-    renderTextBlocks(ctx, wordCloudState, nodes, draggedNodeId ?? null);
+    renderTextBlocks(ctx, wordCloudState, nodes, draggedNodeId ?? null, selectedNodeId);
     // Still draw non-cloud nodes normally
     for (const node of nodes) {
       const isDimmed = hasFocus && !connectedNodeIds.has(node.id);

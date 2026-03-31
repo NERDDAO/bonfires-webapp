@@ -663,8 +663,34 @@ export default function ForceGraph({
   useEffect(() => {
     if (renderMode === "wordcloud" && nodesRef.current) {
       wordCloudStateRef.current = buildWordClouds(nodesRef.current, elementDataMap);
+
+      // Widen collision radius so text blocks don't pile on each other
+      const sim = simulationRef.current;
+      if (sim) {
+        sim.force(
+          "collision",
+          d3.forceCollide<ViewNode>().radius(() => 80)
+        );
+        sim.force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH * 2.5));
+        sim.on("tick", () => redraw());
+        sim.alpha(0.5).restart();
+      }
     } else {
       wordCloudStateRef.current = null;
+
+      // Restore normal collision radius
+      const sim = simulationRef.current;
+      if (sim) {
+        sim.force(
+          "collision",
+          d3.forceCollide<ViewNode>().radius(
+            (d) => (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING
+          )
+        );
+        sim.force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH));
+        sim.on("tick", () => redraw());
+        sim.alpha(0.3).restart();
+      }
     }
     redraw();
 

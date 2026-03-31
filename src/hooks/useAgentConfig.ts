@@ -22,6 +22,8 @@ import type {
   EnvVarDeleteResponse,
   EnvVarsListResponse,
   EnvVarsUpsertResponse,
+  LlmConfig,
+  LlmModelOption,
   PersonalityResponse,
   PersonalityTrait,
   PersonalityTraitsModifyResponse,
@@ -201,6 +203,17 @@ export function useSkillsCatalog(enabled = true) {
   });
 }
 
+// ── LLM Model Catalog ───────────────────────────────────────────────────
+
+export function useLlmModelsCatalog(enabled = true) {
+  return useQuery({
+    queryKey: ["llm-models-catalog"],
+    queryFn: () => fetchJson<LlmModelOption[]>("/api/llm-models"),
+    staleTime: 10 * 60 * 1000,
+    enabled,
+  });
+}
+
 // ── Chat Config ─────────────────────────────────────────────────────────────
 
 export function useAgentChatConfig(agentId: string | undefined) {
@@ -250,6 +263,33 @@ export function useUpdateAgentFeatures() {
       }),
     onSuccess: (_, { agentId }) => {
       qc.invalidateQueries({ queryKey: ["agent-features", agentId] });
+      qc.invalidateQueries({ queryKey: ["agent-details", agentId] });
+    },
+  });
+}
+
+// ── LLM Config ─────────────────────────────────────────────────────────────
+
+export function useAgentLlmConfig(agentId: string | undefined) {
+  return useQuery({
+    queryKey: ["agent-llm-config", agentId],
+    queryFn: () => fetchJson<LlmConfig>(`/api/agents/${agentId}/llm-config`),
+    enabled: !!agentId,
+    staleTime: 30_000,
+  });
+}
+
+export function useUpdateLlmConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, llmConfig }: { agentId: string; llmConfig: LlmConfig }) =>
+      fetchJson<LlmConfig>(`/api/agents/${agentId}/llm-config`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ llmConfig }),
+      }),
+    onSuccess: (_, { agentId }) => {
+      qc.invalidateQueries({ queryKey: ["agent-llm-config", agentId] });
       qc.invalidateQueries({ queryKey: ["agent-details", agentId] });
     },
   });

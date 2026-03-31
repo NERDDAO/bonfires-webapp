@@ -134,6 +134,7 @@ export type {
   AgentUpdateRequest,
   ChatConfig,
   GroupConfig,
+  LlmConfig,
   McpTool,
   ReportingConfig,
   TokenValidationResult,

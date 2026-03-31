@@ -5,9 +5,11 @@
  *
  * Tabbed detail view for a selected agent.
  * Tabs: General | Platform | Features | Chat | Tools | Personality
+ * Admin-only tabs: LLM Config
  */
 import { useState } from "react";
 
+import { useAuth } from "@/hooks/useAuth";
 import { useAgentDetails } from "@/hooks/useAgentDeploy";
 import {
   useDeleteAgent,
@@ -22,7 +24,9 @@ import { ChatPoliciesTab } from "./tabs/ChatPoliciesTab";
 import { ToolsTab } from "./tabs/ToolsTab";
 import { PersonalityTab } from "./tabs/PersonalityTab";
 import { SkillsTab } from "./tabs/SkillsTab";
-const TABS = [
+import { LlmConfigTab } from "./tabs/LlmConfigTab";
+
+const BASE_TABS = [
   "General",
   "Platform",
   "Chat",
@@ -32,7 +36,9 @@ const TABS = [
   "Personality",
 ] as const;
 
-type TabName = (typeof TABS)[number];
+const ADMIN_TABS = ["LLM Config"] as const;
+
+type TabName = (typeof BASE_TABS)[number] | (typeof ADMIN_TABS)[number];
 
 interface AgentDetailTabsProps {
   agentId: string;
@@ -50,6 +56,13 @@ export function AgentDetailTabs({
   const { data: agent, isLoading, refetch } = useAgentDetails(agentId);
   const deleteAgent = useDeleteAgent();
   const toggleAgent = useToggleAgent();
+  const { orgRole } = useAuth();
+
+  const isAdmin = orgRole === "org:bonfire_admin";
+  const visibleTabs: TabName[] = [
+    ...BASE_TABS,
+    ...(isAdmin ? ADMIN_TABS : []),
+  ];
 
   if (isLoading) {
     return (
@@ -106,7 +119,7 @@ export function AgentDetailTabs({
       {/* Tabs */}
       <div className="border-b border-base-300">
         <div role="tablist" className="tabs tabs-bordered px-4">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab}
               role="tab"
@@ -123,11 +136,12 @@ export function AgentDetailTabs({
       <div className="p-4">
         {activeTab === "General" && <GeneralTab agent={agent} onSaved={refetch} />}
         {activeTab === "Platform" && <DeploymentTab agent={agent} onSaved={refetch} />}
-        {activeTab === "Features" && <FeaturesTab agent={agent} onSaved={refetch} />}
+        {activeTab === "Features" && <FeaturesTab agent={agent} onSaved={refetch} isAdmin={isAdmin} />}
         {activeTab === "Chat" && <ChatPoliciesTab agent={agent} onSaved={refetch} />}
         {activeTab === "Tools" && <ToolsTab agentId={agentId} agent={agent} onSaved={refetch} />}
         {activeTab === "Skills" && <SkillsTab agentId={agentId} agent={agent} onSaved={refetch} />}
         {activeTab === "Personality" && <PersonalityTab agentId={agentId} />}
+        {activeTab === "LLM Config" && isAdmin && <LlmConfigTab agent={agent} onSaved={refetch} />}
       </div>
 
       <ConfirmModal

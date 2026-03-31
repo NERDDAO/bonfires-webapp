@@ -50,6 +50,14 @@ export interface AgentFeatures {
   isImageGenerationEnabled: boolean;
   defaultImageGenerationModel: string;
   allowScheduling: boolean;
+  maxToolIterations?: number;
+  maxParallelToolCalls?: number;
+}
+
+export interface LlmConfig {
+  internalModel?: string;
+  responseModels?: string[];
+  defaultResponseModel?: string;
 }
 
 // ── Wizard form data ─────────────────────────────────────────────────────────
@@ -133,6 +141,7 @@ export interface AgentFullResponse {
     reportingConfig?: ReportingConfig;
   } | null;
   agentFeatures: AgentFeatures | null;
+  llmConfig: LlmConfig | null;
   enabledMcpTools: string[];
   enabledSkills: string[];
   timezone: string | null;
@@ -145,6 +154,7 @@ export interface AgentUpdateRequest {
   is_active?: boolean;
   chatConfig?: ChatConfig;
   agentFeatures?: AgentFeatures;
+  llmConfig?: LlmConfig;
   deploymentConfiguration?: Record<string, unknown>;
   enabledMcpTools?: string[];
   enabledSkills?: string[];
@@ -246,6 +256,21 @@ export interface TokenValidationResult {
   error?: string;
 }
 
+// ── LLM Model Presets ────────────────────────────────────────────────────
+
+export interface LlmModelOption {
+  id: string;
+  presetName: string;
+  modelId: string;
+  maxTokens: number | null;
+  baseTemperature: number | null;
+  internalTemperature: number | null;
+  costTier: string;
+  shortDescription: string;
+  fullDescription: string;
+  isActive: boolean;
+}
+
 // ── Defaults ─────────────────────────────────────────────────────────────────
 
 export const DEFAULT_AGENT_FEATURES: AgentFeatures = {
@@ -255,6 +280,14 @@ export const DEFAULT_AGENT_FEATURES: AgentFeatures = {
   isImageGenerationEnabled: false,
   defaultImageGenerationModel: "flux-1-dev-fp8",
   allowScheduling: false,
+  maxToolIterations: undefined,
+  maxParallelToolCalls: undefined,
+};
+
+export const DEFAULT_LLM_CONFIG: LlmConfig = {
+  internalModel: undefined,
+  responseModels: [],
+  defaultResponseModel: undefined,
 };
 
 export const DEFAULT_CHAT_CONFIG: ChatConfig = {

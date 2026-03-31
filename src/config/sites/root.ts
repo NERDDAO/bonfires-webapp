@@ -12,8 +12,7 @@ import type { SiteConfig } from "./types";
 export const rootSiteConfig: SiteConfig = {
   navigation: [
     { label: "Home", href: "/" },
-    { label: "Hyperblogs", href: "/hyperblogs" },
-    { label: "Explore Bonfires", href: "/explore" },
+    { label: "Explore", href: "/explore" },
     { label: "Docs", href: siteCopy.docsUrl },
   ],
 

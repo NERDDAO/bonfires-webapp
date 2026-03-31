@@ -70,10 +70,7 @@ const mainnetTransport = fallback([
 const wagmiConfig = getDefaultConfig({
   appName: "Bonfires.ai",
   projectId: process.env["NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID"] ?? "bonfires-project-id",
-  chains:
-    process.env["NEXT_PUBLIC_ENVIRONMENT"] === "development"
-      ? testnetChains
-      : mainnetChains,
+  chains: mainnetChains,
   transports: {
     [mainnet.id]: mainnetTransport,
     [base.id]: http("https://mainnet.base.org"),

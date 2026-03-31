@@ -31,7 +31,7 @@ export function DataRoomMarketplaceCard({
 }: DataRoomMarketplaceCardProps) {
   const router = useRouter();
   const { isConnected } = useWalletAccount();
-  const { buildAndSignPaymentHeader } = usePaymentHeader();
+  const { buildAndSignPaymentHeader } = usePaymentHeader(dataroom.id);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 

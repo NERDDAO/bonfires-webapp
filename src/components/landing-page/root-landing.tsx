@@ -44,7 +44,7 @@ export default function RootLanding() {
             Explore Bonfires
           </Link>
           <Link
-            href="/hyperblogs"
+            href="/explore?tab=hyperblogs"
             className="btn btn-lg bg-transparent border border-dark-s-400 text-dark-s-0 hover:bg-dark-s-800"
           >
             Browse Hyperblogs

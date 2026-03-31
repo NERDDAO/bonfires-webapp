@@ -34,60 +34,55 @@ export function GraphExplorerPanel({ className }: { className?: string } = {}) {
 
   return (
     <>
+      {/* Floating panel — like the chat box but top-left */}
       <div
         className={cn(
-          "flex flex-col absolute top-4 left-4 z-50 max-h-[calc(100dvh-10rem)] lg:max-h-[calc(100dvh-7.5rem)] w-full lg:w-fit max-w-[calc(100vw-2rem)]",
-          !panel.isRecentActivityCollapsed && "h-full",
-          className
+          "fixed top-20 left-4 z-30",
+          "flex flex-col overflow-hidden",
+          border,
+          "shadow-xl",
+          effectiveExpanded
+            ? "w-[calc(100vw-2rem)] sm:w-80 lg:w-96 max-w-[calc(100vw-5rem)] h-[calc(100dvh-7rem)] lg:h-[600px]"
+            : "w-12 h-12",
+          "transition-all duration-200",
+          className,
         )}
         role="group"
         aria-label="Graph explorer controls"
       >
-        {showCollapseBadge && (
-          <button
-            type="button"
-            onClick={() => panel.setIsCollapsed(true)}
-            className={cn(
-              "z-10 items-center justify-center hidden lg:flex",
-              "h-7 rounded-full gap-1 py-2 pl-2 pr-3 w-fit bg-[#22252B]",
-              border,
-              "hover:bg-[#22252B]/80 transition-colors duration-200"
-            )}
-            aria-label="Collapse panel"
-            title="Collapse panel"
-          >
-            <Image
-              className="rotate-90"
-              src="/icons/chevron-down.svg"
-              alt=""
-              width={12}
-              height={12}
-            />
-            <span className="text-xs font-bold text-white">Collapse</span>
-          </button>
-        )}
-
         {effectiveExpanded ? (
           <>
-            <div className="relative z-10">
-              <PanelHeader />
+            <div className="flex items-center justify-between p-3 border-b border-[#333333] shrink-0">
+              <span className="font-montserrat text-sm font-bold text-white uppercase tracking-wider">
+                Explorer
+              </span>
+              {showCollapseBadge && (
+                <button
+                  type="button"
+                  onClick={() => panel.setIsCollapsed(true)}
+                  className="text-xs text-white/60 hover:text-white transition-colors"
+                  aria-label="Collapse panel"
+                >
+                  —
+                </button>
+              )}
             </div>
-
-            {!panel.isRecentActivityCollapsed && (
-              <div className="relative z-0 min-h-0">
-                <EpisodesList />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="relative z-10">
+                <PanelHeader />
               </div>
-            )}
+              {!panel.isRecentActivityCollapsed && (
+                <div className="relative z-0 min-h-0 flex-1 overflow-hidden">
+                  <EpisodesList />
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <button
             type="button"
             onClick={() => panel.setIsCollapsed(false)}
-            className={cn(
-              "flex flex-col items-center gap-3 py-4 px-3 rounded-lg min-w-[56px] absolute z-50",
-              border,
-              " hover:bg-[#22252B]/80 transition-colors duration-200"
-            )}
+            className="w-full h-full flex items-center justify-center hover:bg-[#22252B]/80 transition-colors"
             aria-label="Expand panel"
             title="Expand panel"
           >

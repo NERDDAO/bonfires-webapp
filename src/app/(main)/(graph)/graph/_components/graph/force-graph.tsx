@@ -7,13 +7,13 @@
  * node size by type, d3 force layout, drag/pan/zoom. Accepts GraphElement[]
  * and callbacks so it plugs into GraphVisualization without changing core logic.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import * as d3 from "d3";
-
-
+import { Cloud, Type } from "lucide-react";
 
 import { IconButton } from "../ui/icon-button";
+import { buildWordClouds, isAnimating, type WordCloudState } from "./word-cloud-renderer";
 import {
   ALPHA_DECAY,
   CENTER_STRENGTH,
@@ -101,6 +101,8 @@ export default function ForceGraph({
   } | null>(null);
   const TOUCH_PAN_THRESHOLD_PX = 10;
   const [, setTick] = useState(0);
+  const [renderMode, setRenderMode] = useState<"labels" | "wordcloud">("labels");
+  const wordCloudStateRef = useRef<WordCloudState | null>(null);
 
   const highlightedSet = useRef(new Set<string>());
   highlightedSet.current = new Set(
@@ -109,6 +111,20 @@ export default function ForceGraph({
   if (selectedNodeId) {
     highlightedSet.current.add(selectedNodeId.replace(/^n:/, ""));
   }
+
+  // Build element data map for word cloud text extraction
+  const elementDataMap = useMemo(() => {
+    const map = new Map<string, Record<string, unknown>>();
+    for (const el of elements) {
+      if (!el.data) continue;
+      const data = el.data as Record<string, unknown>;
+      const id = String(data["id"] ?? data["uuid"] ?? "").replace(/^n:/, "");
+      if (id && typeof data["node_type"] === "string") {
+        map.set(id, data);
+      }
+    }
+    return map;
+  }, [elements]);
 
   const onNodeClickRef = useRef(onNodeClick);
   const onEdgeClickRef = useRef(onEdgeClick);
@@ -236,7 +252,11 @@ export default function ForceGraph({
             "collision",
             d3
               .forceCollide<ViewNode>()
-              .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING)
+              .radius((d) =>
+                renderMode === "wordcloud"
+                  ? 70
+                  : (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING
+              )
           );
 
         while (simulation.alpha() > LAYOUT_ALPHA_MIN) {
@@ -283,7 +303,10 @@ export default function ForceGraph({
         null,
         selectedNode,
         highlightedSet.current,
-        transformRef.current
+        transformRef.current,
+        renderMode,
+        wordCloudStateRef.current ?? undefined,
+        draggedNodeRef.current?.id ?? null,
       );
     };
 
@@ -339,7 +362,7 @@ export default function ForceGraph({
       pointerDownOnCanvasRef.current = true;
       const { x, y } = toLogical(e);
       lastLogicalRef.current = { x, y };
-      const node = nodeUnderPoint(nodes, x, y);
+      const node = nodeUnderPoint(nodes, x, y, wordCloudStateRef.current ?? undefined);
       if (node) {
         draggedNodeRef.current = node;
         didDragRef.current = false;
@@ -403,7 +426,7 @@ export default function ForceGraph({
       } else {
         lastLogicalRef.current = { x, y };
         const edgeUnder = edgeUnderPoint(links, x, y);
-        const nodeUnder = nodeUnderPoint(nodes, x, y);
+        const nodeUnder = nodeUnderPoint(nodes, x, y, wordCloudStateRef.current ?? undefined);
         hoveredEdgeRef.current = edgeUnder?.id ?? null;
         hoveredNodeRef.current = nodeUnder?.id ?? null;
         redraw();
@@ -433,7 +456,7 @@ export default function ForceGraph({
           if (edgeUnder) {
             onEdgeClickRef.current?.(edgeUnder.id);
           } else if (wasPanning && !didPan && nodesRef.current) {
-            const nodeUnder = nodeUnderPoint(nodesRef.current, x, y);
+            const nodeUnder = nodeUnderPoint(nodesRef.current, x, y, wordCloudStateRef.current ?? undefined);
             if (!nodeUnder) {
               onBackgroundClickRef.current?.();
             }
@@ -506,7 +529,7 @@ export default function ForceGraph({
       const coords = getTouchCoords(e);
       if (!coords) return;
       const { x, y } = toLogical(coords);
-      const node = nodeUnderPoint(nodes, x, y);
+      const node = nodeUnderPoint(nodes, x, y, wordCloudStateRef.current ?? undefined);
       const edge = edgeUnderPoint(links, x, y);
       touchStartRef.current = {
         clientX: coords.clientX,
@@ -641,6 +664,54 @@ export default function ForceGraph({
     };
   }, [elements, centerNodeId, redraw]);
 
+  // Separate effect: build word clouds when mode or elements change
+  useEffect(() => {
+    const sim = simulationRef.current;
+    if (renderMode === "wordcloud" && nodesRef.current) {
+      wordCloudStateRef.current = buildWordClouds(nodesRef.current, elementDataMap);
+
+      // Gently spread nodes apart for text blocks
+      if (sim) {
+        sim.force(
+          "collision",
+          d3.forceCollide<ViewNode>().radius(() => 75).strength(0.7),
+        );
+        sim.force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH * 2));
+        sim.on("tick", () => redraw());
+        sim.alpha(0.15).alphaDecay(0.02).restart();
+      }
+    } else {
+      wordCloudStateRef.current = null;
+
+      // Restore normal forces
+      if (sim) {
+        sim.force(
+          "collision",
+          d3.forceCollide<ViewNode>().radius(
+            (d) => (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING,
+          ),
+        );
+        sim.force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH));
+        sim.on("tick", () => redraw());
+        sim.alpha(0.1).alphaDecay(ALPHA_DECAY).restart();
+      }
+    }
+    redraw();
+
+    // Animation loop for text block fade-in
+    if (renderMode !== "wordcloud") return;
+    let rafId: number;
+    const animate = () => {
+      const state = wordCloudStateRef.current;
+      if (state && isAnimating(state)) {
+        redraw();
+        rafId = requestAnimationFrame(animate);
+      }
+    };
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
+  }, [renderMode, elementDataMap, redraw]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const nodes = nodesRef.current;
@@ -666,7 +737,10 @@ export default function ForceGraph({
       selectedEdge,
       selectedNode,
       highlightedSet.current,
-      transformRef.current
+      transformRef.current,
+      renderMode,
+      wordCloudStateRef.current ?? undefined,
+      draggedNodeRef.current?.id ?? null,
     );
 
     const el = canvasRef.current;
@@ -700,8 +774,19 @@ export default function ForceGraph({
       <div
         className="absolute top-3 right-3 z-10 hidden lg:flex flex-col gap-1 rounded-md border border-neutral-700 bg-neutral-900/90 p-1 shadow-md"
         role="group"
-        aria-label="Zoom controls"
+        aria-label="Graph controls"
       >
+        <IconButton
+          onClick={() => setRenderMode((m) => m === "labels" ? "wordcloud" : "labels")}
+          aria-label={renderMode === "labels" ? "Switch to text block view" : "Switch to label view"}
+          title={renderMode === "labels" ? "Text block view" : "Label view"}
+        >
+          {renderMode === "labels" ? (
+            <Cloud className="w-4 h-4" />
+          ) : (
+            <Type className="w-4 h-4" />
+          )}
+        </IconButton>
         <IconButton
           onClick={() => zoomBy(1.25)}
           aria-label="Zoom in"

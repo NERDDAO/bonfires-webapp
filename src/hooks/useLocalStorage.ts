@@ -31,6 +31,9 @@ export const STORAGE_KEYS = {
 
   // Dashboard state
   DASHBOARD_LAYOUT: "delve.dashboard.layout",
+
+  // Explore page
+  EXPLORE_EXCLUDED_BONFIRES: "delve.explore.excludedBonfires",
 } as const;
 
 /**

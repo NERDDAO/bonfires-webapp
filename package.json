@@ -25,6 +25,7 @@
     "lhci": "lhci autorun"
   },
   "dependencies": {
+    "@chenglou/pretext": "^0.0.3",
     "@clerk/nextjs": "^6.36.10",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@rainbow-me/rainbowkit": "2.2.8",
@@ -35,6 +36,7 @@
     "d3": "^7.9.0",
     "daisyui": "^5.0.9",
     "framer-motion": "^12.23.24",
+    "fuse.js": "^7.1.0",
     "graphology": "^0.26.0",
     "graphology-layout-force": "^0.2.4",
     "graphology-layout-forceatlas2": "^0.10.1",

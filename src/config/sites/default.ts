@@ -11,7 +11,7 @@ import type { SiteConfig } from "./types";
 
 export const defaultSiteConfig: SiteConfig = {
   navigation: [
-    { label: "Hyperblogs", href: "/hyperblogs" },
+    { label: "Explore", href: "/explore" },
     { label: "Graph Explorer", href: "/graph" },
     { label: "Docs", href: siteCopy.docsUrl },
   ],
@@ -27,7 +27,7 @@ export const defaultSiteConfig: SiteConfig = {
 
   features: {
     graphExplorer: true,
-    exploreBonfires: false,
+    exploreBonfires: true,
     homePage: false,
   },
 };

@@ -8,16 +8,23 @@ import { config } from "@/lib/config";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** Pick the app root that matches the current hostname. */
+/** Resolve the app root once per session (hostname won't change). */
+let _cachedAppRoot: string | null = null;
 function getAppRoot(): string {
+  if (_cachedAppRoot) return _cachedAppRoot;
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
     const match = config.subdomain.appRoots.find(
       (root) => hostname === root || hostname.endsWith(`.${root}`),
     );
-    if (match) return match;
+    if (match) {
+      _cachedAppRoot = match;
+      return match;
+    }
   }
-  return config.subdomain.appRoots[0] ?? "app.bonfires.ai";
+  const fallback = config.subdomain.appRoots[0] ?? "app.bonfires.ai";
+  _cachedAppRoot = fallback;
+  return fallback;
 }
 
 /**
@@ -28,6 +35,22 @@ function getAppRoot(): string {
 function getBonfireBaseUrl(bonfire: BonfireInfo): string {
   const slug = bonfire.slug ?? bonfire.id;
   return `https://${slug}.${getAppRoot()}`;
+}
+
+/** Format an ISO date string as a short relative label. */
+function formatRelativeDate(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  const hours = Math.floor(mins / 60);
+  if (hours < 1) return `${mins}m ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 1) return `${hours}h ago`;
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(months / 12);
+  return `${years}y ago`;
 }
 
 // ─── Skeleton ───────────────────────────────────────────────────────────────
@@ -64,12 +87,14 @@ function BonfireCardSkeleton({ className }: { className?: string }) {
 interface BonfireCardProps {
   data?: BonfireInfo;
   isLoading?: boolean;
+  isHighlighted?: boolean;
   className?: string;
 }
 
 export default function BonfireCard({
   data,
   isLoading,
+  isHighlighted,
   className,
 }: BonfireCardProps) {
   if (isLoading || !data) {
@@ -84,7 +109,9 @@ export default function BonfireCard({
       href={baseUrl}
       className={cn(
         "group rounded-2xl w-full flex items-center gap-5 p-4 lg:p-5",
-        "bg-[#FFFFFF05] border border-[#333333]",
+        isHighlighted
+          ? "bg-brand-primary/5 border border-brand-primary/60"
+          : "bg-[#FFFFFF05] border border-[#333333]",
         "transition-all hover:border-brand-primary/40 hover:bg-[#FFFFFF08] no-underline",
         className,
       )}
@@ -100,12 +127,19 @@ export default function BonfireCard({
         />
       </div>
 
-      {/* Content: name + description + taxonomy badges */}
+      {/* Content: name + description + taxonomy badges + stats */}
       <div className="flex-1 min-w-0">
         {/* Name */}
-        <h3 className="text-base lg:text-lg font-semibold text-dark-s-0 truncate">
-          {data.name}
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-base lg:text-lg font-semibold text-dark-s-0 truncate">
+            {data.name}
+          </h3>
+          {isHighlighted && (
+            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded">
+              Current
+            </span>
+          )}
+        </div>
 
         {/* Description */}
         {data.description && (
@@ -132,22 +166,38 @@ export default function BonfireCard({
             )}
           </div>
         )}
+
+        {/* Stats row */}
+        <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-dark-s-80">
+          {data.agent_count > 0 && (
+            <span>{data.agent_count} agent{data.agent_count !== 1 ? "s" : ""}</span>
+          )}
+          {(data.total_episodes ?? 0) > 0 && (
+            <span>{data.total_episodes} episode{data.total_episodes !== 1 ? "s" : ""}</span>
+          )}
+          {data.created_at && (
+            <span>Created {formatRelativeDate(data.created_at)}</span>
+          )}
+          {(data.latest_episode?.created_at ?? data.updated_at) && (
+            <span>Updated {formatRelativeDate(data.latest_episode?.created_at ?? data.updated_at ?? "")}</span>
+          )}
+        </div>
       </div>
 
       {/* Actions */}
       <div className="shrink-0 hidden sm:flex items-center gap-2">
-        {data.agent_count > 0 && (
-          <span className="text-xs text-dark-s-60 bg-dark-s-700/50 px-2.5 py-1 rounded-full">
-            {data.agent_count} agent{data.agent_count !== 1 ? "s" : ""}
-          </span>
+        {data.slug && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.location.href = graphUrl;
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-brand-primary/50 text-brand-primary text-sm font-medium transition-colors hover:bg-brand-primary/10"
+          >
+            Explore Graph
+          </button>
         )}
-        <a
-          href={graphUrl}
-          onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-brand-primary/50 text-brand-primary text-sm font-medium transition-colors hover:bg-brand-primary/10 no-underline"
-        >
-          Explore Graph
-        </a>
       </div>
     </a>
   );

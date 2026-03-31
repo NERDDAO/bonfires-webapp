@@ -12,9 +12,13 @@ export interface BonfireInfo {
   name: string;
   description?: string;
   created_at: string;
+  updated_at?: string;
   agent_count: number;
+  total_episodes?: number;
   is_public?: boolean;
   latest_taxonomies?: TaxonomyInfo[];
+  latest_episode_id?: string | null;
+  latest_episode?: { created_at?: string; updated_at?: string; [key: string]: unknown } | null;
   /**
    * URL-safe slug for subdomain routing (e.g. "eth-boulder").
    * When present, used to build subdomain URLs: `{slug}.app.bonfires.ai`.
@@ -452,6 +456,8 @@ export interface DataRoomInfo {
   source_bonfire_name?: string | null;
   htn_template_id?: string | null;
   htn_template_type?: string | null;
+  /** Dynamic price with floor enforcement — use this for display instead of price_usd */
+  current_hyperblog_price_usd?: string | null;
 }
 
 export interface DataRoomListResponse {
@@ -619,4 +625,88 @@ export interface PaymentStatusResponse {
   tx_hash: string;
   confirmed_at?: string;
   error?: string;
+}
+
+// ─── Hackathon Types ─────────────────────────────────────────────────────────
+
+export interface HackathonTrackInfo {
+  id: string;
+  name: string;
+  cadence: "weekly" | "monthly" | "yearly";
+  status: "upcoming" | "active" | "judging" | "completed";
+  bonfire_ref: string;
+  dataroom_ref: string;
+  rubric_ref: string;
+  escrow_address: string;
+  platform_fee_bps: number;
+  starts_at: string;
+  ends_at: string;
+  judging_ends_at?: string;
+  current_entry_price_usd: number | null;
+  submission_count: number;
+  description?: string;
+  judging_proposal?: JudgingProposal;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JudgingProposal {
+  rankings: Array<{
+    wallet: string;
+    project_url?: string;
+    weighted_score?: number;
+    review_count?: number;
+    total_votes?: number;
+    rank: number;
+    reasoning: string;
+  }>;
+  distributions: Array<{
+    wallet: string;
+    amount_usd: number;
+    percentage: number;
+  }>;
+  platform_fee_usd: number;
+  rationale: string;
+}
+
+/** Aggregated submission — one per wallet, from HyperBlog data */
+export interface AggregatedSubmission {
+  wallet: string;
+  project_url?: string;
+  latest_hyperblog_id: string;
+  latest_hyperblog_title?: string;
+  weighted_score?: number;
+  recommendation?: string;
+  summary?: string;
+  strengths?: string[];
+  concerns?: string[];
+  review_count: number;
+  total_votes: number;
+  latest_review_at?: string;
+}
+
+export interface MentorInfo {
+  id: string;
+  mentor_wallet: string;
+  mentor_name: string;
+  bonfire_ref: string;
+  dataroom_ref: string;
+  track_refs: string[];
+  session_count: number;
+  total_earned_usd: number;
+  bio?: string;
+  specialties: string[];
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LeaderboardResponse {
+  entries: AggregatedSubmission[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface HackathonTrackListResponse {
+  tracks: HackathonTrackInfo[];
 }

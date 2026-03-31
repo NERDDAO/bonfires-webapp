@@ -128,7 +128,7 @@ export default function DashboardPage() {
                     Browse Data Rooms
                   </Link>
                   <Link
-                    href="/hyperblogs"
+                    href="/explore?tab=hyperblogs"
                     className="btn btn-block btn-outline justify-start gap-3"
                   >
                     <span>📝</span>

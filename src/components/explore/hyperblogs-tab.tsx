@@ -7,6 +7,7 @@ import { useSubdomainBonfire } from "@/contexts/SubdomainBonfireContext";
 import { usePublicHyperBlogsInfiniteQuery } from "@/hooks/queries/useHyperBlogsQuery";
 import type { HyperBlogInfo } from "@/types";
 import HyperBlogCard from "@/components/hyperblogs/hyperblog-card";
+import BonfireFilterDropdown, { useBonfireFilter } from "@/components/explore/bonfire-filter-dropdown";
 import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 8;
@@ -39,6 +40,7 @@ interface HyperBlogsTabProps {
 export default function HyperBlogsTab({ search, sortBy, onSortChange }: HyperBlogsTabProps) {
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
+  const filter = useBonfireFilter();
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isError, error } =
     usePublicHyperBlogsInfiniteQuery({
@@ -60,9 +62,10 @@ export default function HyperBlogsTab({ search, sortBy, onSortChange }: HyperBlo
   const fuse = useMemo(() => new Fuse(allBlogs, FUSE_OPTIONS), [allBlogs]);
   const filtered: HyperBlogInfo[] = useMemo(() => {
     const trimmed = search.trim();
-    if (!trimmed) return allBlogs;
-    return fuse.search(trimmed).map((r) => r.item);
-  }, [allBlogs, fuse, search]);
+    let results = trimmed ? fuse.search(trimmed).map((r) => r.item) : allBlogs;
+    results = results.filter((b) => !b.source_bonfire_id || !filter.excludedSet.has(b.source_bonfire_id));
+    return results;
+  }, [allBlogs, fuse, search, filter.excludedSet]);
 
   const totalCount = filtered.length + placeholderCount;
 
@@ -83,7 +86,7 @@ export default function HyperBlogsTab({ search, sortBy, onSortChange }: HyperBlo
   return (
     <>
       {/* Sort pills */}
-      <div className="flex items-center gap-1.5 mb-4 mt-1">
+      <div className="flex items-center gap-1.5 mb-4 mt-1 flex-wrap">
         {HYPERBLOG_SORT_OPTIONS.map((opt) => (
           <button
             key={opt.key}
@@ -98,6 +101,7 @@ export default function HyperBlogsTab({ search, sortBy, onSortChange }: HyperBlo
             {opt.label}
           </button>
         ))}
+        <BonfireFilterDropdown {...filter} />
       </div>
 
       <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full">

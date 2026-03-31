@@ -8,6 +8,7 @@ import { useDataRoomsInfiniteQuery } from "@/hooks";
 import type { DataRoomInfo } from "@/types/api";
 
 import DataroomCard from "@/components/hyperblogs/dataroom-card";
+import BonfireFilterDropdown, { useBonfireFilter } from "@/components/explore/bonfire-filter-dropdown";
 import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 12;
@@ -41,6 +42,7 @@ interface DataRoomsTabProps {
 export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRoomsTabProps) {
   const { subdomainConfig, isSubdomainScoped } = useSubdomainBonfire();
   const bonfireId = isSubdomainScoped ? subdomainConfig?.bonfireId : undefined;
+  const filter = useBonfireFilter();
 
   // Price sorts are client-side; API only supports total_purchases and created_at
   const apiSortBy = sortBy === "price_low" || sortBy === "price_high" ? "created_at" : sortBy;
@@ -63,6 +65,9 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
     const trimmed = search.trim();
     let results = trimmed ? fuse.search(trimmed).map((r) => r.item) : allDatarooms;
 
+    // Apply bonfire filter
+    results = results.filter((dr) => !filter.excludedSet.has(dr.bonfire_id));
+
     // Client-side price sort
     if (sortBy === "price_low" || sortBy === "price_high") {
       const getPrice = (dr: DataRoomInfo) =>
@@ -73,7 +78,7 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
     }
 
     return results;
-  }, [allDatarooms, fuse, search, sortBy]);
+  }, [allDatarooms, fuse, search, sortBy, filter.excludedSet]);
 
   const placeholderCount = isFetchingNextPage ? PAGE_SIZE : 0;
   const totalCount = filtered.length + placeholderCount;
@@ -94,7 +99,7 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
   return (
     <div>
       {/* Sort pills */}
-      <div className="flex items-center gap-1.5 mb-4 mt-1">
+      <div className="flex items-center gap-1.5 mb-4 mt-1 flex-wrap">
         {DATAROOM_SORT_OPTIONS
           .filter((opt) => {
             if (!opt.toggle) return true;
@@ -123,6 +128,7 @@ export default function DataRoomsTab({ search, sortBy, onSortChange }: DataRooms
               {opt.label}
             </button>
           ))}
+        <BonfireFilterDropdown {...filter} />
       </div>
 
       {/* Dataroom grid */}

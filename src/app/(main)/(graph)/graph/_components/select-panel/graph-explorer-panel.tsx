@@ -42,7 +42,7 @@ export function GraphExplorerPanel({ className }: { className?: string } = {}) {
           border,
           "shadow-xl",
           effectiveExpanded
-            ? "w-[calc(100vw-2rem)] lg:w-96 h-[calc(100dvh-7rem)] lg:h-[600px]"
+            ? "w-[calc(100vw-2rem)] sm:w-80 lg:w-96 max-w-[calc(100vw-5rem)] h-[calc(100dvh-7rem)] lg:h-[600px]"
             : "w-12 h-12",
           "transition-all duration-200",
           className,

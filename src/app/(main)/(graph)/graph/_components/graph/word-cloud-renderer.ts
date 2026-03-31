@@ -61,6 +61,8 @@ export type WordCloudState = {
   /** Drag velocity tracking for blob deformation */
   _dragPrevPos: { x: number; y: number } | null;
   _dragVelocity: { vx: number; vy: number };
+  /** Cached similarity results: "nodeA:nodeB" → similarities (stable until blocks rebuild) */
+  _similarityCache: Map<string, { ab: Map<string, WordSimilarity>; ba: Map<string, WordSimilarity> }>;
 };
 
 // --- Constants ---
@@ -81,10 +83,11 @@ const PASSIVE_RANGE = 250;
 const PASSIVE_PULL = 8;   // subtle always-on pull
 const DRAG_PULL = 30;     // strong pull when dragging
 
-// Blob deformation: lines trail behind drag direction like water
-const BLOB_MAX_OFFSET = 12;   // max px a trailing line can lag
+// Blob deformation: droplet — center leads, edges trail + pinch inward
+const BLOB_MAX_OFFSET = 14;   // max px a trailing line can lag
 const BLOB_VELOCITY_DECAY = 0.85; // velocity damping per frame
-const BLOB_VELOCITY_SCALE = 0.6;  // how much velocity maps to deformation
+const BLOB_VELOCITY_SCALE = 0.6;  // drag direction deformation
+const BLOB_PINCH_SCALE = 0.4;    // perpendicular pinch toward drag axis
 
 // --- Build ---
 
@@ -143,6 +146,7 @@ export function buildWordClouds(
     _lastPositionHash: 0,
     _dragPrevPos: null,
     _dragVelocity: { vx: 0, vy: 0 },
+    _similarityCache: new Map(),
   };
 }
 
@@ -171,10 +175,17 @@ function computePairEffects(
       const a = state.blocks.get(ni.id)!;
       const b = state.blocks.get(nj.id)!;
 
-      // Fuzzy n-gram matching: a's words → best match in b (with similarity score)
-      const aSimilarities = findSimilarWords(a.wordMap, b.wordMap);
-      // Also b → a for the reverse direction
-      const bSimilarities = findSimilarWords(b.wordMap, a.wordMap);
+      // Fuzzy n-gram matching with caching (word maps are stable between rebuilds)
+      const cacheKey = ni.id < nj.id ? `${ni.id}:${nj.id}` : `${nj.id}:${ni.id}`;
+      let cached = state._similarityCache.get(cacheKey);
+      if (!cached) {
+        const ab = findSimilarWords(a.wordMap, b.wordMap);
+        const ba = findSimilarWords(b.wordMap, a.wordMap);
+        cached = ni.id < nj.id ? { ab, ba } : { ab: ba, ba: ab };
+        state._similarityCache.set(cacheKey, cached);
+      }
+      const aSimilarities = ni.id < nj.id ? cached.ab : cached.ba;
+      const bSimilarities = ni.id < nj.id ? cached.ba : cached.ab;
 
       if (aSimilarities.size === 0 && bSimilarities.size === 0) continue;
 
@@ -297,9 +308,13 @@ export function renderTextBlocks(
     computePairEffects(state, nodes, draggedNodeId, selectedNodeId);
   }
 
+  // Build node lookup map once (avoids O(n) find() per block)
+  const nodeMap = new Map<string, ViewNode>();
+  for (const n of nodes) nodeMap.set(n.id, n);
+
   // Track drag velocity for blob deformation
   if (draggedNodeId) {
-    const dragNode = nodes.find((n) => n.id === draggedNodeId);
+    const dragNode = nodeMap.get(draggedNodeId);
     if (dragNode) {
       const cx = dragNode.x ?? 0;
       const cy = dragNode.y ?? 0;
@@ -332,14 +347,14 @@ export function renderTextBlocks(
   const CLEAR_RADIUS = 200;
   let proximityDim: Map<string, number> | null = null;
   if (selectedNodeId) {
-    const selNode = nodes.find((n) => n.id === selectedNodeId);
+    const selNode = nodeMap.get(selectedNodeId);
     if (selNode) {
       proximityDim = new Map();
       const sx = selNode.x ?? 0;
       const sy = selNode.y ?? 0;
       for (const block of state.blocks.values()) {
         if (block.nodeId === selectedNodeId) continue;
-        const other = nodes.find((n) => n.id === block.nodeId);
+        const other = nodeMap.get(block.nodeId);
         if (!other) continue;
         const dist = Math.hypot((other.x ?? 0) - sx, (other.y ?? 0) - sy);
         if (dist < CLEAR_RADIUS) {
@@ -352,7 +367,7 @@ export function renderTextBlocks(
   }
 
   for (const block of state.blocks.values()) {
-    const node = nodes.find((n) => n.id === block.nodeId);
+    const node = nodeMap.get(block.nodeId);
     if (!node) continue;
 
     const bounds = getBlockBounds(node, block, state.blockWidth);
@@ -405,11 +420,18 @@ export function renderTextBlocks(
       ctx.fillRect(glowX - glowR, glowY - glowR, glowR * 2, glowR * 2);
     }
 
-    // Blob deformation: droplet shape — center lines lead, top/bottom trail
+    // Blob deformation: droplet — center leads, edges trail + pinch inward
     const { vx, vy } = state._dragVelocity;
-    const hasVelocity = isDragged && (Math.abs(vx) > 0.5 || Math.abs(vy) > 0.5);
+    const speed = Math.hypot(vx, vy);
+    const hasVelocity = isDragged && speed > 0.5;
     const lineCount = block.lines.length;
     const midLine = (lineCount - 1) / 2;
+    // Normalized drag direction and perpendicular (for pinching)
+    const dirX = hasVelocity ? vx / speed : 0;
+    const dirY = hasVelocity ? vy / speed : 0;
+    // Perpendicular to drag direction (used to pinch trailing lines inward)
+    const perpX = -dirY;
+    const perpY = dirX;
 
     for (let lineIdx = 0; lineIdx < lineCount; lineIdx++) {
       const line = block.lines[lineIdx]!;
@@ -419,17 +441,28 @@ export function renderTextBlocks(
       const fadeProgress = Math.min(1, Math.max(0, lineAge / FADE_IN_DURATION));
       if (fadeProgress <= 0) continue;
 
-      // Droplet deformation: center follows drag, edges trail behind
+      // Droplet: center lines follow drag fully, edge lines trail + pinch
       let blobDx = 0;
       let blobDy = 0;
       if (hasVelocity && lineCount > 1) {
-        // 0 at center, 1 at edges — how much this line trails
+        // 0 at center, 1 at edges
         const edgeness = Math.abs(lineIdx - midLine) / midLine;
-        // Invert: center gets full offset (moves with drag), edges get none (trail)
-        const followFactor = 1 - edgeness * edgeness; // quadratic falloff
-        blobDx = vx * BLOB_VELOCITY_SCALE * followFactor;
-        blobDy = vy * BLOB_VELOCITY_SCALE * followFactor;
-        // Clamp
+        // Center follows drag, edges trail (quadratic falloff)
+        const followFactor = 1 - edgeness * edgeness;
+        // Drag-direction offset: center moves with drag, edges stay behind
+        const dragOffset = speed * BLOB_VELOCITY_SCALE * followFactor;
+        blobDx = dirX * dragOffset;
+        blobDy = dirY * dragOffset;
+
+        // Pinch: trailing lines contract toward center axis
+        // Each line's perpendicular position relative to block center
+        const lineRelY = (lineIdx - midLine) / midLine; // -1..1
+        const pinchAmount = speed * BLOB_PINCH_SCALE * edgeness * edgeness;
+        // Pull toward the drag axis (contract perpendicular offset)
+        blobDx -= perpX * lineRelY * pinchAmount;
+        blobDy -= perpY * lineRelY * pinchAmount;
+
+        // Clamp total offset
         const mag = Math.hypot(blobDx, blobDy);
         if (mag > BLOB_MAX_OFFSET) {
           const scale = BLOB_MAX_OFFSET / mag;

@@ -664,16 +664,41 @@ export default function ForceGraph({
     };
   }, [elements, centerNodeId, redraw]);
 
-  // Separate effect: build word clouds when mode or elements change (no simulation rebuild)
+  // Separate effect: build word clouds when mode or elements change
   useEffect(() => {
+    const sim = simulationRef.current;
     if (renderMode === "wordcloud" && nodesRef.current) {
       wordCloudStateRef.current = buildWordClouds(nodesRef.current, elementDataMap);
+
+      // Gently spread nodes apart for text blocks
+      if (sim) {
+        sim.force(
+          "collision",
+          d3.forceCollide<ViewNode>().radius(() => 75).strength(0.7),
+        );
+        sim.force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH * 2));
+        sim.on("tick", () => redraw());
+        sim.alpha(0.15).alphaDecay(0.02).restart();
+      }
     } else {
       wordCloudStateRef.current = null;
+
+      // Restore normal forces
+      if (sim) {
+        sim.force(
+          "collision",
+          d3.forceCollide<ViewNode>().radius(
+            (d) => (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING,
+          ),
+        );
+        sim.force("charge", d3.forceManyBody().strength(CHARGE_STRENGTH));
+        sim.on("tick", () => redraw());
+        sim.alpha(0.1).alphaDecay(ALPHA_DECAY).restart();
+      }
     }
     redraw();
 
-    // Animation loop for text block fade-in and highlight pulse
+    // Animation loop for text block fade-in
     if (renderMode !== "wordcloud") return;
     let rafId: number;
     const animate = () => {

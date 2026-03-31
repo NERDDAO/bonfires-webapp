@@ -10,9 +10,10 @@ import { FeaturesSection } from "../sections/FeaturesSection";
 interface FeaturesTabProps {
   agent: AgentFullResponse;
   onSaved: () => void;
+  isAdmin?: boolean;
 }
 
-export function FeaturesTab({ agent, onSaved }: FeaturesTabProps) {
+export function FeaturesTab({ agent, onSaved, isAdmin }: FeaturesTabProps) {
   const initial: AgentFeatures = { ...DEFAULT_AGENT_FEATURES, ...agent.agentFeatures };
   const [features, setFeatures] = useState<AgentFeatures>(initial);
   const updateFeatures = useUpdateAgentFeatures();
@@ -26,7 +27,7 @@ export function FeaturesTab({ agent, onSaved }: FeaturesTabProps) {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <FeaturesSection features={features} onChange={setFeatures} />
+      <FeaturesSection features={features} onChange={setFeatures} isAdmin={isAdmin} />
 
       {isDirty && (
         <div className="flex gap-2">

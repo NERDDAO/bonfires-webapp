@@ -60,7 +60,7 @@ export function DeploymentSection({
           <span className="label-text font-medium">Platform</span>
         </label>
         <select
-          className="select select-bordered"
+          className="select select-bordered w-full"
           value={platform}
           onChange={(e) => {
             onChange({ platform: e.target.value as AgentPlatform });

@@ -15,9 +15,10 @@ import {
 import type { ViewNode } from "./force-graph-types";
 import {
   type BoundingBox,
+  type WordSimilarity,
   extractNodeText,
   tokenize,
-  findSharedWords,
+  findSimilarWords,
 } from "./word-cloud-utils";
 
 // --- Types ---
@@ -33,7 +34,8 @@ type PairEffect = {
   dirX: number;
   dirY: number;
   strength: number; // 0..1
-  sharedWords: Set<string>;
+  /** word → similarity score (0..1) from n-gram Jaccard */
+  wordSimilarities: Map<string, number>;
 };
 
 type NodeTextBlock = {
@@ -157,8 +159,13 @@ function computePairEffects(
 
       const a = state.blocks.get(ni.id)!;
       const b = state.blocks.get(nj.id)!;
-      const shared = findSharedWords(a.wordMap, b.wordMap);
-      if (shared.size === 0) continue;
+
+      // Fuzzy n-gram matching: a's words → best match in b (with similarity score)
+      const aSimilarities = findSimilarWords(a.wordMap, b.wordMap);
+      // Also b → a for the reverse direction
+      const bSimilarities = findSimilarWords(b.wordMap, a.wordMap);
+
+      if (aSimilarities.size === 0 && bSimilarities.size === 0) continue;
 
       const proximity = Math.max(0, 1 - dist / PASSIVE_RANGE);
       const dx = bx - ax;
@@ -166,27 +173,40 @@ function computePairEffects(
       const nx = dx / dist;
       const ny = dy / dist;
 
-      // Boost strength if either node is being dragged
       const isDragPair = draggedNodeId === ni.id || draggedNodeId === nj.id;
       const strength = isDragPair ? proximity * 1.5 : proximity;
 
-      if (!state._pairEffects.has(ni.id)) state._pairEffects.set(ni.id, []);
-      state._pairEffects.get(ni.id)!.push({
-        otherNodeId: nj.id,
-        dirX: nx,
-        dirY: ny,
-        strength,
-        sharedWords: shared,
-      });
+      // Build per-word similarity maps
+      const aWordSims = new Map<string, number>();
+      for (const [word, sim] of aSimilarities) {
+        aWordSims.set(word, sim.similarity);
+      }
+      const bWordSims = new Map<string, number>();
+      for (const [word, sim] of bSimilarities) {
+        bWordSims.set(word, sim.similarity);
+      }
 
-      if (!state._pairEffects.has(nj.id)) state._pairEffects.set(nj.id, []);
-      state._pairEffects.get(nj.id)!.push({
-        otherNodeId: ni.id,
-        dirX: -nx,
-        dirY: -ny,
-        strength,
-        sharedWords: shared,
-      });
+      if (aWordSims.size > 0) {
+        if (!state._pairEffects.has(ni.id)) state._pairEffects.set(ni.id, []);
+        state._pairEffects.get(ni.id)!.push({
+          otherNodeId: nj.id,
+          dirX: nx,
+          dirY: ny,
+          strength,
+          wordSimilarities: aWordSims,
+        });
+      }
+
+      if (bWordSims.size > 0) {
+        if (!state._pairEffects.has(nj.id)) state._pairEffects.set(nj.id, []);
+        state._pairEffects.get(nj.id)!.push({
+          otherNodeId: ni.id,
+          dirX: -nx,
+          dirY: -ny,
+          strength,
+          wordSimilarities: bWordSims,
+        });
+      }
     }
   }
 }
@@ -277,24 +297,26 @@ export function renderTextBlocks(
     const effects = state._pairEffects.get(block.nodeId);
     const isDragged = block.nodeId === draggedNodeId;
 
-    // Collect all shared words and their aggregate pull direction
-    const wordPulls = new Map<string, { px: number; py: number }>();
+    // Collect per-word pull vectors scaled by n-gram similarity
+    const wordPulls = new Map<string, { px: number; py: number; maxSim: number }>();
     if (effects) {
       for (const effect of effects) {
         const pullBase = isDragged || effect.otherNodeId === draggedNodeId
           ? DRAG_PULL
           : PASSIVE_PULL;
-        const pull = pullBase * effect.strength;
 
-        for (const word of effect.sharedWords) {
+        for (const [word, similarity] of effect.wordSimilarities) {
+          const pull = pullBase * effect.strength * similarity;
           const existing = wordPulls.get(word);
           if (existing) {
             existing.px += effect.dirX * pull;
             existing.py += effect.dirY * pull * 0.4;
+            existing.maxSim = Math.max(existing.maxSim, similarity);
           } else {
             wordPulls.set(word, {
               px: effect.dirX * pull,
               py: effect.dirY * pull * 0.4,
+              maxSim: similarity,
             });
           }
         }
@@ -329,8 +351,10 @@ export function renderTextBlocks(
           const tokenW = getTokenWidth(token, ctx, state._tokenWidths);
 
           if (pull) {
+            // Color intensity scales with similarity: strong matches = full highlight, weak = blended
             ctx.fillStyle = HIGHLIGHT_COLOR;
-            const intensity = isDragged ? 1 : 0.85;
+            const simBoost = 0.5 + 0.5 * pull.maxSim; // 0.5..1.0
+            const intensity = (isDragged ? 1 : 0.85) * simBoost;
             ctx.globalAlpha = intensity * fadeProgress;
             ctx.fillText(token, xOffset + pull.px, lineY + pull.py);
           } else {

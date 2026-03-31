@@ -1,7 +1,7 @@
 /**
- * Text block renderer: uses pretext for clean paragraph layout at each node.
- * When blocks are near each other, shared words get highlighted and blocks
- * gently repel to reduce overlap.
+ * Text block renderer: clean pretext paragraphs at each node.
+ * During drag, shared words in nearby blocks pull toward the dragged node
+ * like water droplets attracted to a magnet — per-word physics.
  */
 
 import {
@@ -24,16 +24,7 @@ import {
 type PositionedLine = {
   text: string;
   width: number;
-  /** Relative y offset from block top */
   relY: number;
-};
-
-type NeighborEffect = {
-  /** Unit direction toward neighbor */
-  dirX: number;
-  dirY: number;
-  /** 0..1 proximity strength (1 = touching, 0 = far) */
-  strength: number;
 };
 
 type NodeTextBlock = {
@@ -43,11 +34,6 @@ type NodeTextBlock = {
   lines: PositionedLine[];
   blockHeight: number;
   wordMap: Map<string, number>;
-  highlightedWords: Set<string>;
-  nudgeX: number;
-  nudgeY: number;
-  /** Strongest neighbor effect (for taper + word pull) */
-  neighbor: NeighborEffect | null;
   createdAt: number;
 };
 
@@ -57,7 +43,6 @@ export type WordCloudState = {
   blockWidth: number;
   lineHeight: number;
   _tokenWidths: Map<string, number>;
-  _lastPositionHash: number;
   _createdAt: number;
 };
 
@@ -74,11 +59,8 @@ const HIGHLIGHT_COLOR = "#f5572a";
 const MAX_TEXT_LENGTH = 800;
 const FADE_IN_DURATION = 1200;
 const FADE_STAGGER_PER_LINE = 60;
-const HIGHLIGHT_PULSE_SPEED = 0.003;
-const REPULSION_RANGE = 280;
-const MAX_NUDGE = 60;
-const WORD_PULL = 14;
-const TAPER_AMOUNT = 20;
+const MAGNET_RANGE = 300;
+const MAGNET_PULL = 30;
 
 // --- Build ---
 
@@ -122,10 +104,6 @@ export function buildWordClouds(
       lines,
       blockHeight: lines.length * LINE_HEIGHT,
       wordMap: tokenize(text),
-      highlightedWords: new Set(),
-      nudgeX: 0,
-      nudgeY: 0,
-      neighbor: null,
       createdAt: now,
     });
   }
@@ -136,20 +114,19 @@ export function buildWordClouds(
     blockWidth: BLOCK_WIDTH,
     lineHeight: LINE_HEIGHT,
     _tokenWidths: new Map(),
-    _lastPositionHash: 0,
     _createdAt: now,
   };
 }
 
-// --- Compute block bounds (with nudge) ---
+// --- Block bounds ---
 
 function getBlockBounds(
   node: ViewNode,
   block: NodeTextBlock,
   blockWidth: number,
 ): BoundingBox {
-  const cx = (node.x ?? 0) + block.nudgeX;
-  const cy = (node.y ?? 0) + block.nudgeY;
+  const cx = node.x ?? 0;
+  const cy = node.y ?? 0;
   return {
     x: cx - blockWidth / 2,
     y: cy - block.blockHeight / 2,
@@ -158,75 +135,13 @@ function getBlockBounds(
   };
 }
 
-// --- Soft repulsion + shared word highlights ---
-
-function computeProximityEffects(state: WordCloudState, nodes: ViewNode[]): void {
-  for (const block of state.blocks.values()) {
-    block.highlightedWords = new Set();
-    block.nudgeX = 0;
-    block.nudgeY = 0;
-    block.neighbor = null;
-  }
-
-  const nodeArr = nodes.filter((n) => state.blocks.has(n.id));
-  for (let i = 0; i < nodeArr.length; i++) {
-    for (let j = i + 1; j < nodeArr.length; j++) {
-      const ni = nodeArr[i]!;
-      const nj = nodeArr[j]!;
-      const ax = ni.x ?? 0;
-      const ay = ni.y ?? 0;
-      const bx = nj.x ?? 0;
-      const by = nj.y ?? 0;
-      const dist = Math.hypot(bx - ax, by - ay);
-      if (dist > REPULSION_RANGE || dist < 0.1) continue;
-
-      const a = state.blocks.get(ni.id)!;
-      const b = state.blocks.get(nj.id)!;
-
-      const shared = findSharedWords(a.wordMap, b.wordMap);
-      for (const word of shared) {
-        a.highlightedWords.add(word);
-        b.highlightedWords.add(word);
-      }
-
-      const proximity = Math.max(0, 1 - dist / REPULSION_RANGE);
-      const dx = bx - ax;
-      const dy = by - ay;
-      const nx = dx / dist;
-      const ny = dy / dist;
-
-      // Repulsion
-      const nudge = proximity * MAX_NUDGE;
-      a.nudgeX -= nx * nudge;
-      a.nudgeY -= ny * nudge;
-      b.nudgeX += nx * nudge;
-      b.nudgeY += ny * nudge;
-
-      // Track strongest neighbor for taper/pull effects
-      if (!a.neighbor || proximity > a.neighbor.strength) {
-        a.neighbor = { dirX: nx, dirY: ny, strength: proximity };
-      }
-      if (!b.neighbor || proximity > b.neighbor.strength) {
-        b.neighbor = { dirX: -nx, dirY: -ny, strength: proximity };
-      }
-    }
-  }
-}
-
-// --- Position hash ---
-
-function computePositionHash(nodes: ViewNode[], blocks: Map<string, NodeTextBlock>): number {
-  let hash = 0;
-  for (const node of nodes) {
-    if (!blocks.has(node.id)) continue;
-    hash = (hash * 31 + ((node.x ?? 0) * 100 | 0) + ((node.y ?? 0) * 100 | 0)) | 0;
-  }
-  return hash;
-}
-
 // --- Cached token width ---
 
-function getTokenWidth(token: string, ctx: CanvasRenderingContext2D, cache: Map<string, number>): number {
+function getTokenWidth(
+  token: string,
+  ctx: CanvasRenderingContext2D,
+  cache: Map<string, number>,
+): number {
   let w = cache.get(token);
   if (w === undefined) {
     w = ctx.measureText(token).width;
@@ -260,15 +175,38 @@ export function renderTextBlocks(
   ctx: CanvasRenderingContext2D,
   state: WordCloudState,
   nodes: ViewNode[],
+  draggedNodeId: string | null,
 ): void {
-  const hash = computePositionHash(nodes, state.blocks);
-  if (hash !== state._lastPositionHash) {
-    state._lastPositionHash = hash;
-    computeProximityEffects(state, nodes);
-  }
-
   const now = performance.now();
-  const pulseAlpha = 0.8 + 0.2 * Math.sin(now * HIGHLIGHT_PULSE_SPEED);
+
+  // If dragging, compute which words in OTHER blocks are shared with the dragged block
+  let magnetNode: ViewNode | null = null;
+  let magnetBlock: NodeTextBlock | null = null;
+  let magnetSharedByBlock: Map<string, Set<string>> | null = null;
+
+  if (draggedNodeId) {
+    magnetNode = nodes.find((n) => n.id === draggedNodeId) ?? null;
+    magnetBlock = state.blocks.get(draggedNodeId) ?? null;
+
+    if (magnetNode && magnetBlock) {
+      magnetSharedByBlock = new Map();
+      for (const [otherId, otherBlock] of state.blocks) {
+        if (otherId === draggedNodeId) continue;
+        const otherNode = nodes.find((n) => n.id === otherId);
+        if (!otherNode) continue;
+        const dist = Math.hypot(
+          (otherNode.x ?? 0) - (magnetNode.x ?? 0),
+          (otherNode.y ?? 0) - (magnetNode.y ?? 0),
+        );
+        if (dist > MAGNET_RANGE) continue;
+
+        const shared = findSharedWords(magnetBlock.wordMap, otherBlock.wordMap);
+        if (shared.size > 0) {
+          magnetSharedByBlock.set(otherId, shared);
+        }
+      }
+    }
+  }
 
   ctx.font = state.font;
   ctx.textAlign = "left";
@@ -279,16 +217,26 @@ export function renderTextBlocks(
     if (!node) continue;
 
     const bounds = getBlockBounds(node, block, state.blockWidth);
-    const hasHighlights = block.highlightedWords.size > 0;
     const blockAge = now - block.createdAt;
 
-    // Compute per-line taper: lines near the vertical center of the block
-    // shift toward the neighbor, lines at edges stay put → organic rounded shape
-    const lineCount = block.lines.length;
-    const nbr = block.neighbor;
-    const pullX = nbr ? nbr.dirX * WORD_PULL * nbr.strength : 0;
+    // Magnet effect: is this block near the dragged node?
+    const sharedWithMagnet = magnetSharedByBlock?.get(block.nodeId);
+    let magnetDirX = 0;
+    let magnetDirY = 0;
+    let magnetStrength = 0;
 
-    for (let lineIdx = 0; lineIdx < lineCount; lineIdx++) {
+    if (sharedWithMagnet && magnetNode) {
+      const dx = (magnetNode.x ?? 0) - (node.x ?? 0);
+      const dy = (magnetNode.y ?? 0) - (node.y ?? 0);
+      const dist = Math.hypot(dx, dy);
+      if (dist > 0.1) {
+        magnetDirX = dx / dist;
+        magnetDirY = dy / dist;
+        magnetStrength = Math.max(0, 1 - dist / MAGNET_RANGE);
+      }
+    }
+
+    for (let lineIdx = 0; lineIdx < block.lines.length; lineIdx++) {
       const line = block.lines[lineIdx]!;
 
       const lineDelay = lineIdx * FADE_STAGGER_PER_LINE;
@@ -296,40 +244,42 @@ export function renderTextBlocks(
       const fadeProgress = Math.min(1, Math.max(0, lineAge / FADE_IN_DURATION));
       if (fadeProgress <= 0) continue;
 
-      // Taper: bell curve centered at middle of block → middle lines shift most
-      const t = lineCount > 1 ? lineIdx / (lineCount - 1) : 0.5;
-      const bellCurve = Math.sin(t * Math.PI); // 0 at edges, 1 at center
-      const taperShift = nbr
-        ? nbr.dirX * TAPER_AMOUNT * nbr.strength * bellCurve
-        : 0;
-
-      const lineX = bounds.x + taperShift;
+      const lineX = bounds.x;
       const lineY = bounds.y + line.relY;
 
-      if (!hasHighlights) {
+      if (!sharedWithMagnet) {
+        // No magnet interaction — draw entire line fast
         ctx.fillStyle = block.color;
         ctx.globalAlpha = 0.7 * fadeProgress;
         ctx.fillText(line.text, lineX, lineY);
       } else {
+        // Per-word magnet: shared words pull toward dragged node
         const words = line.text.split(/(\s+)/);
         let xOffset = lineX;
 
         for (const token of words) {
           const isWord = /\S/.test(token);
           const normalized = token.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const isShared = isWord && block.highlightedWords.has(normalized);
+          const isShared = isWord && sharedWithMagnet.has(normalized);
 
-          if (isShared) {
+          const tokenW = getTokenWidth(token, ctx, state._tokenWidths);
+
+          if (isShared && magnetStrength > 0) {
+            // Pull this word toward the magnet
+            const pull = MAGNET_PULL * magnetStrength;
+            const wordPullX = magnetDirX * pull;
+            const wordPullY = magnetDirY * pull * 0.5; // less vertical pull
+
             ctx.fillStyle = HIGHLIGHT_COLOR;
-            ctx.globalAlpha = pulseAlpha * fadeProgress;
-            ctx.fillText(token, xOffset + pullX * bellCurve, lineY);
+            ctx.globalAlpha = (0.8 + 0.2 * magnetStrength) * fadeProgress;
+            ctx.fillText(token, xOffset + wordPullX, lineY + wordPullY);
           } else {
             ctx.fillStyle = block.color;
             ctx.globalAlpha = 0.7 * fadeProgress;
             ctx.fillText(token, xOffset, lineY);
           }
 
-          xOffset += getTokenWidth(token, ctx, state._tokenWidths);
+          xOffset += tokenW;
         }
       }
     }

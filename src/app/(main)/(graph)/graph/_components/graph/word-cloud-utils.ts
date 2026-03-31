@@ -1,6 +1,8 @@
 /**
- * Text block utilities: text extraction, tokenization, shared word detection.
- * Layout is handled by pretext in the renderer.
+ * Text block utilities: text extraction, tokenization, shared word detection,
+ * and obstacle geometry for text routing around neighboring nodes.
+ *
+ * Geometry functions adapted from @chenglou/pretext/pages/demos/wrap-geometry.ts (MIT)
  */
 
 // --- Types ---
@@ -12,9 +14,24 @@ export type BoundingBox = {
   h: number;
 };
 
+export type Interval = {
+  left: number;
+  right: number;
+};
+
+export type Rect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 // --- Constants ---
 
 const MIN_WORD_LENGTH = 3;
+const OBSTACLE_H_PAD = 6;
+const OBSTACLE_V_PAD = 2;
+const MIN_SLOT_WIDTH = 24;
 
 const STOPWORDS = new Set([
   "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
@@ -50,7 +67,6 @@ export function extractNodeText(data: Record<string, unknown>): string {
   else if (data["content"]) parts.push(extractStringValues(data["content"]));
 
   if (typeof data["summary"] === "string") parts.push(data["summary"]);
-
   if (typeof data["name"] === "string") parts.push(data["name"]);
 
   if (Array.isArray(data["labels"])) {
@@ -67,7 +83,7 @@ export function extractNodeText(data: Record<string, unknown>): string {
   return parts.join(" ");
 }
 
-// --- Tokenization (for shared-word detection) ---
+// --- Tokenization ---
 
 export function tokenize(text: string): Map<string, number> {
   const freq = new Map<string, number>();
@@ -99,4 +115,49 @@ export function boundsOverlap(a: BoundingBox, b: BoundingBox): boolean {
     a.y + a.h < b.y ||
     b.y + b.h < a.y
   );
+}
+
+// --- Obstacle geometry (from pretext's wrap-geometry.ts) ---
+
+/**
+ * Given rect obstacles and a horizontal y-band, return which horizontal
+ * intervals are blocked by those rects.
+ */
+export function getRectIntervalsForBand(
+  rects: Rect[],
+  bandTop: number,
+  bandBottom: number,
+): Interval[] {
+  const intervals: Interval[] = [];
+  for (const rect of rects) {
+    if (bandBottom <= rect.y - OBSTACLE_V_PAD || bandTop >= rect.y + rect.height + OBSTACLE_V_PAD) continue;
+    intervals.push({
+      left: rect.x - OBSTACLE_H_PAD,
+      right: rect.x + rect.width + OBSTACLE_H_PAD,
+    });
+  }
+  return intervals;
+}
+
+/**
+ * Carve available text slots from a base interval by removing blocked intervals.
+ * Discards slivers narrower than MIN_SLOT_WIDTH.
+ */
+export function carveTextLineSlots(base: Interval, blocked: Interval[]): Interval[] {
+  let slots: Interval[] = [base];
+
+  for (const interval of blocked) {
+    const next: Interval[] = [];
+    for (const slot of slots) {
+      if (interval.right <= slot.left || interval.left >= slot.right) {
+        next.push(slot);
+        continue;
+      }
+      if (interval.left > slot.left) next.push({ left: slot.left, right: interval.left });
+      if (interval.right < slot.right) next.push({ left: interval.right, right: slot.right });
+    }
+    slots = next;
+  }
+
+  return slots.filter(slot => slot.right - slot.left >= MIN_SLOT_WIDTH);
 }

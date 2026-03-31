@@ -9,6 +9,7 @@ describe("buildErc8004Metadata", () => {
     agentName: "My Research Bonfire",
     description: "A knowledge bonfire for DeFi research.",
     capabilities: ["DeFi research", "on-chain data"],
+    image: "",
   };
 
   beforeEach(() => {
@@ -34,21 +35,21 @@ describe("buildErc8004Metadata", () => {
     const result = buildErc8004Metadata(baseForm);
 
     expect(result.services).toHaveLength(1);
-    expect(result.services[0].x402Support).toBe(true);
+    expect(result.services[0]!.x402Support).toBe(true);
   });
 
   it("should use NEXT_PUBLIC_DELVE_API_URL as the service endpoint", () => {
     process.env["NEXT_PUBLIC_DELVE_API_URL"] = "https://custom.api.url";
     const result = buildErc8004Metadata(baseForm);
 
-    expect(result.services[0].endpoint).toBe("https://custom.api.url");
+    expect(result.services[0]!.endpoint).toBe("https://custom.api.url");
   });
 
   it("should fall back to localhost when env var is unset", () => {
     delete process.env["NEXT_PUBLIC_DELVE_API_URL"];
     const result = buildErc8004Metadata(baseForm);
 
-    expect(result.services[0].endpoint).toBe("http://localhost:8000");
+    expect(result.services[0]!.endpoint).toBe("http://localhost:8000");
   });
 
   it("should pass capabilities through unchanged", () => {

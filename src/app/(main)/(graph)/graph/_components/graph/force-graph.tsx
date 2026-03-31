@@ -252,7 +252,11 @@ export default function ForceGraph({
             "collision",
             d3
               .forceCollide<ViewNode>()
-              .radius((d) => (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING)
+              .radius((d) =>
+                renderMode === "wordcloud"
+                  ? 70
+                  : (RADIUS_BY_SIZE[d.size] ?? 12) + COLLISION_PADDING
+              )
           );
 
         while (simulation.alpha() > LAYOUT_ALPHA_MIN) {

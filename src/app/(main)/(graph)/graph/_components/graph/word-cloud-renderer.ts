@@ -1,7 +1,8 @@
 /**
  * Text block renderer: clean pretext paragraphs at each node.
- * During drag, shared words in nearby blocks pull toward the dragged node
- * like water droplets attracted to a magnet — per-word physics.
+ * Always-on: shared words between nearby blocks gently pull toward each other.
+ * On drag: effect intensifies — both the held node's words and neighbor words
+ * pull harder toward their matches, like magnets strengthening.
  */
 
 import {
@@ -27,6 +28,14 @@ type PositionedLine = {
   relY: number;
 };
 
+type PairEffect = {
+  otherNodeId: string;
+  dirX: number;
+  dirY: number;
+  strength: number; // 0..1
+  sharedWords: Set<string>;
+};
+
 type NodeTextBlock = {
   nodeId: string;
   color: string;
@@ -44,6 +53,9 @@ export type WordCloudState = {
   lineHeight: number;
   _tokenWidths: Map<string, number>;
   _createdAt: number;
+  /** Recomputed each frame: per-block pair effects */
+  _pairEffects: Map<string, PairEffect[]>;
+  _lastPositionHash: number;
 };
 
 // --- Constants ---
@@ -59,8 +71,10 @@ const HIGHLIGHT_COLOR = "#f5572a";
 const MAX_TEXT_LENGTH = 800;
 const FADE_IN_DURATION = 1200;
 const FADE_STAGGER_PER_LINE = 60;
-const MAGNET_RANGE = 300;
-const MAGNET_PULL = 30;
+
+const PASSIVE_RANGE = 250;
+const PASSIVE_PULL = 8;   // subtle always-on pull
+const DRAG_PULL = 30;     // strong pull when dragging
 
 // --- Build ---
 
@@ -115,7 +129,66 @@ export function buildWordClouds(
     lineHeight: LINE_HEIGHT,
     _tokenWidths: new Map(),
     _createdAt: now,
+    _pairEffects: new Map(),
+    _lastPositionHash: 0,
   };
+}
+
+// --- Compute pairwise effects ---
+
+function computePairEffects(
+  state: WordCloudState,
+  nodes: ViewNode[],
+  draggedNodeId: string | null,
+): void {
+  state._pairEffects.clear();
+
+  const nodeArr = nodes.filter((n) => state.blocks.has(n.id));
+  for (let i = 0; i < nodeArr.length; i++) {
+    for (let j = i + 1; j < nodeArr.length; j++) {
+      const ni = nodeArr[i]!;
+      const nj = nodeArr[j]!;
+      const ax = ni.x ?? 0;
+      const ay = ni.y ?? 0;
+      const bx = nj.x ?? 0;
+      const by = nj.y ?? 0;
+      const dist = Math.hypot(bx - ax, by - ay);
+      if (dist > PASSIVE_RANGE || dist < 0.1) continue;
+
+      const a = state.blocks.get(ni.id)!;
+      const b = state.blocks.get(nj.id)!;
+      const shared = findSharedWords(a.wordMap, b.wordMap);
+      if (shared.size === 0) continue;
+
+      const proximity = Math.max(0, 1 - dist / PASSIVE_RANGE);
+      const dx = bx - ax;
+      const dy = by - ay;
+      const nx = dx / dist;
+      const ny = dy / dist;
+
+      // Boost strength if either node is being dragged
+      const isDragPair = draggedNodeId === ni.id || draggedNodeId === nj.id;
+      const strength = isDragPair ? proximity * 1.5 : proximity;
+
+      if (!state._pairEffects.has(ni.id)) state._pairEffects.set(ni.id, []);
+      state._pairEffects.get(ni.id)!.push({
+        otherNodeId: nj.id,
+        dirX: nx,
+        dirY: ny,
+        strength,
+        sharedWords: shared,
+      });
+
+      if (!state._pairEffects.has(nj.id)) state._pairEffects.set(nj.id, []);
+      state._pairEffects.get(nj.id)!.push({
+        otherNodeId: ni.id,
+        dirX: -nx,
+        dirY: -ny,
+        strength,
+        sharedWords: shared,
+      });
+    }
+  }
 }
 
 // --- Block bounds ---
@@ -179,33 +252,16 @@ export function renderTextBlocks(
 ): void {
   const now = performance.now();
 
-  // If dragging, compute which words in OTHER blocks are shared with the dragged block
-  let magnetNode: ViewNode | null = null;
-  let magnetBlock: NodeTextBlock | null = null;
-  let magnetSharedByBlock: Map<string, Set<string>> | null = null;
+  // Recompute pair effects (always — includes drag boost when applicable)
+  const hash =
+    nodes.reduce((h, n) => {
+      if (!state.blocks.has(n.id)) return h;
+      return (h * 31 + ((n.x ?? 0) * 100 | 0) + ((n.y ?? 0) * 100 | 0)) | 0;
+    }, 0) + (draggedNodeId ? 1 : 0);
 
-  if (draggedNodeId) {
-    magnetNode = nodes.find((n) => n.id === draggedNodeId) ?? null;
-    magnetBlock = state.blocks.get(draggedNodeId) ?? null;
-
-    if (magnetNode && magnetBlock) {
-      magnetSharedByBlock = new Map();
-      for (const [otherId, otherBlock] of state.blocks) {
-        if (otherId === draggedNodeId) continue;
-        const otherNode = nodes.find((n) => n.id === otherId);
-        if (!otherNode) continue;
-        const dist = Math.hypot(
-          (otherNode.x ?? 0) - (magnetNode.x ?? 0),
-          (otherNode.y ?? 0) - (magnetNode.y ?? 0),
-        );
-        if (dist > MAGNET_RANGE) continue;
-
-        const shared = findSharedWords(magnetBlock.wordMap, otherBlock.wordMap);
-        if (shared.size > 0) {
-          magnetSharedByBlock.set(otherId, shared);
-        }
-      }
-    }
+  if (hash !== state._lastPositionHash) {
+    state._lastPositionHash = hash;
+    computePairEffects(state, nodes, draggedNodeId);
   }
 
   ctx.font = state.font;
@@ -218,23 +274,34 @@ export function renderTextBlocks(
 
     const bounds = getBlockBounds(node, block, state.blockWidth);
     const blockAge = now - block.createdAt;
+    const effects = state._pairEffects.get(block.nodeId);
+    const isDragged = block.nodeId === draggedNodeId;
 
-    // Magnet effect: is this block near the dragged node?
-    const sharedWithMagnet = magnetSharedByBlock?.get(block.nodeId);
-    let magnetDirX = 0;
-    let magnetDirY = 0;
-    let magnetStrength = 0;
+    // Collect all shared words and their aggregate pull direction
+    const wordPulls = new Map<string, { px: number; py: number }>();
+    if (effects) {
+      for (const effect of effects) {
+        const pullBase = isDragged || effect.otherNodeId === draggedNodeId
+          ? DRAG_PULL
+          : PASSIVE_PULL;
+        const pull = pullBase * effect.strength;
 
-    if (sharedWithMagnet && magnetNode) {
-      const dx = (magnetNode.x ?? 0) - (node.x ?? 0);
-      const dy = (magnetNode.y ?? 0) - (node.y ?? 0);
-      const dist = Math.hypot(dx, dy);
-      if (dist > 0.1) {
-        magnetDirX = dx / dist;
-        magnetDirY = dy / dist;
-        magnetStrength = Math.max(0, 1 - dist / MAGNET_RANGE);
+        for (const word of effect.sharedWords) {
+          const existing = wordPulls.get(word);
+          if (existing) {
+            existing.px += effect.dirX * pull;
+            existing.py += effect.dirY * pull * 0.4;
+          } else {
+            wordPulls.set(word, {
+              px: effect.dirX * pull,
+              py: effect.dirY * pull * 0.4,
+            });
+          }
+        }
       }
     }
+
+    const hasEffects = wordPulls.size > 0;
 
     for (let lineIdx = 0; lineIdx < block.lines.length; lineIdx++) {
       const line = block.lines[lineIdx]!;
@@ -247,32 +314,25 @@ export function renderTextBlocks(
       const lineX = bounds.x;
       const lineY = bounds.y + line.relY;
 
-      if (!sharedWithMagnet) {
-        // No magnet interaction — draw entire line fast
+      if (!hasEffects) {
         ctx.fillStyle = block.color;
         ctx.globalAlpha = 0.7 * fadeProgress;
         ctx.fillText(line.text, lineX, lineY);
       } else {
-        // Per-word magnet: shared words pull toward dragged node
         const words = line.text.split(/(\s+)/);
         let xOffset = lineX;
 
         for (const token of words) {
           const isWord = /\S/.test(token);
           const normalized = token.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const isShared = isWord && sharedWithMagnet.has(normalized);
-
+          const pull = isWord ? wordPulls.get(normalized) : undefined;
           const tokenW = getTokenWidth(token, ctx, state._tokenWidths);
 
-          if (isShared && magnetStrength > 0) {
-            // Pull this word toward the magnet
-            const pull = MAGNET_PULL * magnetStrength;
-            const wordPullX = magnetDirX * pull;
-            const wordPullY = magnetDirY * pull * 0.5; // less vertical pull
-
+          if (pull) {
             ctx.fillStyle = HIGHLIGHT_COLOR;
-            ctx.globalAlpha = (0.8 + 0.2 * magnetStrength) * fadeProgress;
-            ctx.fillText(token, xOffset + wordPullX, lineY + wordPullY);
+            const intensity = isDragged ? 1 : 0.85;
+            ctx.globalAlpha = intensity * fadeProgress;
+            ctx.fillText(token, xOffset + pull.px, lineY + pull.py);
           } else {
             ctx.fillStyle = block.color;
             ctx.globalAlpha = 0.7 * fadeProgress;

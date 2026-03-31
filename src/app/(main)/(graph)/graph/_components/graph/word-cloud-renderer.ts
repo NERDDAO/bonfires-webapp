@@ -81,7 +81,7 @@ const FADE_STAGGER_PER_LINE = 60;
 
 const PASSIVE_RANGE = 250;
 const PASSIVE_PULL = 8;   // subtle always-on pull
-const DRAG_PULL = 30;     // strong pull when dragging
+const DRAG_PULL = 12;     // gentle pull when dragging (clearing takes priority)
 
 // Blob deformation: droplet — center leads, edges trail + pinch inward
 const BLOB_MAX_OFFSET = 14;   // max px a trailing line can lag
@@ -342,25 +342,36 @@ export function renderTextBlocks(
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
 
-  // Precompute proximity dimming when a node is selected: nearby blocks fade out
-  // to clear visual space around the selected block
+  // Precompute proximity effects: nearby blocks dim + push away from focus node
   const CLEAR_RADIUS = 200;
+  const REPULSE_STRENGTH = 18; // max px to push nearby blocks away (gentle)
   let proximityDim: Map<string, number> | null = null;
-  if (selectedNodeId) {
-    const selNode = nodeMap.get(selectedNodeId);
-    if (selNode) {
+  let proximityPush: Map<string, { dx: number; dy: number }> | null = null;
+  const focusNodeId = draggedNodeId ?? selectedNodeId;
+  if (focusNodeId) {
+    const focusNode = nodeMap.get(focusNodeId);
+    if (focusNode) {
       proximityDim = new Map();
-      const sx = selNode.x ?? 0;
-      const sy = selNode.y ?? 0;
+      proximityPush = new Map();
+      const sx = focusNode.x ?? 0;
+      const sy = focusNode.y ?? 0;
       for (const block of state.blocks.values()) {
-        if (block.nodeId === selectedNodeId) continue;
+        if (block.nodeId === focusNodeId) continue;
         const other = nodeMap.get(block.nodeId);
         if (!other) continue;
-        const dist = Math.hypot((other.x ?? 0) - sx, (other.y ?? 0) - sy);
-        if (dist < CLEAR_RADIUS) {
-          // Close blocks dim to ~0.3 alpha, farther ones fade back to normal
+        const ox = other.x ?? 0;
+        const oy = other.y ?? 0;
+        const dist = Math.hypot(ox - sx, oy - sy);
+        if (dist < CLEAR_RADIUS && dist > 0.1) {
           const closeness = 1 - dist / CLEAR_RADIUS;
-          proximityDim.set(block.nodeId, 0.3 + 0.7 * (1 - closeness));
+          // Dim (keep readable — don't go below 0.4)
+          const minAlpha = draggedNodeId ? 0.4 : 0.45;
+          proximityDim.set(block.nodeId, minAlpha + (1 - minAlpha) * (1 - closeness));
+          // Push away from focus node (stronger when closer)
+          const pushMag = REPULSE_STRENGTH * closeness * closeness;
+          const nx = (ox - sx) / dist;
+          const ny = (oy - sy) / dist;
+          proximityPush.set(block.nodeId, { dx: nx * pushMag, dy: ny * pushMag });
         }
       }
     }
@@ -371,6 +382,12 @@ export function renderTextBlocks(
     if (!node) continue;
 
     const bounds = getBlockBounds(node, block, state.blockWidth);
+    // Apply repulsion push to block position
+    const push = proximityPush?.get(block.nodeId);
+    if (push) {
+      bounds.x += push.dx;
+      bounds.y += push.dy;
+    }
     const blockAge = now - block.createdAt;
     const effects = state._pairEffects.get(block.nodeId);
     const isDragged = block.nodeId === draggedNodeId;

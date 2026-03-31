@@ -28,6 +28,14 @@ type PositionedLine = {
   relY: number;
 };
 
+type NeighborEffect = {
+  /** Unit direction toward neighbor */
+  dirX: number;
+  dirY: number;
+  /** 0..1 proximity strength (1 = touching, 0 = far) */
+  strength: number;
+};
+
 type NodeTextBlock = {
   nodeId: string;
   color: string;
@@ -36,9 +44,10 @@ type NodeTextBlock = {
   blockHeight: number;
   wordMap: Map<string, number>;
   highlightedWords: Set<string>;
-  /** Soft repulsion offset from nearby blocks */
   nudgeX: number;
   nudgeY: number;
+  /** Strongest neighbor effect (for taper + word pull) */
+  neighbor: NeighborEffect | null;
   createdAt: number;
 };
 
@@ -66,8 +75,10 @@ const MAX_TEXT_LENGTH = 800;
 const FADE_IN_DURATION = 1200;
 const FADE_STAGGER_PER_LINE = 60;
 const HIGHLIGHT_PULSE_SPEED = 0.003;
-const REPULSION_RANGE = 180;
-const MAX_NUDGE = 15;
+const REPULSION_RANGE = 280;
+const MAX_NUDGE = 60;
+const WORD_PULL = 14;
+const TAPER_AMOUNT = 20;
 
 // --- Build ---
 
@@ -114,6 +125,7 @@ export function buildWordClouds(
       highlightedWords: new Set(),
       nudgeX: 0,
       nudgeY: 0,
+      neighbor: null,
       createdAt: now,
     });
   }
@@ -149,11 +161,11 @@ function getBlockBounds(
 // --- Soft repulsion + shared word highlights ---
 
 function computeProximityEffects(state: WordCloudState, nodes: ViewNode[]): void {
-  // Reset
   for (const block of state.blocks.values()) {
     block.highlightedWords = new Set();
     block.nudgeX = 0;
     block.nudgeY = 0;
+    block.neighbor = null;
   }
 
   const nodeArr = nodes.filter((n) => state.blocks.has(n.id));
@@ -171,24 +183,32 @@ function computeProximityEffects(state: WordCloudState, nodes: ViewNode[]): void
       const a = state.blocks.get(ni.id)!;
       const b = state.blocks.get(nj.id)!;
 
-      // Shared word highlights
       const shared = findSharedWords(a.wordMap, b.wordMap);
       for (const word of shared) {
         a.highlightedWords.add(word);
         b.highlightedWords.add(word);
       }
 
-      // Soft repulsion: push blocks apart proportional to proximity
-      const strength = Math.max(0, 1 - dist / REPULSION_RANGE) * MAX_NUDGE;
+      const proximity = Math.max(0, 1 - dist / REPULSION_RANGE);
       const dx = bx - ax;
       const dy = by - ay;
       const nx = dx / dist;
       const ny = dy / dist;
 
-      a.nudgeX -= nx * strength;
-      a.nudgeY -= ny * strength;
-      b.nudgeX += nx * strength;
-      b.nudgeY += ny * strength;
+      // Repulsion
+      const nudge = proximity * MAX_NUDGE;
+      a.nudgeX -= nx * nudge;
+      a.nudgeY -= ny * nudge;
+      b.nudgeX += nx * nudge;
+      b.nudgeY += ny * nudge;
+
+      // Track strongest neighbor for taper/pull effects
+      if (!a.neighbor || proximity > a.neighbor.strength) {
+        a.neighbor = { dirX: nx, dirY: ny, strength: proximity };
+      }
+      if (!b.neighbor || proximity > b.neighbor.strength) {
+        b.neighbor = { dirX: -nx, dirY: -ny, strength: proximity };
+      }
     }
   }
 }
@@ -262,7 +282,13 @@ export function renderTextBlocks(
     const hasHighlights = block.highlightedWords.size > 0;
     const blockAge = now - block.createdAt;
 
-    for (let lineIdx = 0; lineIdx < block.lines.length; lineIdx++) {
+    // Compute per-line taper: lines near the vertical center of the block
+    // shift toward the neighbor, lines at edges stay put → organic rounded shape
+    const lineCount = block.lines.length;
+    const nbr = block.neighbor;
+    const pullX = nbr ? nbr.dirX * WORD_PULL * nbr.strength : 0;
+
+    for (let lineIdx = 0; lineIdx < lineCount; lineIdx++) {
       const line = block.lines[lineIdx]!;
 
       const lineDelay = lineIdx * FADE_STAGGER_PER_LINE;
@@ -270,7 +296,14 @@ export function renderTextBlocks(
       const fadeProgress = Math.min(1, Math.max(0, lineAge / FADE_IN_DURATION));
       if (fadeProgress <= 0) continue;
 
-      const lineX = bounds.x;
+      // Taper: bell curve centered at middle of block → middle lines shift most
+      const t = lineCount > 1 ? lineIdx / (lineCount - 1) : 0.5;
+      const bellCurve = Math.sin(t * Math.PI); // 0 at edges, 1 at center
+      const taperShift = nbr
+        ? nbr.dirX * TAPER_AMOUNT * nbr.strength * bellCurve
+        : 0;
+
+      const lineX = bounds.x + taperShift;
       const lineY = bounds.y + line.relY;
 
       if (!hasHighlights) {
@@ -284,16 +317,18 @@ export function renderTextBlocks(
         for (const token of words) {
           const isWord = /\S/.test(token);
           const normalized = token.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const isShared = isWord && block.highlightedWords.has(normalized);
 
-          if (isWord && block.highlightedWords.has(normalized)) {
+          if (isShared) {
             ctx.fillStyle = HIGHLIGHT_COLOR;
             ctx.globalAlpha = pulseAlpha * fadeProgress;
+            ctx.fillText(token, xOffset + pullX * bellCurve, lineY);
           } else {
             ctx.fillStyle = block.color;
             ctx.globalAlpha = 0.7 * fadeProgress;
+            ctx.fillText(token, xOffset, lineY);
           }
 
-          ctx.fillText(token, xOffset, lineY);
           xOffset += getTokenWidth(token, ctx, state._tokenWidths);
         }
       }

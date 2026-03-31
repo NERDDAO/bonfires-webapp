@@ -1,9 +1,7 @@
 /**
- * Text block renderer: uses pretext's layoutNextLine() with per-line obstacle
- * routing. Text flows around neighboring node bounding boxes — each line gets
- * a different available width carved by whatever obstacles intersect its y-band.
- *
- * Pattern adapted from @chenglou/pretext/pages/demos/dynamic-layout.ts
+ * Text block renderer: uses pretext for clean paragraph layout at each node.
+ * When blocks are near each other, shared words get highlighted and blocks
+ * gently repel to reduce overlap.
  */
 
 import {
@@ -14,24 +12,20 @@ import {
 } from "@chenglou/pretext";
 
 import type { ViewNode } from "./force-graph-types";
-import { RADIUS_BY_SIZE } from "./force-graph-constants";
 import {
   type BoundingBox,
-  type Rect,
   extractNodeText,
   tokenize,
   findSharedWords,
-  getRectIntervalsForBand,
-  carveTextLineSlots,
 } from "./word-cloud-utils";
 
 // --- Types ---
 
 type PositionedLine = {
-  x: number;
-  y: number;
-  width: number;
   text: string;
+  width: number;
+  /** Relative y offset from block top */
+  relY: number;
 };
 
 type NodeTextBlock = {
@@ -39,9 +33,12 @@ type NodeTextBlock = {
   color: string;
   prepared: PreparedTextWithSegments;
   lines: PositionedLine[];
-  bounds: BoundingBox;
+  blockHeight: number;
   wordMap: Map<string, number>;
   highlightedWords: Set<string>;
+  /** Soft repulsion offset from nearby blocks */
+  nudgeX: number;
+  nudgeY: number;
   createdAt: number;
 };
 
@@ -69,8 +66,25 @@ const MAX_TEXT_LENGTH = 800;
 const FADE_IN_DURATION = 1200;
 const FADE_STAGGER_PER_LINE = 60;
 const HIGHLIGHT_PULSE_SPEED = 0.003;
+const REPULSION_RANGE = 180;
+const MAX_NUDGE = 15;
 
-// --- Build (initial, no obstacles — just prepare the text) ---
+// --- Build ---
+
+function layoutBlock(
+  prepared: PreparedTextWithSegments,
+  maxWidth: number,
+): PositionedLine[] {
+  const lines: PositionedLine[] = [];
+  let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 0 };
+  for (let i = 0; i < MAX_LINES; i++) {
+    const line = layoutNextLine(prepared, cursor, maxWidth);
+    if (!line) break;
+    lines.push({ text: line.text, width: line.width, relY: i * LINE_HEIGHT });
+    cursor = line.end;
+  }
+  return lines;
+}
 
 export function buildWordClouds(
   nodes: ViewNode[],
@@ -88,15 +102,18 @@ export function buildWordClouds(
     if (text.length > MAX_TEXT_LENGTH) text = text.slice(0, MAX_TEXT_LENGTH) + "...";
 
     const prepared = prepareWithSegments(text, FONT);
+    const lines = layoutBlock(prepared, BLOCK_WIDTH);
 
     blocks.set(node.id, {
       nodeId: node.id,
       color: node.color,
       prepared,
-      lines: [],
-      bounds: { x: 0, y: 0, w: 0, h: 0 },
+      lines,
+      blockHeight: lines.length * LINE_HEIGHT,
       wordMap: tokenize(text),
       highlightedWords: new Set(),
+      nudgeX: 0,
+      nudgeY: 0,
       createdAt: now,
     });
   }
@@ -112,139 +129,66 @@ export function buildWordClouds(
   };
 }
 
-// --- Obstacle-routed layout (runs when positions change) ---
+// --- Compute block bounds (with nudge) ---
 
-function layoutWithObstacles(
-  state: WordCloudState,
-  nodes: ViewNode[],
-): void {
-  // Build obstacle rects from ALL nodes (each block + each node circle is an obstacle for others)
-  const nodeRects = new Map<string, Rect>();
-  for (const node of nodes) {
-    const r = RADIUS_BY_SIZE[node.size] ?? 12;
-    const nx = node.x ?? 0;
-    const ny = node.y ?? 0;
-    // Node circle obstacle
-    nodeRects.set(node.id, {
-      x: nx - r,
-      y: ny - r,
-      width: r * 2,
-      height: r * 2,
-    });
-  }
-
-  // First pass: layout each block with only node-circle obstacles (not other blocks)
-  for (const node of nodes) {
-    const block = state.blocks.get(node.id);
-    if (!block) continue;
-
-    const cx = node.x ?? 0;
-    const cy = node.y ?? 0;
-
-    // Region where this block's text can flow
-    const regionHeight = MAX_LINES * state.lineHeight;
-    const region: Rect = {
-      x: cx - state.blockWidth / 2,
-      y: cy - regionHeight / 2,
-      width: state.blockWidth,
-      height: regionHeight,
-    };
-
-    // Obstacles: other nodes' circles only (not other text blocks —
-    // overlapping blocks is intentional, that's where shared word highlights work)
-    const obstacles: Rect[] = [];
-    for (const [otherId, rect] of nodeRects) {
-      if (otherId === node.id) continue;
-      obstacles.push(rect);
-    }
-
-    // Layout line-by-line with obstacle routing
-    const lines: PositionedLine[] = [];
-    let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 0 };
-    let lineTop = region.y;
-
-    while (lines.length < MAX_LINES) {
-      if (lineTop + state.lineHeight > region.y + region.height) break;
-
-      const bandTop = lineTop;
-      const bandBottom = lineTop + state.lineHeight;
-
-      const blocked = getRectIntervalsForBand(obstacles, bandTop, bandBottom);
-      const slots = carveTextLineSlots(
-        { left: region.x, right: region.x + region.width },
-        blocked,
-      );
-
-      if (slots.length === 0) {
-        lineTop += state.lineHeight;
-        continue;
-      }
-
-      // Pick the widest available slot
-      let best = slots[0]!;
-      for (let i = 1; i < slots.length; i++) {
-        const s = slots[i]!;
-        if (s.right - s.left > best.right - best.left) best = s;
-      }
-
-      const slotWidth = best.right - best.left;
-      const line = layoutNextLine(block.prepared, cursor, slotWidth);
-      if (!line) break;
-
-      lines.push({
-        x: Math.round(best.left),
-        y: Math.round(lineTop),
-        width: line.width,
-        text: line.text,
-      });
-
-      cursor = line.end;
-      lineTop += state.lineHeight;
-    }
-
-    block.lines = lines;
-
-    // Compute actual bounds from placed lines
-    if (lines.length > 0) {
-      let minX = Infinity, maxX = -Infinity;
-      const minY = lines[0]!.y;
-      const maxY = lines[lines.length - 1]!.y + state.lineHeight;
-      for (const l of lines) {
-        if (l.x < minX) minX = l.x;
-        if (l.x + l.width > maxX) maxX = l.x + l.width;
-      }
-      block.bounds = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
-    } else {
-      block.bounds = { x: cx, y: cy, w: 0, h: 0 };
-    }
-  }
+function getBlockBounds(
+  node: ViewNode,
+  block: NodeTextBlock,
+  blockWidth: number,
+): BoundingBox {
+  const cx = (node.x ?? 0) + block.nudgeX;
+  const cy = (node.y ?? 0) + block.nudgeY;
+  return {
+    x: cx - blockWidth / 2,
+    y: cy - block.blockHeight / 2,
+    w: blockWidth,
+    h: block.blockHeight,
+  };
 }
 
-// --- Shared word highlights ---
+// --- Soft repulsion + shared word highlights ---
 
-function markHighlights(state: WordCloudState, nodes: ViewNode[]): void {
+function computeProximityEffects(state: WordCloudState, nodes: ViewNode[]): void {
+  // Reset
   for (const block of state.blocks.values()) {
     block.highlightedWords = new Set();
+    block.nudgeX = 0;
+    block.nudgeY = 0;
   }
 
   const nodeArr = nodes.filter((n) => state.blocks.has(n.id));
   for (let i = 0; i < nodeArr.length; i++) {
     for (let j = i + 1; j < nodeArr.length; j++) {
-      const a = state.blocks.get(nodeArr[i]!.id)!;
-      const b = state.blocks.get(nodeArr[j]!.id)!;
+      const ni = nodeArr[i]!;
+      const nj = nodeArr[j]!;
+      const ax = ni.x ?? 0;
+      const ay = ni.y ?? 0;
+      const bx = nj.x ?? 0;
+      const by = nj.y ?? 0;
+      const dist = Math.hypot(bx - ax, by - ay);
+      if (dist > REPULSION_RANGE || dist < 0.1) continue;
 
-      // Check proximity, not just AABB overlap
-      const ax = nodeArr[i]!.x ?? 0;
-      const bx = nodeArr[j]!.x ?? 0;
-      const ay = nodeArr[i]!.y ?? 0;
-      const by = nodeArr[j]!.y ?? 0;
-      if (Math.hypot(bx - ax, by - ay) > 250) continue;
+      const a = state.blocks.get(ni.id)!;
+      const b = state.blocks.get(nj.id)!;
 
+      // Shared word highlights
       const shared = findSharedWords(a.wordMap, b.wordMap);
       for (const word of shared) {
         a.highlightedWords.add(word);
         b.highlightedWords.add(word);
       }
+
+      // Soft repulsion: push blocks apart proportional to proximity
+      const strength = Math.max(0, 1 - dist / REPULSION_RANGE) * MAX_NUDGE;
+      const dx = bx - ax;
+      const dy = by - ay;
+      const nx = dx / dist;
+      const ny = dy / dist;
+
+      a.nudgeX -= nx * strength;
+      a.nudgeY -= ny * strength;
+      b.nudgeX += nx * strength;
+      b.nudgeY += ny * strength;
     }
   }
 }
@@ -282,7 +226,7 @@ export function nodeUnderBlock(
   for (const node of nodes) {
     const block = state.blocks.get(node.id);
     if (!block || block.lines.length === 0) continue;
-    const b = block.bounds;
+    const b = getBlockBounds(node, block, state.blockWidth);
     if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
       return node;
     }
@@ -300,8 +244,7 @@ export function renderTextBlocks(
   const hash = computePositionHash(nodes, state.blocks);
   if (hash !== state._lastPositionHash) {
     state._lastPositionHash = hash;
-    layoutWithObstacles(state, nodes);
-    markHighlights(state, nodes);
+    computeProximityEffects(state, nodes);
   }
 
   const now = performance.now();
@@ -312,6 +255,10 @@ export function renderTextBlocks(
   ctx.textBaseline = "top";
 
   for (const block of state.blocks.values()) {
+    const node = nodes.find((n) => n.id === block.nodeId);
+    if (!node) continue;
+
+    const bounds = getBlockBounds(node, block, state.blockWidth);
     const hasHighlights = block.highlightedWords.size > 0;
     const blockAge = now - block.createdAt;
 
@@ -323,13 +270,16 @@ export function renderTextBlocks(
       const fadeProgress = Math.min(1, Math.max(0, lineAge / FADE_IN_DURATION));
       if (fadeProgress <= 0) continue;
 
+      const lineX = bounds.x;
+      const lineY = bounds.y + line.relY;
+
       if (!hasHighlights) {
         ctx.fillStyle = block.color;
         ctx.globalAlpha = 0.7 * fadeProgress;
-        ctx.fillText(line.text, line.x, line.y);
+        ctx.fillText(line.text, lineX, lineY);
       } else {
         const words = line.text.split(/(\s+)/);
-        let xOffset = line.x;
+        let xOffset = lineX;
 
         for (const token of words) {
           const isWord = /\S/.test(token);
@@ -343,7 +293,7 @@ export function renderTextBlocks(
             ctx.globalAlpha = 0.7 * fadeProgress;
           }
 
-          ctx.fillText(token, xOffset, line.y);
+          ctx.fillText(token, xOffset, lineY);
           xOffset += getTokenWidth(token, ctx, state._tokenWidths);
         }
       }

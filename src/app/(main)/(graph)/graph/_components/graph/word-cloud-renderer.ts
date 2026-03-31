@@ -150,21 +150,12 @@ function layoutWithObstacles(
       height: regionHeight,
     };
 
-    // Obstacles: all other nodes' circles + their existing block bounds
+    // Obstacles: other nodes' circles only (not other text blocks —
+    // overlapping blocks is intentional, that's where shared word highlights work)
     const obstacles: Rect[] = [];
     for (const [otherId, rect] of nodeRects) {
       if (otherId === node.id) continue;
       obstacles.push(rect);
-    }
-    // Add other blocks' bounds as obstacles
-    for (const [otherId, otherBlock] of state.blocks) {
-      if (otherId === node.id || otherBlock.lines.length === 0) continue;
-      obstacles.push({
-        x: otherBlock.bounds.x,
-        y: otherBlock.bounds.y,
-        width: otherBlock.bounds.w,
-        height: otherBlock.bounds.h,
-      });
     }
 
     // Layout line-by-line with obstacle routing

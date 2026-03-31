@@ -5,7 +5,9 @@ import { Suspense, useCallback, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/hooks";
+import { useCreateDataRoom } from "@/hooks/mutations/useCreateDataRoom";
 import { useBonfiresMint } from "@/hooks/web3/useBonfiresMint";
+import { useWalletAccount } from "@/lib/wallet/e2e";
 import { Search, ExternalLink } from "lucide-react";
 
 import BonfiresTab, { type SortKey } from "@/components/explore/bonfires-tab";
@@ -257,6 +259,53 @@ function ExplorePageInner() {
 
   // DataRoom wizard
   const [wizardOpen, setWizardOpen] = useState(false);
+  const createDataRoom = useCreateDataRoom();
+  const { address } = useWalletAccount();
+
+  const handleWizardComplete = useCallback(
+    (config: {
+      bonfireId: string;
+      description: string;
+      systemPrompt?: string;
+      centerNodeUuid: string;
+      priceUsd: number;
+      queryLimit: number;
+      expirationDays: number;
+      dynamicPricingEnabled?: boolean;
+      priceStepUsd?: number;
+      priceDecayRate?: number;
+      imageModel?: "schnell" | "dev" | "pro" | "realism";
+      htnTemplateId?: string;
+    }) => {
+      createDataRoom.mutate(
+        {
+          bonfire_id: config.bonfireId,
+          description: config.description,
+          system_prompt: config.systemPrompt ?? "",
+          center_node_uuid: config.centerNodeUuid,
+          price_usd: config.priceUsd,
+          query_limit: config.queryLimit,
+          expiration_days: config.expirationDays,
+          dynamic_pricing_enabled: config.dynamicPricingEnabled,
+          price_step_usd: config.priceStepUsd,
+          price_decay_rate: config.priceDecayRate,
+          image_model: config.imageModel,
+          htn_template_id: config.htnTemplateId,
+          creator_wallet: address ?? "",
+        },
+        {
+          onSuccess: (data) => {
+            setWizardOpen(false);
+            const dataroomId = data.dataroom?.id;
+            if (dataroomId) {
+              router.push(`/hyperblogs/dataroom/${dataroomId}`);
+            }
+          },
+        },
+      );
+    },
+    [createDataRoom, router, address],
+  );
 
   const updateUrl = useCallback(
     (newTab: ExploreTab, newSearch: string) => {
@@ -345,7 +394,7 @@ function ExplorePageInner() {
       <DataRoomWizard
         isOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
-        onComplete={() => setWizardOpen(false)}
+        onComplete={handleWizardComplete}
         publicOnly
       />
 

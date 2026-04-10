@@ -253,6 +253,27 @@ export interface HeartbeatEvent {
   timestamp: string;
 }
 
+export interface RetrievalHitEntity {
+  id: string;
+  name: string;
+}
+
+export interface RetrievalHitEdge {
+  source: string;
+  target: string;
+  label: string;
+}
+
+export interface RetrievalHitEvent {
+  type: "retrieval:hit";
+  seq: number;
+  applicant_id: string;
+  criterion_name: string;
+  entities: RetrievalHitEntity[];
+  edges: RetrievalHitEdge[];
+  episodes: RetrievalHitEntity[];
+}
+
 export interface GraphPhaseEvent {
   type: "graph:phase";
   seq: number;
@@ -269,4 +290,5 @@ export type BatchSSEEvent =
   | BatchCompleteEvent
   | BatchErrorEvent
   | HeartbeatEvent
-  | GraphPhaseEvent;
+  | GraphPhaseEvent
+  | RetrievalHitEvent;

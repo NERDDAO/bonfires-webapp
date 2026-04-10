@@ -86,10 +86,12 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     // Strategy 1: Use getToken() (preferred — generates a fresh JWT)
     const token = await getToken();
     if (token) {
-      // Also include API_KEY so local dev works without CLERK_SECRET_KEY
-      const apiKey = process.env["API_KEY"];
+      // In local dev (no CLERK_SECRET_KEY), also send API_KEY so the backend
+      // can fall through to API key auth when JWT verification fails.
       const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-      if (apiKey) headers["X-API-Key"] = apiKey;
+      if (process.env.NODE_ENV === "development" && process.env["API_KEY"]) {
+        headers["X-API-Key"] = process.env["API_KEY"];
+      }
       return headers;
     }
 
@@ -104,20 +106,16 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     console.debug(
       "[Auth Headers] No Clerk token available (getToken=null, no __session cookie)"
     );
-    // Fallback: use API_KEY env var for local dev when Clerk is not configured
-    const apiKey = process.env["API_KEY"];
-    if (apiKey) {
-      console.debug("[Auth Headers] Falling back to API_KEY");
-      return { "X-API-Key": apiKey };
+    if (process.env.NODE_ENV === "development" && process.env["API_KEY"]) {
+      console.debug("[Auth Headers] Dev fallback to API_KEY");
+      return { "X-API-Key": process.env["API_KEY"] };
     }
     return {};
   } catch (error) {
     console.debug("[Auth Headers] auth() threw:", error);
-    // Fallback: use API_KEY env var for local dev when Clerk is not configured
-    const apiKey = process.env["API_KEY"];
-    if (apiKey) {
-      console.debug("[Auth Headers] Falling back to API_KEY after auth error");
-      return { "X-API-Key": apiKey };
+    if (process.env.NODE_ENV === "development" && process.env["API_KEY"]) {
+      console.debug("[Auth Headers] Dev fallback to API_KEY after auth error");
+      return { "X-API-Key": process.env["API_KEY"] };
     }
     return {};
   }

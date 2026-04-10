@@ -253,6 +253,13 @@ export interface HeartbeatEvent {
   timestamp: string;
 }
 
+export interface GraphPhaseEvent {
+  type: "graph:phase";
+  seq: number;
+  phase: string;
+  progress: Record<string, number>;
+}
+
 export type BatchSSEEvent =
   | BatchStartEvent
   | ApplicantStartEvent
@@ -261,4 +268,5 @@ export type BatchSSEEvent =
   | ApplicantCompleteEvent
   | BatchCompleteEvent
   | BatchErrorEvent
-  | HeartbeatEvent;
+  | HeartbeatEvent
+  | GraphPhaseEvent;

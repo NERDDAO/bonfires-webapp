@@ -9,6 +9,20 @@ import type {
 } from "@/hooks/queries/useBatchEvaluateStream";
 import type { ApplicantReviewBatchInfo, ApplicationStatusItem } from "@/types/applicant-reviews";
 
+const PHASE_LABELS: Record<string, string> = {
+  init_run: "Initializing...",
+  fork_review_bonfire: "Setting up review environment...",
+  generate_ontology: "Building ontology...",
+  chunk_applicants: "Preparing applicants...",
+  dispatch_research: "Researching applicants...",
+  ingest_to_kg: "Ingesting to knowledge graph...",
+  build_trimtab: "Building heuristic index...",
+  dispatch_scorers: "Scoring applicants...",
+  aggregate_scores: "Aggregating scores...",
+  persist_reviews: "Saving reviews...",
+  finalize_run: "Finalizing...",
+};
+
 interface ReevaluateProgress {
   completed: number;
   total: number;
@@ -270,6 +284,26 @@ function StreamingView({
           </div>
         )}
       </div>
+
+      {/* Graph phase indicator */}
+      {streamState.graphPhase && streamState.status === "streaming" && (
+        <div className="flex items-center gap-2 text-sm text-dark-s-300 px-1">
+          <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          <span>{PHASE_LABELS[streamState.graphPhase] ?? streamState.graphPhase}</span>
+          {streamState.graphPhase === "dispatch_research" &&
+            streamState.phaseProgress["research_total"] != null && (
+              <span className="ml-auto tabular-nums text-xs">
+                {streamState.phaseProgress["researched"] ?? 0} / {streamState.phaseProgress["research_total"]} researched
+              </span>
+            )}
+          {streamState.graphPhase === "dispatch_scorers" &&
+            streamState.phaseProgress["scoring_total"] != null && (
+              <span className="ml-auto tabular-nums text-xs">
+                {streamState.phaseProgress["scored"] ?? 0} / {streamState.phaseProgress["scoring_total"]} scored
+              </span>
+            )}
+        </div>
+      )}
 
       {/* Applicant stream */}
       <div

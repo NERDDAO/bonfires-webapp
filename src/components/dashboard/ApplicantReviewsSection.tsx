@@ -257,16 +257,6 @@ export function ApplicantReviewsSection({
             ? () => handleReevaluateAll()
             : undefined
         }
-        onRetryApplication={(appId) =>
-          void runAction(
-            appId,
-            () => apiClient.post<ApplicantReviewActionResponse>(
-              `/api/applicant-reviews/${appId}/retry-research`,
-              {},
-            ),
-            "Research retriggered.",
-          )
-        }
       />
 
       <FullProfileModal
@@ -424,39 +414,6 @@ export function ApplicantReviewsSection({
               actionIds={actionIds}
               showOrgColumn
               onShortlistToggle={(app) => void handleShortlistToggle(app)}
-              onRetryResearch={(app) =>
-                void runAction(
-                  app.id,
-                  () =>
-                    apiClient.post<ApplicantReviewActionResponse>(
-                      `/api/applicant-reviews/${app.id}/retry-research`,
-                      {},
-                    ),
-                  "Research retriggered.",
-                )
-              }
-              onRescore={(app) => {
-                batchProgress.open(batchId ?? "");
-                applicationActions.startSingleRescore();
-                setActionIds((prev) => ({ ...prev, [app.id]: true }));
-                void (async () => {
-                  try {
-                    await apiClient.post<ApplicantReviewActionResponse>(
-                      `/api/applicant-reviews/${app.id}/evaluate`,
-                      { rubric_id: selectedRubricId ?? undefined },
-                    );
-                    toast.success("Evaluation queued.");
-                    await refreshData();
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Action failed unexpectedly",
-                    );
-                  } finally {
-                    setActionIds((prev) => ({ ...prev, [app.id]: false }));
-                    applicationActions.completeSingleRescore();
-                  }
-                })();
-              }}
               onDelete={(app) => {
                 if (!confirm(`Delete submission for ${app.full_name}?`)) return;
                 setActionIds((prev) => ({ ...prev, [app.id]: true }));
@@ -518,28 +475,6 @@ export function ApplicantReviewsSection({
             selectedRubricId={selectedRubricId}
             rubricName={structuredRubricQuery.data?.name}
             actionIds={actionIds}
-            onEvaluate={(appId) => {
-              batchProgress.open(batchId ?? "");
-              applicationActions.startSingleRescore();
-              setActionIds((prev) => ({ ...prev, [appId]: true }));
-              void (async () => {
-                try {
-                  await apiClient.post<ApplicantReviewActionResponse>(
-                    `/api/applicant-reviews/${appId}/evaluate`,
-                    { rubric_id: selectedRubricId },
-                  );
-                  toast.success("Evaluation queued.");
-                  await refreshData();
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Action failed unexpectedly",
-                  );
-                } finally {
-                  setActionIds((prev) => ({ ...prev, [appId]: false }));
-                  applicationActions.completeSingleRescore();
-                }
-              })();
-            }}
             onViewFullProfile={() => profileModal.open()}
           />
         </aside>

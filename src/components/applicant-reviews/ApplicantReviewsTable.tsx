@@ -8,8 +8,8 @@ interface ApplicantReviewsTableProps {
   onSelectApplication: (id: string) => void;
   actionIds: Record<string, boolean>;
   onShortlistToggle: (app: ApplicantReviewListItem) => void;
-  onRetryResearch: (app: ApplicantReviewListItem) => void;
-  onRescore: (app: ApplicantReviewListItem) => void;
+  onRetryResearch?: (app: ApplicantReviewListItem) => void;
+  onRescore?: (app: ApplicantReviewListItem) => void;
   onDelete?: (app: ApplicantReviewListItem) => void;
   showOrgColumn?: boolean;
 }
@@ -92,26 +92,6 @@ export function ApplicantReviewsTable({
                     {application.shortlist_status === "shortlisted"
                       ? "Unshortlist"
                       : "Shortlist"}
-                  </button>
-                  <button
-                    className="bf-action-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRetryResearch(application);
-                    }}
-                    disabled={!!actionIds[application.id]}
-                  >
-                    Retry
-                  </button>
-                  <button
-                    className="bf-action-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRescore(application);
-                    }}
-                    disabled={!!actionIds[application.id]}
-                  >
-                    Re-score
                   </button>
                   {onDelete && (
                     <button

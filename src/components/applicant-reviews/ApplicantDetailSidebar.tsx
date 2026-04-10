@@ -13,7 +13,7 @@ interface ApplicantDetailSidebarProps {
   selectedRubricId: string | null;
   rubricName?: string;
   actionIds: Record<string, boolean>;
-  onEvaluate: (applicationId: string) => void;
+  onEvaluate?: (applicationId: string) => void;
   onViewFullProfile: () => void;
 }
 
@@ -74,17 +74,19 @@ export function ApplicantDetailSidebar({
           <p style={{ fontSize: 14, color: 'var(--bf-text-dim)' }}>
             Not yet evaluated with this rubric.
           </p>
-          <button
-            className="bf-btn-primary"
-            style={{ fontSize: 13, padding: '8px 16px' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onEvaluate(selectedApplicationId);
-            }}
-            disabled={!!actionIds[selectedApplicationId]}
-          >
-            Evaluate with {rubricName ?? "this rubric"}
-          </button>
+          {onEvaluate && (
+            <button
+              className="bf-btn-primary"
+              style={{ fontSize: 13, padding: '8px 16px' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEvaluate(selectedApplicationId);
+              }}
+              disabled={!!actionIds[selectedApplicationId]}
+            >
+              Evaluate with {rubricName ?? "this rubric"}
+            </button>
+          )}
         </div>
       )}
 

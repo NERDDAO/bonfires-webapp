@@ -14,6 +14,7 @@ export interface ApplicantReviewBatchInfo {
   slot_config?: Record<string, unknown> | null;
   rubric_id?: string | null;
   failed_count?: number;
+  review_bonfire_id?: string | null;
   application_items?: ApplicationStatusItem[];
 }
 

@@ -33,6 +33,8 @@ export interface BatchStreamState {
   durationSeconds: number | null;
   graphPhase: string | null;
   phaseProgress: Record<string, number>;
+  nodeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
+  edgeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
 }
 
 const initialState: BatchStreamState = {
@@ -48,6 +50,8 @@ const initialState: BatchStreamState = {
   durationSeconds: null,
   graphPhase: null,
   phaseProgress: {},
+  nodeActivations: new Map(),
+  edgeActivations: new Map(),
 };
 
 type Action =
@@ -60,13 +64,13 @@ type Action =
 function reducer(state: BatchStreamState, action: Action): BatchStreamState {
   switch (action.type) {
     case "CONNECTING":
-      return { ...initialState, status: "connecting", applicants: new Map() };
+      return { ...initialState, status: "connecting", applicants: new Map(), nodeActivations: new Map(), edgeActivations: new Map() };
 
     case "COMPLETE":
       return { ...state, status: "complete", currentApplicantId: null };
 
     case "RESET":
-      return { ...initialState, applicants: new Map() };
+      return { ...initialState, applicants: new Map(), nodeActivations: new Map(), edgeActivations: new Map() };
 
     case "ERROR":
       return { ...state, status: "error", error: action.message };
@@ -203,6 +207,37 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
             graphPhase: event.phase,
             phaseProgress: event.progress,
           };
+
+        case "retrieval:hit": {
+          const nodeActs = new Map(state.nodeActivations);
+          const edgeActs = new Map(state.edgeActivations);
+          const now = Date.now();
+
+          // Activate entity + episode nodes
+          for (const entity of [...event.entities, ...event.episodes]) {
+            const prev = nodeActs.get(entity.id);
+            nodeActs.set(entity.id, {
+              hitCount: (prev?.hitCount ?? 0) + 1,
+              lastHitAt: now,
+            });
+          }
+
+          // Activate edges
+          for (const edge of event.edges) {
+            const edgeKey = `${edge.source}->${edge.target}`;
+            const prev = edgeActs.get(edgeKey);
+            edgeActs.set(edgeKey, {
+              hitCount: (prev?.hitCount ?? 0) + 1,
+              lastHitAt: now,
+            });
+          }
+
+          return {
+            ...newState,
+            nodeActivations: nodeActs,
+            edgeActivations: edgeActs,
+          };
+        }
 
         case "heartbeat":
           return newState;

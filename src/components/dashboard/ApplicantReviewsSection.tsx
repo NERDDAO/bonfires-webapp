@@ -1,41 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
-import { apiClient } from "@/lib/api/client";
 import {
   useApplicantReviewDetail,
   useApplicantReviewsQuery,
 } from "@/hooks/queries/useApplicantReviewsQuery";
 import { useApplicationActions } from "@/hooks/queries/useApplicationActions";
 import { useBatchProgress } from "@/hooks/queries/useBatchProgress";
-import { useProfileModal } from "@/hooks/queries/useProfileModal";
 import {
   useRubricListQuery,
   useStructuredRubricQuery,
 } from "@/hooks/queries/useRubricQuery";
-import { ApplicantDetailSidebar } from "@/components/applicant-reviews/ApplicantDetailSidebar";
-import { ApplicantReviewsTable } from "@/components/applicant-reviews/ApplicantReviewsTable";
+import { ApplicantCard } from "@/components/applicant-reviews/ApplicantCard";
+import { ApplicantProfile } from "@/components/applicant-reviews/ApplicantProfile";
 import { BatchCreationModal } from "@/components/applicant-reviews/BatchCreationModal";
+import { BatchOverview } from "@/components/applicant-reviews/BatchOverview";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
-import { FullProfileModal } from "@/components/applicant-reviews/FullProfileModal";
-import { SlotRankingPanel } from "@/components/applicant-reviews/SlotRankingPanel";
-import type {
-  ApplicantReviewActionResponse,
-  ApplicantReviewListItem,
-} from "@/types/applicant-reviews";
 
-const SORT_OPTIONS = [
-  { value: "score", label: "Score" },
-  { value: "confidence", label: "Confidence" },
-  { value: "updated_at", label: "Updated" },
-  { value: "name", label: "Name" },
-] as const;
-
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 500;
 
 interface ApplicantReviewsSectionProps {
   bonfireId: string;
@@ -49,18 +35,15 @@ export function ApplicantReviewsSection({
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState("score");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [shortlistOnly, setShortlistOnly] = useState(false);
-  const [selectedApplicationId, setSelectedApplicationId] = useState<
-    string | null
-  >(null);
-  const [actionIds, setActionIds] = useState<Record<string, boolean>>({});
-  const [page, setPage] = useState(0);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedRubricDocId, setSelectedRubricDocId] = useState<string | null>(null);
   const [selectedRubricId, setSelectedRubricId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(50);
+  const cardListRef = useRef<HTMLDivElement>(null);
 
   const batchProgress = useBatchProgress();
   const applicationActions = useApplicationActions();
-  const profileModal = useProfileModal();
   const isActive = batchProgress.isOpen || applicationActions.isReevaluating;
   const toastIdRef = useRef<string | null>(null);
 
@@ -68,7 +51,7 @@ export function ApplicantReviewsSection({
   useEffect(() => {
     const progress = applicationActions.reevaluateProgress;
     if (progress && progress.total > 0) {
-      const msg = `Evaluating applicants... (${progress.completed}/${progress.total})`;
+      const msg = `Evaluating... (${progress.completed}/${progress.total})`;
       if (toastIdRef.current) {
         toast.loading(msg, { id: toastIdRef.current });
       } else {
@@ -80,14 +63,14 @@ export function ApplicantReviewsSection({
     }
   }, [applicationActions.reevaluateProgress, isActive]);
 
+  // Rubric auto-selection
   const rubricListQuery = useRubricListQuery(bonfireId || null);
   const structuredRubricQuery = useStructuredRubricQuery(selectedRubricDocId, bonfireId || null);
 
-  // Auto-select active/latest rubric on first load only
   const [rubricAutoSelected, setRubricAutoSelected] = useState(false);
   useEffect(() => {
     if (!rubricAutoSelected && rubricListQuery.data?.items.length) {
-      const active = rubricListQuery.data.items.find(r => r.is_active);
+      const active = rubricListQuery.data.items.find((r) => r.is_active);
       const latest = rubricListQuery.data.items[0];
       const selected = active ?? latest;
       if (selected) setSelectedRubricDocId(selected.id);
@@ -98,18 +81,17 @@ export function ApplicantReviewsSection({
   useEffect(() => {
     if (structuredRubricQuery.data) {
       setSelectedRubricId(structuredRubricQuery.data.id);
-      setPage(0);
     }
   }, [structuredRubricQuery.data]);
 
+  // Data queries
   const reviewsQuery = useApplicantReviewsQuery({
     bonfireId: bonfireId || null,
     batchId,
     sortBy,
     sortOrder,
-    shortlistOnly,
     refetchInterval: isActive ? 4000 : 15000,
-    page,
+    page: 0,
     limit: PAGE_SIZE,
     rubricId: selectedRubricId,
   });
@@ -120,45 +102,53 @@ export function ApplicantReviewsSection({
   });
 
   const applications = reviewsQuery.data?.items ?? [];
-  const hasData = useMemo(() => applications.length > 0, [applications]);
+
+  // Sort locally + filter by search
+  const filteredApps = useMemo(() => {
+    let sorted = [...applications];
+
+    // Local sort
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "score") cmp = (a.overall_score ?? -1) - (b.overall_score ?? -1);
+      else if (sortBy === "confidence") cmp = (a.confidence_score ?? -1) - (b.confidence_score ?? -1);
+      else if (sortBy === "name") cmp = a.full_name.localeCompare(b.full_name);
+      else if (sortBy === "updated_at") cmp = a.updated_at.localeCompare(b.updated_at);
+      return sortOrder === "desc" ? -cmp : cmp;
+    });
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      sorted = sorted.filter(
+        (a) =>
+          a.full_name.toLowerCase().includes(q) ||
+          a.organizations?.some((o) => o.toLowerCase().includes(q)),
+      );
+    }
+
+    return sorted;
+  }, [applications, searchQuery, sortBy, sortOrder]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(50);
+  }, [searchQuery, sortBy, sortOrder]);
+
+  const visibleApps = useMemo(() => filteredApps.slice(0, visibleCount), [filteredApps, visibleCount]);
+
+  const handleCardListScroll = useCallback(() => {
+    const el = cardListRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+      setVisibleCount((prev) => Math.min(prev + 50, filteredApps.length));
+    }
+  }, [filteredApps.length]);
 
   const refreshData = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["applicantReviews"] }),
       queryClient.invalidateQueries({ queryKey: ["applicantReviewDetail"] }),
     ]);
-  };
-
-  const runAction = async (
-    applicationId: string,
-    action: () => Promise<ApplicantReviewActionResponse>,
-    successMessage: string,
-  ) => {
-    setActionIds((prev) => ({ ...prev, [applicationId]: true }));
-    try {
-      await action();
-      toast.success(successMessage);
-      await refreshData();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Action failed unexpectedly",
-      );
-    } finally {
-      setActionIds((prev) => ({ ...prev, [applicationId]: false }));
-    }
-  };
-
-  const handleShortlistToggle = async (application: ApplicantReviewListItem) => {
-    const shortlisted = application.shortlist_status !== "shortlisted";
-    await runAction(
-      application.id,
-      () =>
-        apiClient.post<ApplicantReviewActionResponse>(
-          `/api/applicant-reviews/${application.id}/shortlist`,
-          { shortlisted },
-        ),
-      shortlisted ? "Applicant shortlisted." : "Applicant removed from shortlist.",
-    );
   };
 
   const handleReevaluateAll = () => {
@@ -178,372 +168,309 @@ export function ApplicantReviewsSection({
           selectedRubricId,
           true,
         );
-        await queryClient.invalidateQueries({
-          queryKey: ["applicantReviewBatch"],
-        });
+        await queryClient.invalidateQueries({ queryKey: ["applicantReviewBatch"] });
         await refreshData();
         applicationActions.clearProgress();
         toast.success("Re-evaluation complete.");
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Re-evaluation failed.",
-        );
+        toast.error(err instanceof Error ? err.message : "Re-evaluation failed.");
       }
     })();
   };
 
   return (
-    <div className="space-y-6">
-      {/* ── Header + Actions ── */}
-      <section className="bf-review-panel">
-        <div className="bf-import-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <div className="bf-section-label">APPLICANT REVIEWS</div>
-            {batchId && (
-              <span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--text-secondary)" }}>
-                Batch: {batchId}
-              </span>
-            )}
+    <div
+      className="bf-review-panel"
+      style={{ padding: 0, overflow: "hidden" }}
+    >
+      {/* Header bar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+          padding: "20px 24px",
+          borderBottom: "1px solid var(--bf-border)",
+          background: "var(--bf-bg2)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="bf-section-label" style={{ marginBottom: 0 }}>
+            Applicant Reviews
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-            <button className="bf-btn-primary" onClick={() => setCreateModalOpen(true)}>
-              New Batch
-            </button>
-
-            {applications.length > 0 && (
-              <button
-                type="button"
-                className="bf-btn-primary"
-                onClick={handleReevaluateAll}
-                disabled={applicationActions.isReevaluating}
-              >
-                {applicationActions.isReevaluating ? "Re-evaluating..." : "Rescore All"}
-              </button>
-            )}
-
-            {batchId && (
-              <button
-                type="button"
-                className="bf-btn-secondary"
-                onClick={() => batchProgress.open(batchId)}
-              >
-                View progress
-              </button>
-            )}
-          </div>
+          {batchId && (
+            <span
+              style={{
+                fontSize: 11,
+                fontFamily: "var(--font-montserrat), Montserrat, sans-serif",
+                fontWeight: 600,
+                color: "var(--bf-text-dim)",
+                background: "rgba(255,255,255,0.04)",
+                padding: "2px 8px",
+                borderRadius: "var(--bf-radius-pill)",
+              }}
+            >
+              Batch
+            </span>
+          )}
         </div>
-      </section>
+        <div className="flex items-center gap-2">
+          {/* Rubric selector */}
+          {rubricListQuery.data && rubricListQuery.data.items.length > 0 && (
+            <select
+              value={selectedRubricDocId ?? ""}
+              onChange={(e) => {
+                setSelectedRubricDocId(e.target.value || null);
+                setSelectedApplicationId(null);
+              }}
+              style={{
+                background: "var(--bf-surface)",
+                border: "1px solid var(--bf-border)",
+                borderRadius: "var(--bf-radius)",
+                padding: "6px 10px",
+                fontSize: 12,
+                color: "var(--bf-text-secondary)",
+                fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                cursor: "pointer",
+              }}
+            >
+              {rubricListQuery.data.items.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} {r.is_active ? "(active)" : ""}
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            className="bf-btn-primary"
+            style={{ fontSize: 12, padding: "6px 14px" }}
+            onClick={() => setCreateModalOpen(true)}
+          >
+            New Batch
+          </button>
+          {applications.length > 0 && (
+            <button
+              className="bf-btn-primary"
+              style={{ fontSize: 12, padding: "6px 14px" }}
+              onClick={handleReevaluateAll}
+              disabled={applicationActions.isReevaluating}
+            >
+              {applicationActions.isReevaluating ? "Evaluating..." : "Rescore All"}
+            </button>
+          )}
+        </div>
+      </div>
 
+      {/* Main layout: sidebar + content */}
+      <div style={{ display: "flex", minHeight: "calc(100vh - 200px)" }}>
+        {/* Left sidebar: ranked cards */}
+        <div
+          style={{
+            width: 280,
+            flexShrink: 0,
+            borderRight: "1px solid var(--bf-border)",
+            background: "var(--bf-bg)",
+            display: "flex",
+            flexDirection: "column" as const,
+          }}
+        >
+          {/* Search + sort */}
+          <div
+            style={{
+              padding: "12px 12px 8px",
+              borderBottom: "1px solid var(--bf-border)",
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Search applicants..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: "100%",
+                background: "var(--bf-surface)",
+                border: "1px solid var(--bf-border)",
+                borderRadius: "var(--bf-radius)",
+                padding: "7px 10px",
+                fontSize: 12,
+                color: "var(--bf-text)",
+                fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                outline: "none",
+              }}
+            />
+            <div className="flex items-center gap-1" style={{ marginTop: 6 }}>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 11,
+                  color: "var(--bf-text-dim)",
+                  fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                <option value="score">Sort: Score</option>
+                <option value="confidence">Sort: Confidence</option>
+                <option value="name">Sort: Name</option>
+                <option value="updated_at">Sort: Updated</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setSortOrder((o) => (o === "asc" ? "desc" : "asc"))}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 11,
+                  color: "var(--bf-text-dim)",
+                  cursor: "pointer",
+                  padding: "2px 6px",
+                }}
+              >
+                {sortOrder === "desc" ? "\u2193" : "\u2191"}
+              </button>
+            </div>
+          </div>
+
+          {/* Card list */}
+          <div
+            ref={cardListRef}
+            onScroll={handleCardListScroll}
+            style={{
+              flex: 1,
+              overflowY: "auto" as const,
+              padding: "8px 8px",
+            }}
+            className="space-y-1"
+          >
+            {visibleApps.map((app, idx) => (
+              <ApplicantCard
+                key={app.id}
+                applicant={app}
+                rank={idx + 1}
+                isSelected={selectedApplicationId === app.id}
+                onClick={() =>
+                  setSelectedApplicationId(
+                    selectedApplicationId === app.id ? null : app.id,
+                  )
+                }
+              />
+            ))}
+            {filteredApps.length === 0 && applications.length > 0 && (
+              <div
+                style={{
+                  padding: "20px 12px",
+                  textAlign: "center" as const,
+                  fontSize: 13,
+                  color: "var(--bf-text-dim)",
+                  fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                }}
+              >
+                No matches for &ldquo;{searchQuery}&rdquo;
+              </div>
+            )}
+            {applications.length === 0 && (
+              <div
+                style={{
+                  padding: "40px 12px",
+                  textAlign: "center" as const,
+                  fontSize: 13,
+                  color: "var(--bf-text-dim)",
+                  fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                }}
+              >
+                No applicants yet.
+                <br />
+                Import a batch to get started.
+              </div>
+            )}
+          </div>
+
+          {/* Card count */}
+          {applications.length > 0 && (
+            <div
+              style={{
+                padding: "8px 12px",
+                borderTop: "1px solid var(--bf-border)",
+                fontSize: 11,
+                color: "var(--bf-text-dim)",
+                fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                textAlign: "center" as const,
+              }}
+            >
+              {filteredApps.length} of {applications.length} applicants
+            </div>
+          )}
+        </div>
+
+        {/* Main content area */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto" as const,
+            padding: "24px",
+            background: "var(--bf-bg)",
+          }}
+        >
+          {selectedApplicationId && detailQuery.data ? (
+            <ApplicantProfile
+              detail={detailQuery.data}
+              isLoading={detailQuery.isLoading}
+            />
+          ) : selectedApplicationId && detailQuery.isLoading ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 300,
+                color: "var(--bf-text-dim)",
+                fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                fontSize: 14,
+              }}
+            >
+              Loading profile...
+            </div>
+          ) : (
+            <BatchOverview
+              applicants={applications}
+              rubric={structuredRubricQuery.data}
+              batchName={batchId ? `Batch ${batchId.slice(-6)}` : undefined}
+              onSelectApplicant={setSelectedApplicationId}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
       <BatchCreationModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         bonfireId={bonfireId}
-        onBatchCreated={(newBatchId) => {
+        onBatchCreated={async (newBatchId) => {
           setBatchId(newBatchId);
-          batchProgress.open(newBatchId);
-          void refreshData();
+          setCreateModalOpen(false);
+          await refreshData();
         }}
       />
-
       <BatchProgressModal
         isOpen={batchProgress.isOpen}
         onClose={batchProgress.close}
         batch={batchProgress.batch}
         reevaluateProgress={applicationActions.reevaluateProgress}
-        streamState={applicationActions.streamState}
-        onCancel={applicationActions.cancelStream}
         onReevaluateAll={
           batchId && applications.length > 0
             ? () => handleReevaluateAll()
             : undefined
         }
-        onRetryApplication={(appId) =>
-          void runAction(
-            appId,
-            () => apiClient.post<ApplicantReviewActionResponse>(
-              `/api/applicant-reviews/${appId}/retry-research`,
-              {},
-            ),
-            "Research retriggered.",
-          )
-        }
+        streamState={applicationActions.streamState}
+        onCancel={applicationActions.cancelStream}
       />
-
-      <FullProfileModal
-        isOpen={profileModal.isOpen}
-        onClose={profileModal.close}
-        detail={detailQuery.data}
-      />
-
-      {/* ── Table + Detail Sidebar ── */}
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <div style={{ background: 'var(--bf-surface)', border: '1px solid var(--bf-border)', borderRadius: 'var(--bf-radius)', padding: 24 }}>
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <label className="form-control">
-              <span className="bf-label">Sort</span>
-              <select
-                className="bf-input"
-                style={{ padding: '8px 12px' }}
-                value={sortBy}
-                onChange={(event) => { setSortBy(event.target.value); setPage(0); }}
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="form-control">
-              <span className="bf-label">Order</span>
-              <select
-                className="bf-input"
-                style={{ padding: '8px 12px' }}
-                value={sortOrder}
-                onChange={(event) => {
-                  setSortOrder(event.target.value === "asc" ? "asc" : "desc");
-                  setPage(0);
-                }}
-              >
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </select>
-            </label>
-
-            <label className="label cursor-pointer gap-2 pt-6">
-              <span className="bf-label" style={{ marginBottom: 0 }}>Shortlist only</span>
-              <input
-                type="checkbox"
-                className="checkbox checkbox-sm"
-                checked={shortlistOnly}
-                onChange={(event) => {
-                  setShortlistOnly(event.target.checked);
-                  setPage(0);
-                }}
-              />
-            </label>
-
-            {rubricListQuery.data && rubricListQuery.data.items.length > 0 && (
-              <label className="form-control">
-                <span className="bf-label">Rubric</span>
-                <select
-                  className="bf-input"
-                  style={{ padding: '8px 12px' }}
-                  value={selectedRubricDocId ?? "default"}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "default") {
-                      setSelectedRubricDocId(null);
-                      setSelectedRubricId(null);
-                    } else {
-                      setSelectedRubricDocId(val);
-                    }
-                    setPage(0);
-                  }}
-                >
-                  <option value="default">Default (v1)</option>
-                  {rubricListQuery.data.items.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} {r.version ? `(${r.version})` : ""} {r.is_active ? " [active]" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            <button
-              onClick={async () => {
-                const params = new URLSearchParams({ bonfire_id: bonfireId });
-                if (batchId) params.set("batch_id", batchId);
-                if (selectedRubricId) params.set("rubric_id", selectedRubricId);
-                const res = await fetch(`/api/applicant-reviews-export?${params}`);
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "applicant_reviews.csv";
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              disabled={!bonfireId}
-              className="bf-action-btn"
-              style={{ marginTop: 'auto' }}
-            >
-              Export CSV
-            </button>
-          </div>
-
-          {structuredRubricQuery.data && (
-            <div className="collapse collapse-arrow border border-base-300 rounded-xl mb-4">
-              <input type="checkbox" />
-              <div className="collapse-title text-sm font-medium">
-                {structuredRubricQuery.data.name} {structuredRubricQuery.data.version ? `(${structuredRubricQuery.data.version})` : ""}
-              </div>
-              <div className="collapse-content text-xs space-y-2">
-                {structuredRubricQuery.data.categories.map((cat) => (
-                  <div key={cat.name} className="border-b border-base-200 pb-2">
-                    <div className="flex justify-between font-medium">
-                      <span>{cat.name}</span>
-                      <span>Weight: {cat.weight}%</span>
-                    </div>
-                    <ul className="ml-4 mt-1 list-disc list-inside text-base-content/70">
-                      {cat.criteria.map((c) => (
-                        <li key={c}>{c}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-                {(structuredRubricQuery.data.passing_threshold != null || structuredRubricQuery.data.top25_threshold != null) && (
-                  <div className="text-base-content/60 pt-1">
-                    {structuredRubricQuery.data.passing_threshold != null && <span>Passing: {structuredRubricQuery.data.passing_threshold}</span>}
-                    {structuredRubricQuery.data.top25_threshold != null && <span className="ml-3">Top 25: {structuredRubricQuery.data.top25_threshold}</span>}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {!bonfireId ? (
-            <div className="p-8 text-center text-sm" style={{ border: '1px dashed var(--bf-border-bright)', borderRadius: 'var(--bf-radius)', color: 'var(--bf-text-dim)' }}>
-              Select a bonfire to begin reviewing applicants.
-            </div>
-          ) : reviewsQuery.isLoading ? (
-            <div className="p-8 text-center text-sm" style={{ color: 'var(--bf-text-dim)' }}>
-              Loading applicants...
-            </div>
-          ) : !hasData ? (
-            <div className="p-8 text-center text-sm" style={{ border: '1px dashed var(--bf-border-bright)', borderRadius: 'var(--bf-radius)', color: 'var(--bf-text-dim)' }}>
-              No applicants found. Import a batch above to begin reviewing.
-            </div>
-          ) : (
-            <ApplicantReviewsTable
-              applications={applications}
-              selectedApplicationId={selectedApplicationId}
-              onSelectApplication={setSelectedApplicationId}
-              actionIds={actionIds}
-              showOrgColumn
-              onShortlistToggle={(app) => void handleShortlistToggle(app)}
-              onRetryResearch={(app) =>
-                void runAction(
-                  app.id,
-                  () =>
-                    apiClient.post<ApplicantReviewActionResponse>(
-                      `/api/applicant-reviews/${app.id}/retry-research`,
-                      {},
-                    ),
-                  "Research retriggered.",
-                )
-              }
-              onRescore={(app) => {
-                batchProgress.open(batchId ?? "");
-                applicationActions.startSingleRescore();
-                setActionIds((prev) => ({ ...prev, [app.id]: true }));
-                void (async () => {
-                  try {
-                    await apiClient.post<ApplicantReviewActionResponse>(
-                      `/api/applicant-reviews/${app.id}/evaluate`,
-                      { rubric_id: selectedRubricId ?? undefined },
-                    );
-                    toast.success("Evaluation queued.");
-                    await refreshData();
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Action failed unexpectedly",
-                    );
-                  } finally {
-                    setActionIds((prev) => ({ ...prev, [app.id]: false }));
-                    applicationActions.completeSingleRescore();
-                  }
-                })();
-              }}
-              onDelete={(app) => {
-                if (!confirm(`Delete submission for ${app.full_name}?`)) return;
-                setActionIds((prev) => ({ ...prev, [app.id]: true }));
-                void (async () => {
-                  try {
-                    await apiClient.delete(`/api/applicant-reviews/${app.id}`);
-                    toast.success("Submission deleted");
-                    await refreshData();
-                  } catch {
-                    toast.error("Failed to delete");
-                  } finally {
-                    setActionIds((prev) => ({ ...prev, [app.id]: false }));
-                  }
-                })();
-              }}
-            />
-          )}
-
-          {batchId && applications.some(a => a.evaluation_status === "completed") && (
-            <div className="bf-review-panel" style={{ marginTop: 24 }}>
-              <SlotRankingPanel
-                batchId={batchId}
-                applications={applications}
-                onSlotsAssigned={() => void refreshData()}
-              />
-            </div>
-          )}
-
-          {reviewsQuery.data && reviewsQuery.data.total > 0 && (
-            <div className="flex items-center justify-between" style={{ borderTop: '1px solid var(--bf-border)', padding: '12px 16px' }}>
-              <span style={{ fontSize: 14, color: 'var(--bf-text-secondary)' }}>
-                Showing {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, reviewsQuery.data.total)} of {reviewsQuery.data.total}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="bf-action-btn"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={(page + 1) * PAGE_SIZE >= reviewsQuery.data.total}
-                  className="bf-action-btn"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <aside className="sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto" style={{ background: 'var(--bf-surface)', border: '1px solid var(--bf-border)', borderRadius: 'var(--bf-radius)', padding: 24 }}>
-          <ApplicantDetailSidebar
-            selectedApplicationId={selectedApplicationId}
-            detail={detailQuery.data}
-            isLoading={detailQuery.isLoading}
-            selectedRubricId={selectedRubricId}
-            rubricName={structuredRubricQuery.data?.name}
-            actionIds={actionIds}
-            onEvaluate={(appId) => {
-              batchProgress.open(batchId ?? "");
-              applicationActions.startSingleRescore();
-              setActionIds((prev) => ({ ...prev, [appId]: true }));
-              void (async () => {
-                try {
-                  await apiClient.post<ApplicantReviewActionResponse>(
-                    `/api/applicant-reviews/${appId}/evaluate`,
-                    { rubric_id: selectedRubricId },
-                  );
-                  toast.success("Evaluation queued.");
-                  await refreshData();
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Action failed unexpectedly",
-                  );
-                } finally {
-                  setActionIds((prev) => ({ ...prev, [appId]: false }));
-                  applicationActions.completeSingleRescore();
-                }
-              })();
-            }}
-            onViewFullProfile={() => profileModal.open()}
-          />
-        </aside>
-      </section>
     </div>
   );
 }

@@ -86,7 +86,13 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     // Strategy 1: Use getToken() (preferred — generates a fresh JWT)
     const token = await getToken();
     if (token) {
-      return { Authorization: `Bearer ${token}` };
+      // In local dev (no CLERK_SECRET_KEY), also send API_KEY so the backend
+      // can fall through to API key auth when JWT verification fails.
+      const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+      if (process.env.NODE_ENV === "development" && process.env["API_KEY"]) {
+        headers["X-API-Key"] = process.env["API_KEY"];
+      }
+      return headers;
     }
 
     // Strategy 2: Read Clerk's __session cookie directly.
@@ -100,9 +106,17 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     console.debug(
       "[Auth Headers] No Clerk token available (getToken=null, no __session cookie)"
     );
+    if (process.env.NODE_ENV === "development" && process.env["API_KEY"]) {
+      console.debug("[Auth Headers] Dev fallback to API_KEY");
+      return { "X-API-Key": process.env["API_KEY"] };
+    }
     return {};
   } catch (error) {
     console.debug("[Auth Headers] auth() threw:", error);
+    if (process.env.NODE_ENV === "development" && process.env["API_KEY"]) {
+      console.debug("[Auth Headers] Dev fallback to API_KEY after auth error");
+      return { "X-API-Key": process.env["API_KEY"] };
+    }
     return {};
   }
 }

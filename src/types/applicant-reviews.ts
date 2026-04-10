@@ -275,6 +275,18 @@ export interface RetrievalHitEvent {
   episodes: RetrievalHitEntity[];
 }
 
+export interface GraphTaxonomyEvent {
+  type: "graph:taxonomy";
+  seq: number;
+  nodes: Array<{ uuid: string; name: string; category: string }>;
+}
+
+export interface GraphEpisodeEvent {
+  type: "graph:episode";
+  seq: number;
+  episode_uuid: string;
+}
+
 export interface GraphPhaseEvent {
   type: "graph:phase";
   seq: number;
@@ -293,4 +305,6 @@ export type BatchSSEEvent =
   | BatchErrorEvent
   | HeartbeatEvent
   | GraphPhaseEvent
+  | GraphTaxonomyEvent
+  | GraphEpisodeEvent
   | RetrievalHitEvent;

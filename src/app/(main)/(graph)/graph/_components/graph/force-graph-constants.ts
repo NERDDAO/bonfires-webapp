@@ -67,6 +67,8 @@ export const NODE_TYPE_COLORS = {
   entity: NODE_COLOR_DEFAULTS.entityColor,
   user: NODE_COLOR_DEFAULTS.userColor,
   unknown: NODE_COLOR_DEFAULTS.unknownColor,
+  taxonomy: NODE_COLOR_DEFAULTS.taxonomyColor,
+  community: NODE_COLOR_DEFAULTS.communityColor,
 } as const;
 
 /** Activation glow constants */

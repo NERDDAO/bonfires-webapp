@@ -36,6 +36,10 @@ export interface BatchStreamState {
   reviewBonfireId: string | null;
   nodeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
   edgeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
+  /** Accumulated graph nodes from SSE events (taxonomy + retrieval entities) */
+  graphNodes: Map<string, { id: string; label: string; type: string }>;
+  /** Accumulated graph edges from SSE events (retrieval edges) */
+  graphEdges: Map<string, { source: string; target: string; label: string }>;
 }
 
 const initialState: BatchStreamState = {
@@ -54,6 +58,8 @@ const initialState: BatchStreamState = {
   reviewBonfireId: null,
   nodeActivations: new Map(),
   edgeActivations: new Map(),
+  graphNodes: new Map(),
+  graphEdges: new Map(),
 };
 
 type Action =
@@ -66,7 +72,7 @@ type Action =
 function reducer(state: BatchStreamState, action: Action): BatchStreamState {
   switch (action.type) {
     case "CONNECTING":
-      return { ...initialState, status: "connecting", applicants: new Map(), nodeActivations: new Map(), edgeActivations: new Map() };
+      return { ...initialState, status: "connecting", applicants: new Map(), nodeActivations: new Map(), edgeActivations: new Map(), graphNodes: new Map(), graphEdges: new Map() };
 
     case "COMPLETE":
       return { ...state, status: "complete", currentApplicantId: null };
@@ -211,21 +217,56 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
             reviewBonfireId: event.review_bonfire_id ?? state.reviewBonfireId,
           };
 
+        case "graph:taxonomy": {
+          const nodes = new Map(state.graphNodes);
+          for (const node of event.nodes) {
+            if (node.uuid && !nodes.has(node.uuid)) {
+              nodes.set(node.uuid, { id: node.uuid, label: node.name, type: `taxonomy:${node.category}` });
+            }
+          }
+          return { ...newState, graphNodes: nodes };
+        }
+
+        case "graph:episode": {
+          const nodes = new Map(state.graphNodes);
+          if (event.episode_uuid && !nodes.has(event.episode_uuid)) {
+            nodes.set(event.episode_uuid, { id: event.episode_uuid, label: `Episode`, type: "episode" });
+          }
+          return { ...newState, graphNodes: nodes };
+        }
+
         case "retrieval:hit": {
           const nodeActs = new Map(state.nodeActivations);
           const edgeActs = new Map(state.edgeActivations);
+          const nodes = new Map(state.graphNodes);
+          const edges = new Map(state.graphEdges);
           const now = Date.now();
 
-          // Activate entity + episode nodes
-          for (const entity of [...event.entities, ...event.episodes]) {
+          // Activate + accumulate entity nodes
+          for (const entity of event.entities) {
             const prev = nodeActs.get(entity.id);
             nodeActs.set(entity.id, {
               hitCount: (prev?.hitCount ?? 0) + 1,
               lastHitAt: now,
             });
+            if (entity.id && !nodes.has(entity.id)) {
+              nodes.set(entity.id, { id: entity.id, label: entity.name, type: "entity" });
+            }
           }
 
-          // Activate edges
+          // Activate + accumulate episode nodes
+          for (const episode of event.episodes) {
+            const prev = nodeActs.get(episode.id);
+            nodeActs.set(episode.id, {
+              hitCount: (prev?.hitCount ?? 0) + 1,
+              lastHitAt: now,
+            });
+            if (episode.id && !nodes.has(episode.id)) {
+              nodes.set(episode.id, { id: episode.id, label: episode.name, type: "episode" });
+            }
+          }
+
+          // Activate + accumulate edges
           for (const edge of event.edges) {
             const edgeKey = `${edge.source}->${edge.target}`;
             const prev = edgeActs.get(edgeKey);
@@ -233,12 +274,17 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
               hitCount: (prev?.hitCount ?? 0) + 1,
               lastHitAt: now,
             });
+            if (!edges.has(edgeKey)) {
+              edges.set(edgeKey, { source: edge.source, target: edge.target, label: edge.label });
+            }
           }
 
           return {
             ...newState,
             nodeActivations: nodeActs,
             edgeActivations: edgeActs,
+            graphNodes: nodes,
+            graphEdges: edges,
           };
         }
 

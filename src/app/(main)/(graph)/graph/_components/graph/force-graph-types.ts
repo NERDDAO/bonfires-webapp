@@ -17,6 +17,10 @@ export interface ViewNode {
   /** Fixed position while dragging (d3 force) */
   fx?: number;
   fy?: number;
+  /** Activation: total retrieval hit count (grows node size) */
+  activationHitCount?: number;
+  /** Activation: timestamp of last retrieval hit (drives glow decay) */
+  activationLastHitAt?: number;
 }
 
 export interface ViewLink {
@@ -24,6 +28,10 @@ export interface ViewLink {
   target: ViewNode;
   id: string;
   label: string;
+  /** Activation: total retrieval hit count (grows edge width) */
+  activationHitCount?: number;
+  /** Activation: timestamp of last retrieval hit (drives glow decay) */
+  activationLastHitAt?: number;
 }
 
 export interface ForceGraphProps {

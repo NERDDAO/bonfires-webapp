@@ -31,6 +31,8 @@ export interface BatchStreamState {
   evaluatedCount: number;
   skippedCount: number;
   durationSeconds: number | null;
+  graphPhase: string | null;
+  phaseProgress: Record<string, number>;
 }
 
 const initialState: BatchStreamState = {
@@ -44,6 +46,8 @@ const initialState: BatchStreamState = {
   evaluatedCount: 0,
   skippedCount: 0,
   durationSeconds: null,
+  graphPhase: null,
+  phaseProgress: {},
 };
 
 type Action =
@@ -192,6 +196,13 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
             error: event.message,
           };
         }
+
+        case "graph:phase":
+          return {
+            ...newState,
+            graphPhase: event.phase,
+            phaseProgress: event.progress,
+          };
 
         case "heartbeat":
           return newState;

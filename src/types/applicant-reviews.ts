@@ -280,6 +280,7 @@ export interface GraphPhaseEvent {
   seq: number;
   phase: string;
   progress: Record<string, number>;
+  review_bonfire_id?: string;
 }
 
 export type BatchSSEEvent =

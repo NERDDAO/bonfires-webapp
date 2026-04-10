@@ -423,7 +423,7 @@ export function BatchProgressModal({
             {/* Graph fills the background */}
             <ReviewGraphPanel
               streamState={streamState}
-              reviewBonfireId={reviewBonfireId}
+              reviewBonfireId={reviewBonfireId ?? streamState.reviewBonfireId ?? undefined}
               className="absolute inset-0 rounded-lg overflow-hidden"
             />
             {/* Pipeline overlay */}

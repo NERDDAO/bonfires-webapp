@@ -33,6 +33,7 @@ export interface BatchStreamState {
   durationSeconds: number | null;
   graphPhase: string | null;
   phaseProgress: Record<string, number>;
+  reviewBonfireId: string | null;
   nodeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
   edgeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
 }
@@ -50,6 +51,7 @@ const initialState: BatchStreamState = {
   durationSeconds: null,
   graphPhase: null,
   phaseProgress: {},
+  reviewBonfireId: null,
   nodeActivations: new Map(),
   edgeActivations: new Map(),
 };
@@ -206,6 +208,7 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
             ...newState,
             graphPhase: event.phase,
             phaseProgress: event.progress,
+            reviewBonfireId: event.review_bonfire_id ?? state.reviewBonfireId,
           };
 
         case "retrieval:hit": {

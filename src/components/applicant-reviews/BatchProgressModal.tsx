@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Modal } from "@/components/ui/modal";
+import { ReviewGraphPanel } from "@/components/applicant-reviews/ReviewGraphPanel";
 import type {
   ApplicantStreamState,
   BatchStreamState,
@@ -37,6 +38,7 @@ interface BatchProgressModalProps {
   streamState?: BatchStreamState;
   onCancel?: () => void;
   onRetryApplication?: (applicationId: string) => void;
+  reviewBonfireId?: string;
 }
 
 function ProgressBar({
@@ -269,9 +271,11 @@ function phaseIndex(phase: string | null): number {
 function StreamingView({
   streamState,
   onCancel,
+  compact = false,
 }: {
   streamState: BatchStreamState;
   onCancel?: () => void;
+  compact?: boolean;
 }) {
   const currentIdx = phaseIndex(streamState.graphPhase);
   const isComplete = streamState.status === "complete";
@@ -296,9 +300,9 @@ function StreamingView({
           return (
             <div
               key={phase}
-              className={`flex items-center gap-2.5 rounded px-2 py-1.5 text-sm transition-colors ${
+              className={`flex items-center gap-2 ${compact ? "py-0.5 text-xs" : "rounded px-2 py-1.5 text-sm"} transition-colors ${
                 isCurrent
-                  ? "bg-amber-950/40 text-amber-200"
+                  ? compact ? "text-amber-300" : "bg-amber-950/40 text-amber-200"
                   : isDone
                     ? "text-dark-s-400"
                     : "text-dark-s-600"
@@ -319,7 +323,7 @@ function StreamingView({
               <span className={isCurrent ? "font-medium" : ""}>{label}</span>
 
               {/* Progress counter */}
-              {progressText && (
+              {!compact && progressText && (
                 <span className="ml-auto tabular-nums text-xs text-amber-400/80">
                   {progressText}
                 </span>
@@ -330,7 +334,7 @@ function StreamingView({
       </div>
 
       {/* Completion summary */}
-      {isComplete && streamState.durationSeconds !== null && (
+      {!compact && isComplete && streamState.durationSeconds !== null && (
         <div className="rounded-lg border border-green-600/30 bg-green-950/20 px-4 py-3 text-sm text-green-400">
           Completed in {streamState.durationSeconds.toFixed(1)}s
           {streamState.completedApplicants > 0 && ` — ${streamState.completedApplicants} applicants scored`}
@@ -339,14 +343,14 @@ function StreamingView({
       )}
 
       {/* Error display */}
-      {streamState.error && (
+      {!compact && streamState.error && (
         <div className="rounded-lg border border-red-600/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
           {streamState.error}
         </div>
       )}
 
       {/* Cancel button */}
-      {(streamState.status === "streaming" || streamState.status === "connecting") && (
+      {!compact && (streamState.status === "streaming" || streamState.status === "connecting") && (
         <div className="flex justify-end">
           <button
             type="button"
@@ -370,6 +374,7 @@ export function BatchProgressModal({
   streamState,
   onCancel,
   onRetryApplication,
+  reviewBonfireId,
 }: BatchProgressModalProps) {
   const [appDetailsOpen, setAppDetailsOpen] = useState(false);
   const hasFailures = batch?.application_items?.some(
@@ -397,7 +402,7 @@ export function BatchProgressModal({
       onClose={onClose}
       title="Batch Progress"
       size="lg"
-      className={isStreaming ? "max-w-2xl" : "max-w-[480px]"}
+      className={isStreaming ? "max-w-3xl" : "max-w-[480px]"}
     >
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between text-sm">
@@ -414,7 +419,20 @@ export function BatchProgressModal({
 
         {/* Phase-driven streaming view */}
         {isStreaming && streamState ? (
-          <StreamingView streamState={streamState} onCancel={onCancel} />
+          <div className="relative min-h-[400px]">
+            {/* Graph fills the background */}
+            <ReviewGraphPanel
+              streamState={streamState}
+              reviewBonfireId={reviewBonfireId}
+              className="absolute inset-0 rounded-lg overflow-hidden"
+            />
+            {/* Pipeline overlay */}
+            <div className="relative z-10 pointer-events-none">
+              <div className="inline-block bg-dark-s-950/90 backdrop-blur-sm border border-dark-s-700 rounded-lg p-3 m-2 pointer-events-auto max-w-[200px]">
+                <StreamingView streamState={streamState} onCancel={onCancel} compact />
+              </div>
+            </div>
+          </div>
         ) : (
           /* Static batch summary when not streaming */
           <div className="space-y-3">

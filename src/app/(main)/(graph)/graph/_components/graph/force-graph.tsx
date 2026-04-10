@@ -25,6 +25,8 @@ import {
   LINK_DISTANCE,
   LINK_STRENGTH,
   RADIUS_BY_SIZE,
+  ROTATION_EASE_DURATION_MS,
+  ROTATION_SPEED,
   VELOCITY_DECAY,
   ZOOM_MAX,
   ZOOM_MIN,
@@ -55,6 +57,7 @@ export default function ForceGraph({
   centerNodeId,
   panToNodeId,
   onPanToNodeComplete,
+  rotating,
   className,
 }: ForceGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,6 +106,12 @@ export default function ForceGraph({
   const [, setTick] = useState(0);
   const [renderMode, setRenderMode] = useState<"labels" | "wordcloud">("labels");
   const wordCloudStateRef = useRef<WordCloudState | null>(null);
+
+  // 3D rotation state
+  const rotationAngleRef = useRef(0);
+  const rotationSpeedRef = useRef(0);
+  const rotationFrameRef = useRef<number | null>(null);
+  const lastRotationTimeRef = useRef<number>(0);
 
   const highlightedSet = useRef(new Set<string>());
   highlightedSet.current = new Set(
@@ -758,6 +767,71 @@ export default function ForceGraph({
       }
     }
   });
+
+  // 3D rotation animation loop
+  useEffect(() => {
+    if (rotationFrameRef.current) {
+      cancelAnimationFrame(rotationFrameRef.current);
+      rotationFrameRef.current = null;
+    }
+
+    const targetSpeed = rotating ? ROTATION_SPEED : 0;
+
+    const animate = () => {
+      const now = performance.now();
+      const dt = lastRotationTimeRef.current > 0
+        ? Math.min((now - lastRotationTimeRef.current) / 1000, 0.05)
+        : 0;
+      lastRotationTimeRef.current = now;
+
+      // Ease rotation speed toward target
+      const easeRate = Math.min(dt / (ROTATION_EASE_DURATION_MS / 1000) * 3, 1);
+      rotationSpeedRef.current += (targetSpeed - rotationSpeedRef.current) * easeRate;
+
+      // Update angle
+      rotationAngleRef.current += rotationSpeedRef.current * dt;
+
+      // Apply Y-axis rotation projection to node positions
+      const nodes = nodesRef.current;
+      const cosA = Math.cos(rotationAngleRef.current);
+      const isRotating = Math.abs(rotationSpeedRef.current) > 0.001;
+
+      if (isRotating && nodes) {
+        for (const node of nodes) {
+          if (node.x != null) {
+            // Store original x for force layout on first rotation frame
+            if (node.x0 == null) node.x0 = node.x;
+            node.x = node.x0 * cosA;
+          }
+        }
+        redraw();
+        rotationFrameRef.current = requestAnimationFrame(animate);
+      } else if (nodes) {
+        // Restore original positions when rotation stops
+        for (const node of nodes) {
+          if (node.x0 != null) {
+            node.x = node.x0;
+            node.x0 = undefined;
+          }
+        }
+        rotationSpeedRef.current = 0;
+        lastRotationTimeRef.current = 0;
+        redraw();
+      }
+    };
+
+    if (rotating || rotationSpeedRef.current > 0.001) {
+      lastRotationTimeRef.current = performance.now();
+      rotationFrameRef.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (rotationFrameRef.current) {
+        cancelAnimationFrame(rotationFrameRef.current);
+        rotationFrameRef.current = null;
+      }
+    };
+  }, [rotating, redraw]);
 
   return (
     <div

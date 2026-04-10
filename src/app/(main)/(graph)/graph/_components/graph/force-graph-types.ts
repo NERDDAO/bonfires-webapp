@@ -55,6 +55,8 @@ export interface ForceGraphProps {
   panToNodeId?: string | null;
   /** Called after panning to panToNodeId so the parent can clear it */
   onPanToNodeComplete?: () => void;
+  /** When true, apply slow Y-axis 3D rotation to the graph */
+  rotating?: boolean;
   /** Additional CSS class */
   className?: string;
 }

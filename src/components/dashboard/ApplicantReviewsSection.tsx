@@ -20,6 +20,7 @@ import { ApplicantProfile } from "@/components/applicant-reviews/ApplicantProfil
 import { BatchCreationModal } from "@/components/applicant-reviews/BatchCreationModal";
 import { BatchOverview } from "@/components/applicant-reviews/BatchOverview";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
+import { ReviewGraphPanel } from "@/components/applicant-reviews/ReviewGraphPanel";
 
 const PAGE_SIZE = 500;
 
@@ -263,8 +264,8 @@ export function ApplicantReviewsSection({
         </div>
       </div>
 
-      {/* Main layout: sidebar + content */}
-      <div style={{ display: "flex", minHeight: "calc(100vh - 200px)" }}>
+      {/* Main layout: sidebar + content — both panels scroll independently */}
+      <div style={{ display: "flex", height: "calc(100vh - 120px)", overflow: "hidden" }}>
         {/* Left sidebar: ranked cards */}
         <div
           style={{
@@ -447,6 +448,16 @@ export function ApplicantReviewsSection({
         </div>
       </div>
 
+      {/* Batch graph (post-review) */}
+      {batchProgress.batch?.status === "completed" && batchProgress.batch?.review_bonfire_id && (
+        <div className="mt-4 rounded-lg border border-dark-s-700 overflow-hidden" style={{ height: 400 }}>
+          <ReviewGraphPanel
+            bonfireId={batchProgress.batch.review_bonfire_id}
+            className="h-full"
+          />
+        </div>
+      )}
+
       {/* Modals */}
       <BatchCreationModal
         isOpen={createModalOpen}
@@ -470,6 +481,7 @@ export function ApplicantReviewsSection({
         }
         streamState={applicationActions.streamState}
         onCancel={applicationActions.cancelStream}
+        reviewBonfireId={batchProgress.batch?.review_bonfire_id ?? undefined}
       />
     </div>
   );

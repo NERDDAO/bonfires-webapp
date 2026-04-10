@@ -79,8 +79,9 @@ export function CreateBlogModal({
   const [txStep, setTxStep] = useState<TxStep>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  // Dynamic price — fetched when modal opens
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [prices, setPrices] = useState<Record<string, string> | null>(null);
+  const currentPrice = prices ? parseFloat(prices[blogLength] ?? prices["medium"] ?? "0") : null;
+  const uniformPrices = (price: string) => ({ short: price, medium: price, long: price });
 
   // Template input state
   const [requiredInputs, setRequiredInputs] = useState<TemplateInput[]>([]);
@@ -103,20 +104,21 @@ export function CreateBlogModal({
     let cancelled = false;
     (async () => {
       try {
-        const dr = await apiClient.get<DataRoomInfo & { current_hyperblog_price_usd?: string }>(
+        const dr = await apiClient.get<DataRoomInfo & { current_hyperblog_price_usd?: string; hyperblog_prices?: Record<string, string> }>(
           `/api/datarooms/${dataroomId}`
         );
         if (cancelled) return;
-        const price = dr.current_hyperblog_price_usd
-          ? parseFloat(dr.current_hyperblog_price_usd)
-          : dr.price_usd;
-        setCurrentPrice(price);
+        if (dr.hyperblog_prices) {
+          setPrices(dr.hyperblog_prices);
+        } else {
+          setPrices(uniformPrices(dr.current_hyperblog_price_usd ?? String(dr.price_usd ?? 0)));
+        }
         // Resolve template ID from dataroom if not provided as prop
         if (!htnTemplateId && dr.htn_template_id) {
           setResolvedHtnTemplateId(dr.htn_template_id);
         }
       } catch {
-        if (!cancelled) setCurrentPrice(dataroomPriceUsd ?? null);
+        if (!cancelled) setPrices(uniformPrices(String(dataroomPriceUsd ?? 0)));
       }
     })();
     return () => { cancelled = true; };
@@ -207,15 +209,19 @@ export function CreateBlogModal({
     setTxStep("signing");
 
     try {
-      // 1. Always fetch current dynamic price — don't trust the prop (may be stale base price)
-      const dataroom = await apiClient.get<DataRoomInfo & { current_hyperblog_price_usd?: string }>(
+      // 1. Always fetch current dynamic price — don't trust cached state (may be stale)
+      const dataroom = await apiClient.get<DataRoomInfo & { current_hyperblog_price_usd?: string; hyperblog_prices?: Record<string, string> }>(
         `/api/datarooms/${dataroomId}`
       );
-      const priceUsd = dataroom.current_hyperblog_price_usd
-        ? parseFloat(dataroom.current_hyperblog_price_usd)
-        : dataroom.price_usd ?? dataroomPriceUsd ?? 0;
-
-      const expectedAmount = priceUsd.toFixed(2);
+      let expectedAmount: string;
+      if (dataroom.hyperblog_prices?.[blogLength]) {
+        expectedAmount = dataroom.hyperblog_prices[blogLength];
+      } else {
+        const priceUsd = dataroom.current_hyperblog_price_usd
+          ? parseFloat(dataroom.current_hyperblog_price_usd)
+          : dataroom.price_usd ?? dataroomPriceUsd ?? 0;
+        expectedAmount = priceUsd.toFixed(2);
+      }
 
       // 2. Build and sign payment header for that amount
       const paymentHeader = await buildAndSignPaymentHeader(expectedAmount);

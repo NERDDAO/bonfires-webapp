@@ -246,6 +246,26 @@ function StreamingApplicantView({
   );
 }
 
+const PIPELINE_PHASES = [
+  "init_run",
+  "fork_review_bonfire",
+  "generate_ontology",
+  "chunk_applicants",
+  "dispatch_research",
+  "ingest_to_kg",
+  "build_trimtab",
+  "dispatch_scorers",
+  "aggregate_scores",
+  "persist_reviews",
+  "finalize_run",
+] as const;
+
+function phaseIndex(phase: string | null): number {
+  if (!phase) return -1;
+  const idx = PIPELINE_PHASES.indexOf(phase as (typeof PIPELINE_PHASES)[number]);
+  return idx >= 0 ? idx : -1;
+}
+
 function StreamingView({
   streamState,
   onCancel,
@@ -253,74 +273,70 @@ function StreamingView({
   streamState: BatchStreamState;
   onCancel?: () => void;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const applicantEntries = Array.from(streamState.applicants.entries());
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [streamState.currentApplicantId, streamState.completedApplicants]);
+  const currentIdx = phaseIndex(streamState.graphPhase);
+  const isComplete = streamState.status === "complete";
 
   return (
-    <div className="space-y-3">
-      {/* Overall progress */}
-      <div>
-        <div className="flex justify-between text-sm">
-          <span className="text-dark-s-200">Overall Progress</span>
-          <span className="font-semibold tabular-nums text-dark-s-0">
-            {streamState.completedApplicants} / {streamState.totalApplicants} applicants
-          </span>
-        </div>
-        <ProgressBar
-          value={streamState.completedApplicants}
-          total={streamState.totalApplicants}
-          className="h-full rounded bg-primary"
-        />
-        {streamState.status === "complete" && streamState.durationSeconds !== null && (
-          <div className="text-xs text-dark-s-400 mt-1">
-            Completed in {streamState.durationSeconds.toFixed(1)}s
-            {streamState.skippedCount > 0 && ` (${streamState.skippedCount} skipped)`}
-          </div>
-        )}
+    <div className="space-y-4">
+      {/* Pipeline steps */}
+      <div className="space-y-1">
+        {PIPELINE_PHASES.map((phase, idx) => {
+          const isCurrent = idx === currentIdx && !isComplete;
+          const isDone = isComplete || idx < currentIdx;
+          const label = PHASE_LABELS[phase] ?? phase;
+
+          // Progress text for research/scoring phases
+          let progressText: string | null = null;
+          if (isCurrent && phase === "dispatch_research" && streamState.phaseProgress["research_total"] != null) {
+            progressText = `${streamState.phaseProgress["researched"] ?? 0} / ${streamState.phaseProgress["research_total"]}`;
+          } else if (isCurrent && phase === "dispatch_scorers" && streamState.phaseProgress["scoring_total"] != null) {
+            progressText = `${streamState.phaseProgress["scored"] ?? 0} / ${streamState.phaseProgress["scoring_total"]}`;
+          }
+
+          return (
+            <div
+              key={phase}
+              className={`flex items-center gap-2.5 rounded px-2 py-1.5 text-sm transition-colors ${
+                isCurrent
+                  ? "bg-amber-950/40 text-amber-200"
+                  : isDone
+                    ? "text-dark-s-400"
+                    : "text-dark-s-600"
+              }`}
+            >
+              {/* Status indicator */}
+              <div className="flex-shrink-0 w-4 text-center">
+                {isCurrent ? (
+                  <div className="h-2 w-2 mx-auto rounded-full bg-amber-400 animate-pulse" />
+                ) : isDone ? (
+                  <span className="text-green-500 text-xs">&#10003;</span>
+                ) : (
+                  <div className="h-1.5 w-1.5 mx-auto rounded-full bg-dark-s-600" />
+                )}
+              </div>
+
+              {/* Label */}
+              <span className={isCurrent ? "font-medium" : ""}>{label}</span>
+
+              {/* Progress counter */}
+              {progressText && (
+                <span className="ml-auto tabular-nums text-xs text-amber-400/80">
+                  {progressText}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Graph phase indicator */}
-      {streamState.graphPhase && streamState.status === "streaming" && (
-        <div className="flex items-center gap-2 text-sm text-dark-s-300 px-1">
-          <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-          <span>{PHASE_LABELS[streamState.graphPhase] ?? streamState.graphPhase}</span>
-          {streamState.graphPhase === "dispatch_research" &&
-            streamState.phaseProgress["research_total"] != null && (
-              <span className="ml-auto tabular-nums text-xs">
-                {streamState.phaseProgress["researched"] ?? 0} / {streamState.phaseProgress["research_total"]} researched
-              </span>
-            )}
-          {streamState.graphPhase === "dispatch_scorers" &&
-            streamState.phaseProgress["scoring_total"] != null && (
-              <span className="ml-auto tabular-nums text-xs">
-                {streamState.phaseProgress["scored"] ?? 0} / {streamState.phaseProgress["scoring_total"]} scored
-              </span>
-            )}
+      {/* Completion summary */}
+      {isComplete && streamState.durationSeconds !== null && (
+        <div className="rounded-lg border border-green-600/30 bg-green-950/20 px-4 py-3 text-sm text-green-400">
+          Completed in {streamState.durationSeconds.toFixed(1)}s
+          {streamState.completedApplicants > 0 && ` — ${streamState.completedApplicants} applicants scored`}
+          {streamState.skippedCount > 0 && ` (${streamState.skippedCount} skipped)`}
         </div>
       )}
-
-      {/* Applicant stream */}
-      <div
-        ref={scrollRef}
-        className="space-y-2 max-h-[400px] overflow-y-auto pr-1"
-      >
-        {applicantEntries.map(([id, applicant], index) => (
-          <StreamingApplicantView
-            key={id}
-            applicantId={id}
-            applicant={applicant}
-            index={index}
-            totalApplicants={streamState.totalApplicants}
-            isCurrent={streamState.currentApplicantId === id}
-          />
-        ))}
-      </div>
 
       {/* Error display */}
       {streamState.error && (
@@ -330,7 +346,7 @@ function StreamingView({
       )}
 
       {/* Cancel button */}
-      {streamState.status === "streaming" || streamState.status === "connecting" ? (
+      {(streamState.status === "streaming" || streamState.status === "connecting") && (
         <div className="flex justify-end">
           <button
             type="button"
@@ -340,7 +356,7 @@ function StreamingView({
             Cancel
           </button>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -396,100 +412,35 @@ export function BatchProgressModal({
           )}
         </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-dark-s-200">Imported</span>
-            <span className="font-semibold tabular-nums text-dark-s-0">
-              {total} applicants
-            </span>
-          </div>
-
-          <div>
+        {/* Phase-driven streaming view */}
+        {isStreaming && streamState ? (
+          <StreamingView streamState={streamState} onCancel={onCancel} />
+        ) : (
+          /* Static batch summary when not streaming */
+          <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-dark-s-200">Research</span>
+              <span className="text-dark-s-200">Imported</span>
               <span className="font-semibold tabular-nums text-dark-s-0">
-                {researchDone} / {total}
+                {total} applicants
               </span>
             </div>
-            <ProgressBar value={researchDone} total={total} className="h-full rounded bg-blue-600" />
-          </div>
-
-          <div>
-            <div className="flex justify-between text-sm">
-              <span className="text-dark-s-200">Evaluation</span>
-              <span className="font-semibold tabular-nums text-dark-s-0">
-                {evalDone} / {total}
-              </span>
+            <div>
+              <div className="flex justify-between text-sm">
+                <span className="text-dark-s-200">Evaluated</span>
+                <span className="font-semibold tabular-nums text-dark-s-0">
+                  {evalDone} / {total}
+                </span>
+              </div>
+              <ProgressBar value={evalDone} total={total} className="h-full rounded bg-purple-500" />
             </div>
-            <ProgressBar value={evalDone} total={total} className="h-full rounded bg-purple-500" />
-          </div>
-
-          <div>
             <div className="flex justify-between text-sm">
               <span className="text-dark-s-200">Shortlisted</span>
               <span className="font-semibold tabular-nums text-dark-s-0">
                 {shortlisted}
               </span>
             </div>
-            <ProgressBar value={shortlisted} total={total || 1} className="h-full rounded bg-amber-500" />
           </div>
-        </div>
-
-        {/* Per-application status */}
-        {batch?.application_items && batch.application_items.length > 0 && (
-          <details
-            open={appDetailsOpen}
-            onToggle={(e) => setAppDetailsOpen((e.target as HTMLDetailsElement).open)}
-            style={{ marginTop: 16 }}
-          >
-            <summary
-              style={{
-                fontSize: 13,
-                cursor: "pointer",
-                userSelect: "none",
-                padding: "4px 0",
-                color: "var(--text-secondary, #ccc)",
-              }}
-            >
-              Applications ({batch.application_items.length})
-              {(batch.failed_count ?? 0) > 0 && (
-                <span style={{ color: "#ef4444", marginLeft: 8 }}>
-                  {batch.failed_count} failed
-                </span>
-              )}
-            </summary>
-            <div style={{ maxHeight: 300, overflowY: "auto", marginTop: 8 }}>
-              {batch.application_items.map((item) => (
-                <ApplicationStatusRow
-                  key={item.id}
-                  item={item}
-                  onRetry={onRetryApplication}
-                />
-              ))}
-            </div>
-          </details>
         )}
-
-        {/* Streaming view — replaces the old simple progress indicator */}
-        {isStreaming && streamState ? (
-          <StreamingView streamState={streamState} onCancel={onCancel} />
-        ) : isReevaluating && reevaluateProgress ? (
-          <div className="rounded-lg border border-amber-600/50 bg-amber-950/30 px-4 py-3 flex items-center gap-3">
-            <div
-              className="h-4 w-4 shrink-0 rounded-full border-2 border-amber-500 border-t-transparent animate-spin"
-              aria-hidden
-            />
-            <div>
-              <div className="text-sm font-semibold text-amber-500">
-                Re-evaluating batch...
-              </div>
-              <div className="text-xs text-amber-600">
-                {reevaluateProgress.completed} / {reevaluateProgress.total} applicants
-                re-scored
-              </div>
-            </div>
-          </div>
-        ) : null}
 
         <hr className="border-dark-s-700" />
 

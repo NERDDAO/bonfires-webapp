@@ -15,7 +15,8 @@ export async function GET(
     : "";
 
   return handleProxySSERequest(
-    `/applicant-reviews/batch-eval-runs/${runId}/stream${queryString}`
+    `/applicant-reviews/batch-eval-runs/${runId}/stream${queryString}`,
+    { method: "GET" }
   );
 }
 

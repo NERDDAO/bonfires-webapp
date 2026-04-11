@@ -67,4 +67,18 @@ export const NODE_TYPE_COLORS = {
   entity: NODE_COLOR_DEFAULTS.entityColor,
   user: NODE_COLOR_DEFAULTS.userColor,
   unknown: NODE_COLOR_DEFAULTS.unknownColor,
+  taxonomy: NODE_COLOR_DEFAULTS.taxonomyColor,
+  community: NODE_COLOR_DEFAULTS.communityColor,
 } as const;
+
+/** Activation glow constants */
+export const ACTIVATION_GLOW_DURATION_MS = 2500;
+export const ACTIVATION_GLOW_FLARE_MS = 500;
+export const ACTIVATION_NODE_GROWTH_FACTOR = 3;
+export const ACTIVATION_EDGE_GROWTH_FACTOR = 1.5;
+export const ACTIVATION_GLOW_MAX_ALPHA = 0.6;
+
+/** 3D rotation constants */
+export const ROTATION_SPEED = 0.15; // rad/s
+export const ROTATION_EASE_DURATION_MS = 2000;
+export const ROTATION_PERSPECTIVE_FACTOR = 0.0003;

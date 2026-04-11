@@ -23,6 +23,8 @@ export const NODE_COLOR_DEFAULTS = {
   entityColor: "#99ff55", // Green for entities
   userColor: "#ff7b48", // Orange for user nodes
   unknownColor: "#ff4d4f", // Red for unknown types
+  taxonomyColor: "#9370db", // Indigo/purple for taxonomy labels
+  communityColor: "#ff6b9d", // Pink/magenta for community rollups
 } as const;
 
 export type NodeColorDefaults = typeof NODE_COLOR_DEFAULTS;

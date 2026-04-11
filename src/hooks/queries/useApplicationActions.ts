@@ -14,7 +14,7 @@ export interface ReevaluateProgress {
 export function useApplicationActions() {
   const [reevaluateProgress, setReevaluateProgress] =
     useState<ReevaluateProgress | null>(null);
-  const { streamState, startStream, cancelStream } =
+  const { streamState, startStream, cancelStream, dispatchGraphExpand } =
     useBatchEvaluateStream();
   const rescoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -78,9 +78,9 @@ export function useApplicationActions() {
         : reevaluateProgress;
 
   const isReevaluating =
-    derivedProgress != null ||
     streamState.status === "streaming" ||
-    streamState.status === "connecting";
+    streamState.status === "connecting" ||
+    (reevaluateProgress != null && streamState.status !== "complete");
 
   return {
     reevaluateProgress: derivedProgress,
@@ -91,5 +91,6 @@ export function useApplicationActions() {
     isReevaluating,
     streamState,
     cancelStream,
+    dispatchGraphExpand,
   };
 }

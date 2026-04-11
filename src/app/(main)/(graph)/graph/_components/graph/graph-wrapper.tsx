@@ -45,6 +45,8 @@ interface GraphVisualizationProps {
   panToNodeId?: string | null;
   /** Called after panning to panToNodeId so the parent can clear it */
   onPanToNodeComplete?: () => void;
+  /** When true, apply slow 3D Y-axis rotation */
+  rotating?: boolean;
   /** Additional CSS class */
   className?: string;
 }
@@ -66,6 +68,7 @@ export const GraphWrapper = memo(function GraphWrapper({
   centerNodeId,
   panToNodeId,
   onPanToNodeComplete,
+  rotating,
   className,
 }: GraphVisualizationProps) {
   // Track whether we've completed at least one load cycle
@@ -108,8 +111,8 @@ export const GraphWrapper = memo(function GraphWrapper({
     );
   }
 
-  // Empty state (only after loading completed once)
-  if (!loading && hasLoadedOnceRef.current && elements.length === 0) {
+  // Empty state (only after loading completed once, skip in live/rotating mode)
+  if (!rotating && !loading && hasLoadedOnceRef.current && elements.length === 0) {
     return (
       <GraphStatusOverlay
         isLoading={false}
@@ -142,6 +145,7 @@ export const GraphWrapper = memo(function GraphWrapper({
         centerNodeId={centerNodeId}
         panToNodeId={panToNodeId}
         onPanToNodeComplete={onPanToNodeComplete}
+        rotating={rotating}
       />
     </div>
   );

@@ -39,6 +39,10 @@ interface BatchProgressModalProps {
   onCancel?: () => void;
   onRetryApplication?: (applicationId: string) => void;
   reviewBonfireId?: string;
+  dispatchGraphExpand?: (
+    nodes: Array<{ id: string; label: string; type: string }>,
+    edges: Array<{ source: string; target: string; label: string }>,
+  ) => void;
 }
 
 function ProgressBar({
@@ -375,6 +379,7 @@ export function BatchProgressModal({
   onCancel,
   onRetryApplication,
   reviewBonfireId,
+  dispatchGraphExpand,
 }: BatchProgressModalProps) {
   const [appDetailsOpen, setAppDetailsOpen] = useState(false);
   const hasFailures = batch?.application_items?.some(
@@ -424,6 +429,7 @@ export function BatchProgressModal({
             <ReviewGraphPanel
               streamState={streamState}
               reviewBonfireId={reviewBonfireId ?? streamState.reviewBonfireId ?? undefined}
+              dispatchGraphExpand={dispatchGraphExpand}
               className="absolute inset-0 rounded-lg overflow-hidden"
             />
             {/* Pipeline overlay */}

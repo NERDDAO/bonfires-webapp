@@ -111,8 +111,8 @@ export const GraphWrapper = memo(function GraphWrapper({
     );
   }
 
-  // Empty state (only after loading completed once)
-  if (!loading && hasLoadedOnceRef.current && elements.length === 0) {
+  // Empty state (only after loading completed once, skip in live/rotating mode)
+  if (!rotating && !loading && hasLoadedOnceRef.current && elements.length === 0) {
     return (
       <GraphStatusOverlay
         isLoading={false}

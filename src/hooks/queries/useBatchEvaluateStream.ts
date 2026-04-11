@@ -67,7 +67,8 @@ type Action =
   | { type: "SSE_EVENT"; event: BatchSSEEvent }
   | { type: "ERROR"; message: string }
   | { type: "COMPLETE" }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "GRAPH_EXPAND"; nodes: Array<{ id: string; label: string; type: string }>; edges: Array<{ source: string; target: string; label: string }> };
 
 function reducer(state: BatchStreamState, action: Action): BatchStreamState {
   switch (action.type) {
@@ -296,6 +297,23 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
       }
     }
 
+    case "GRAPH_EXPAND": {
+      const nodes = new Map(state.graphNodes);
+      const edges = new Map(state.graphEdges);
+      for (const node of action.nodes) {
+        if (node.id && !nodes.has(node.id)) {
+          nodes.set(node.id, node);
+        }
+      }
+      for (const edge of action.edges) {
+        const edgeKey = `${edge.source}->${edge.target}`;
+        if (!edges.has(edgeKey)) {
+          edges.set(edgeKey, edge);
+        }
+      }
+      return { ...state, graphNodes: nodes, graphEdges: edges };
+    }
+
     default:
       return state;
   }
@@ -476,5 +494,12 @@ export function useBatchEvaluateStream() {
     dispatch({ type: "RESET" });
   }, []);
 
-  return { streamState, startStream, cancelStream };
+  const dispatchGraphExpand = useCallback(
+    (nodes: Array<{ id: string; label: string; type: string }>, edges: Array<{ source: string; target: string; label: string }>) => {
+      dispatch({ type: "GRAPH_EXPAND", nodes, edges });
+    },
+    [],
+  );
+
+  return { streamState, startStream, cancelStream, dispatchGraphExpand };
 }

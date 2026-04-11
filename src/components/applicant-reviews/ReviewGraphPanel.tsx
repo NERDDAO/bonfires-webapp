@@ -13,6 +13,11 @@ interface ReviewGraphPanelProps {
   streamState?: BatchStreamState;
   /** Live mode: review bonfire ID for phase-boundary graph fetches */
   reviewBonfireId?: string;
+  /** Live mode: dispatch expanded graph data into reducer */
+  dispatchGraphExpand?: (
+    nodes: Array<{ id: string; label: string; type: string }>,
+    edges: Array<{ source: string; target: string; label: string }>,
+  ) => void;
   /** Static mode: bonfire ID for completed review graph */
   bonfireId?: string;
   /** Static mode: agent ID */
@@ -24,6 +29,7 @@ interface ReviewGraphPanelProps {
 export function ReviewGraphPanel({
   streamState,
   reviewBonfireId,
+  dispatchGraphExpand,
   bonfireId,
   agentId,
   className,
@@ -37,7 +43,7 @@ export function ReviewGraphPanel({
     isScoring,
   } = useReviewGraphStream({
     streamState: isLiveMode ? streamState : undefined,
-    reviewBonfireId,
+    dispatchGraphExpand,
   });
 
   // Static mode: fetch complete graph
@@ -81,7 +87,7 @@ export function ReviewGraphPanel({
   const elements = isLiveMode ? liveElements : staticElements;
   const loading = isLiveMode ? liveLoading : staticQuery.isLoading;
 
-  if (elements.length === 0 && !loading) return null;
+  if (!isLiveMode && elements.length === 0 && !loading) return null;
 
   return (
     <div className={className}>

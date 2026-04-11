@@ -330,7 +330,7 @@ export function useBatchEvaluateStream() {
   const runIdRef = useRef<string | null>(null);
 
   const startStream = useCallback(
-    async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean) => {
+    async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean, rescoreOnly?: boolean, reviewBonfireId?: string) => {
       // Cancel any existing stream
       abortRef.current?.abort();
 
@@ -352,6 +352,10 @@ export function useBatchEvaluateStream() {
         if (rubricId) createBody["rubric_id"] = rubricId;
         if (force) createBody["force"] = true;
         if (batchId) createBody["batch_id"] = batchId;
+        if (rescoreOnly && reviewBonfireId) {
+          createBody["rescore_only"] = true;
+          createBody["review_bonfire_id"] = reviewBonfireId;
+        }
 
         const createResponse = await fetch(
           "/api/applicant-reviews/batch-eval-runs",

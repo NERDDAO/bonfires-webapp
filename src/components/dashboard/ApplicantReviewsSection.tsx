@@ -172,7 +172,7 @@ export function ApplicantReviewsSection({
     ]);
   };
 
-  const handleReevaluateAll = () => {
+  const handleReevaluateAll = (rescoreOnly = false) => {
     batchProgress.open(batchId ?? "");
     void (async () => {
       try {
@@ -183,20 +183,46 @@ export function ApplicantReviewsSection({
           toast.success("All applications already evaluated.");
           return;
         }
+        const reviewBonfireId = rescoreOnly ? batchProgress.batch?.review_bonfire_id : undefined;
+        if (rescoreOnly && !reviewBonfireId) {
+          toast.error("No previous review bonfire found — run a full evaluation first.");
+          return;
+        }
         await applicationActions.reevaluateAll(
           toEvaluate.map((a) => a.id),
           batchId ?? undefined,
           selectedRubricId,
           true,
+          rescoreOnly,
+          reviewBonfireId ?? undefined,
         );
         await queryClient.invalidateQueries({ queryKey: ["applicantReviewBatch"] });
         await refreshData();
         applicationActions.clearProgress();
-        toast.success("Re-evaluation complete.");
+        toast.success(rescoreOnly ? "Re-scoring complete." : "Re-evaluation complete.");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Re-evaluation failed.");
       }
     })();
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const params = new URLSearchParams({ bonfire_id: bonfireId });
+      if (batchId) params.set("batch_id", batchId);
+      if (selectedRubricId) params.set("rubric_id", selectedRubricId);
+      const response = await fetch(`/api/applicant-reviews/export-csv?${params.toString()}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `applicant_reviews_${batchId ?? bonfireId}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "CSV export failed.");
+    }
   };
 
   return (
@@ -302,10 +328,29 @@ export function ApplicantReviewsSection({
               <button
                 className="bf-btn-primary"
                 style={{ fontSize: 12, padding: "6px 14px" }}
-                onClick={handleReevaluateAll}
+                onClick={() => handleReevaluateAll(false)}
                 disabled={applicationActions.isReevaluating}
               >
-                {applicationActions.isReevaluating ? "Evaluating..." : "Rescore All"}
+                {applicationActions.isReevaluating ? "Evaluating..." : "Evaluate All"}
+              </button>
+              {batchProgress.batch?.review_bonfire_id && (
+                <button
+                  className="bf-btn-primary"
+                  style={{ fontSize: 12, padding: "6px 14px", opacity: 0.9 }}
+                  onClick={() => handleReevaluateAll(true)}
+                  disabled={applicationActions.isReevaluating}
+                  title="Re-run scoring only — skip research and KG ingestion"
+                >
+                  Rescore Only
+                </button>
+              )}
+              <button
+                className="bf-btn-primary"
+                style={{ fontSize: 12, padding: "6px 14px", opacity: 0.8 }}
+                onClick={() => void handleExportCsv()}
+                title="Download batch results as CSV"
+              >
+                Export CSV
               </button>
               {batchId && (
                 <button

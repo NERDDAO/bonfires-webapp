@@ -27,11 +27,11 @@ export function useApplicationActions() {
   }, []);
 
   const reevaluateAll = useCallback(
-    async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean) => {
+    async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean, rescoreOnly?: boolean, reviewBonfireId?: string) => {
       if (applicationIds.length === 0) return;
       setReevaluateProgress({ completed: 0, total: applicationIds.length });
       try {
-        await startStream(applicationIds, batchId, rubricId, force);
+        await startStream(applicationIds, batchId, rubricId, force, rescoreOnly, reviewBonfireId);
       } finally {
         if (streamState.status === "complete") {
           setReevaluateProgress({

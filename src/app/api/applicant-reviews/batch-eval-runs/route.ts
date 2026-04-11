@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     batch_id: body.batch_id ?? null,
   };
   if (body.rescore_only) {
-    proxyBody.rescore_only = true;
-    proxyBody.review_bonfire_id = body.review_bonfire_id;
+    proxyBody["rescore_only"] = true;
+    proxyBody["review_bonfire_id"] = body.review_bonfire_id;
   }
 
   return handleProxyRequest("/applicant-reviews/batch-eval-runs", {

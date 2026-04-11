@@ -14,6 +14,7 @@ export interface ApplicantReviewBatchInfo {
   slot_config?: Record<string, unknown> | null;
   rubric_id?: string | null;
   failed_count?: number;
+  review_bonfire_id?: string | null;
   application_items?: ApplicationStatusItem[];
 }
 
@@ -253,11 +254,45 @@ export interface HeartbeatEvent {
   timestamp: string;
 }
 
+export interface RetrievalHitEntity {
+  id: string;
+  name: string;
+}
+
+export interface RetrievalHitEdge {
+  source: string;
+  target: string;
+  label: string;
+}
+
+export interface RetrievalHitEvent {
+  type: "retrieval:hit";
+  seq: number;
+  applicant_id: string;
+  criterion_name: string;
+  entities: RetrievalHitEntity[];
+  edges: RetrievalHitEdge[];
+  episodes: RetrievalHitEntity[];
+}
+
+export interface GraphTaxonomyEvent {
+  type: "graph:taxonomy";
+  seq: number;
+  nodes: Array<{ uuid: string; name: string; category: string }>;
+}
+
+export interface GraphEpisodeEvent {
+  type: "graph:episode";
+  seq: number;
+  episode_uuid: string;
+}
+
 export interface GraphPhaseEvent {
   type: "graph:phase";
   seq: number;
   phase: string;
   progress: Record<string, number>;
+  review_bonfire_id?: string;
 }
 
 export type BatchSSEEvent =
@@ -269,4 +304,7 @@ export type BatchSSEEvent =
   | BatchCompleteEvent
   | BatchErrorEvent
   | HeartbeatEvent
-  | GraphPhaseEvent;
+  | GraphPhaseEvent
+  | GraphTaxonomyEvent
+  | GraphEpisodeEvent
+  | RetrievalHitEvent;

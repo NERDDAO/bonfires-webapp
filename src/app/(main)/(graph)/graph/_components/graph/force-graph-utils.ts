@@ -71,7 +71,14 @@ export function getNodeColor(
       (lbl) => typeof lbl === "string" && lbl.toLowerCase() === "user"
     ) ?? false;
   if (hasUserLabel) return NODE_TYPE_COLORS.user;
+  const hasTaxonomyLabel =
+    labels?.some(
+      (lbl) => typeof lbl === "string" && lbl.toLowerCase() === "taxonomy"
+    ) ?? false;
+  if (hasTaxonomyLabel) return NODE_TYPE_COLORS.taxonomy;
   const type = (nodeType ?? "entity").toLowerCase();
+  if (type.startsWith("taxonomy")) return NODE_TYPE_COLORS.taxonomy;
+  if (type === "community") return NODE_TYPE_COLORS.community;
   if (type === "episode") return NODE_TYPE_COLORS.episode;
   if (type === "entity") return NODE_TYPE_COLORS.entity;
   return NODE_TYPE_COLORS.unknown;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import {
@@ -15,11 +15,13 @@ import {
   useRubricListQuery,
   useStructuredRubricQuery,
 } from "@/hooks/queries/useRubricQuery";
+import { apiClient } from "@/lib/api/client";
 import { ApplicantCard } from "@/components/applicant-reviews/ApplicantCard";
 import { ApplicantProfile } from "@/components/applicant-reviews/ApplicantProfile";
 import { BatchCreationModal } from "@/components/applicant-reviews/BatchCreationModal";
 import { BatchOverview } from "@/components/applicant-reviews/BatchOverview";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
+import { ReviewGraphPanel } from "@/components/applicant-reviews/ReviewGraphPanel";
 
 const PAGE_SIZE = 500;
 
@@ -41,6 +43,25 @@ export function ApplicantReviewsSection({
   const [selectedRubricId, setSelectedRubricId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(50);
   const cardListRef = useRef<HTMLDivElement>(null);
+
+  // Batch list for picker
+  const batchListQuery = useQuery({
+    queryKey: ["batchList", bonfireId],
+    queryFn: () =>
+      apiClient.get<{ items: Array<{ id: string; name: string; status: string; imported_count: number; created_at: string | null }> }>(
+        `/api/applicant-review-batches?bonfire_id=${bonfireId}`,
+        { cache: false },
+      ),
+    enabled: !!bonfireId,
+  });
+
+  // Auto-select latest batch if none selected
+  useEffect(() => {
+    const firstBatch = batchListQuery.data?.items?.[0];
+    if (!batchId && firstBatch) {
+      setBatchId(firstBatch.id);
+    }
+  }, [batchId, batchListQuery.data]);
 
   const batchProgress = useBatchProgress();
   const applicationActions = useApplicationActions();
@@ -217,6 +238,32 @@ export function ApplicantReviewsSection({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Batch selector */}
+          {batchListQuery.data && batchListQuery.data.items.length > 0 && (
+            <select
+              value={batchId ?? ""}
+              onChange={(e) => {
+                setBatchId(e.target.value || null);
+                setSelectedApplicationId(null);
+              }}
+              style={{
+                background: "var(--bf-surface)",
+                border: "1px solid var(--bf-border)",
+                borderRadius: "var(--bf-radius)",
+                padding: "6px 10px",
+                fontSize: 12,
+                color: "var(--bf-text-secondary)",
+                fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                cursor: "pointer",
+              }}
+            >
+              {batchListQuery.data.items.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} ({b.imported_count}) — {b.status}
+                </option>
+              ))}
+            </select>
+          )}
           {/* Rubric selector */}
           {rubricListQuery.data && rubricListQuery.data.items.length > 0 && (
             <select
@@ -251,20 +298,31 @@ export function ApplicantReviewsSection({
             New Batch
           </button>
           {applications.length > 0 && (
-            <button
-              className="bf-btn-primary"
-              style={{ fontSize: 12, padding: "6px 14px" }}
-              onClick={handleReevaluateAll}
-              disabled={applicationActions.isReevaluating}
-            >
-              {applicationActions.isReevaluating ? "Evaluating..." : "Rescore All"}
-            </button>
+            <>
+              <button
+                className="bf-btn-primary"
+                style={{ fontSize: 12, padding: "6px 14px" }}
+                onClick={handleReevaluateAll}
+                disabled={applicationActions.isReevaluating}
+              >
+                {applicationActions.isReevaluating ? "Evaluating..." : "Rescore All"}
+              </button>
+              {batchId && (
+                <button
+                  className="bf-btn-primary"
+                  style={{ fontSize: 12, padding: "6px 14px", opacity: 0.8 }}
+                  onClick={() => batchProgress.open(batchId)}
+                >
+                  Progress
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Main layout: sidebar + content */}
-      <div style={{ display: "flex", minHeight: "calc(100vh - 200px)" }}>
+      {/* Main layout: sidebar + content — both panels scroll independently */}
+      <div style={{ display: "flex", height: "calc(100vh - 120px)", overflow: "hidden" }}>
         {/* Left sidebar: ranked cards */}
         <div
           style={{
@@ -447,6 +505,16 @@ export function ApplicantReviewsSection({
         </div>
       </div>
 
+      {/* Batch graph (post-review) */}
+      {batchProgress.batch?.status === "completed" && batchProgress.batch?.review_bonfire_id && (
+        <div className="mt-4 rounded-lg border border-dark-s-700 overflow-hidden" style={{ height: 400 }}>
+          <ReviewGraphPanel
+            bonfireId={batchProgress.batch.review_bonfire_id}
+            className="h-full"
+          />
+        </div>
+      )}
+
       {/* Modals */}
       <BatchCreationModal
         isOpen={createModalOpen}
@@ -470,6 +538,8 @@ export function ApplicantReviewsSection({
         }
         streamState={applicationActions.streamState}
         onCancel={applicationActions.cancelStream}
+        reviewBonfireId={batchProgress.batch?.review_bonfire_id ?? undefined}
+        dispatchGraphExpand={applicationActions.dispatchGraphExpand}
       />
     </div>
   );

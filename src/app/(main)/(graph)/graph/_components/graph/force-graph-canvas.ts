@@ -12,7 +12,33 @@ import {
   MAX_FROM_HOVERED_EDGE_LABELS,
   MAX_LABEL_WIDTH,
   RADIUS_BY_SIZE,
+  ACTIVATION_GLOW_DURATION_MS,
+  ACTIVATION_GLOW_FLARE_MS,
+  ACTIVATION_GLOW_MAX_ALPHA,
+  ACTIVATION_NODE_GROWTH_FACTOR,
+  ACTIVATION_EDGE_GROWTH_FACTOR,
 } from "./force-graph-constants";
+
+/** Compute glow opacity (0-1) from activation timestamp. */
+function glowOpacity(lastHitAt: number | undefined, now: number): number {
+  if (!lastHitAt) return 0;
+  const elapsed = now - lastHitAt;
+  if (elapsed < 0 || elapsed > ACTIVATION_GLOW_DURATION_MS) return 0;
+  if (elapsed < ACTIVATION_GLOW_FLARE_MS) return 1;
+  return 1 - (elapsed - ACTIVATION_GLOW_FLARE_MS) / (ACTIVATION_GLOW_DURATION_MS - ACTIVATION_GLOW_FLARE_MS);
+}
+
+/** Compute activation-adjusted node radius. */
+function activatedRadius(baseRadius: number, hitCount: number | undefined): number {
+  if (!hitCount || hitCount <= 0) return baseRadius;
+  return baseRadius + Math.log2(1 + hitCount) * ACTIVATION_NODE_GROWTH_FACTOR;
+}
+
+/** Compute activation-adjusted edge width. */
+function activatedEdgeWidth(baseWidth: number, hitCount: number | undefined): number {
+  if (!hitCount || hitCount <= 0) return baseWidth;
+  return baseWidth + Math.log2(1 + hitCount) * ACTIVATION_EDGE_GROWTH_FACTOR;
+}
 import { getConnectedNodeIds } from "./force-graph-data";
 import type { ViewLink, ViewNode } from "./force-graph-types";
 import {
@@ -32,7 +58,8 @@ export function drawNode(
 ): void {
   const x = node.x ?? 0;
   const y = node.y ?? 0;
-  const r = RADIUS_BY_SIZE[node.size] ?? 12;
+  const baseR = RADIUS_BY_SIZE[node.size] ?? 12;
+  const r = activatedRadius(baseR, node.activationHitCount);
   const active = isHovered || isSelectedOrHighlighted;
 
   ctx.beginPath();
@@ -58,6 +85,21 @@ export function drawNode(
   ctx.strokeStyle = strokeColor;
   ctx.lineWidth = active ? 2 : 1.2;
   ctx.stroke();
+
+  // Activation glow ring
+  const glow = glowOpacity(node.activationLastHitAt, Date.now());
+  if (glow > 0) {
+    const glowR = activatedRadius(baseR, node.activationHitCount) + 4;
+    ctx.save();
+    ctx.globalAlpha = glow * ACTIVATION_GLOW_MAX_ALPHA;
+    ctx.beginPath();
+    ctx.arc(x, y, glowR, 0, 2 * Math.PI);
+    ctx.fillStyle = node.color ?? colors.nodeFill;
+    ctx.shadowColor = node.color ?? colors.nodeFill;
+    ctx.shadowBlur = 12 + (node.activationHitCount ?? 0) * 2;
+    ctx.fill();
+    ctx.restore();
+  }
 
   const baseFontSize = node.size >= 4 ? 10 : node.size >= 2 ? 9 : 8;
   const fontSize = active
@@ -255,8 +297,25 @@ export function draw(
       const sy = link.source.y ?? 0;
       const tx = link.target.x ?? 0;
       const ty = link.target.y ?? 0;
+
+      // Activation glow for edges
+      const edgeGlow = glowOpacity(link.activationLastHitAt, Date.now());
+      if (edgeGlow > 0) {
+        ctx.save();
+        ctx.globalAlpha = edgeGlow * ACTIVATION_GLOW_MAX_ALPHA;
+        ctx.strokeStyle = link.source.color ?? GRAPH_COLORS.linkStrokeActive;
+        ctx.lineWidth = activatedEdgeWidth(EDGE_WIDTH_NORMAL, link.activationHitCount) + 2;
+        ctx.shadowColor = link.source.color ?? GRAPH_COLORS.linkStrokeActive;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       ctx.strokeStyle = GRAPH_COLORS.linkStroke;
-      ctx.lineWidth = EDGE_WIDTH_NORMAL;
+      ctx.lineWidth = activatedEdgeWidth(EDGE_WIDTH_NORMAL, link.activationHitCount);
       ctx.beginPath();
       ctx.moveTo(sx, sy);
       ctx.lineTo(tx, ty);

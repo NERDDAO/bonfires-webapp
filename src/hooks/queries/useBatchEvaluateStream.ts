@@ -33,6 +33,13 @@ export interface BatchStreamState {
   durationSeconds: number | null;
   graphPhase: string | null;
   phaseProgress: Record<string, number>;
+  reviewBonfireId: string | null;
+  nodeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
+  edgeActivations: Map<string, { hitCount: number; lastHitAt: number }>;
+  /** Accumulated graph nodes from SSE events (taxonomy + retrieval entities) */
+  graphNodes: Map<string, { id: string; label: string; type: string }>;
+  /** Accumulated graph edges from SSE events (retrieval edges) */
+  graphEdges: Map<string, { source: string; target: string; label: string }>;
 }
 
 const initialState: BatchStreamState = {
@@ -48,6 +55,11 @@ const initialState: BatchStreamState = {
   durationSeconds: null,
   graphPhase: null,
   phaseProgress: {},
+  reviewBonfireId: null,
+  nodeActivations: new Map(),
+  edgeActivations: new Map(),
+  graphNodes: new Map(),
+  graphEdges: new Map(),
 };
 
 type Action =
@@ -55,18 +67,19 @@ type Action =
   | { type: "SSE_EVENT"; event: BatchSSEEvent }
   | { type: "ERROR"; message: string }
   | { type: "COMPLETE" }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "GRAPH_EXPAND"; nodes: Array<{ id: string; label: string; type: string }>; edges: Array<{ source: string; target: string; label: string }> };
 
 function reducer(state: BatchStreamState, action: Action): BatchStreamState {
   switch (action.type) {
     case "CONNECTING":
-      return { ...initialState, status: "connecting", applicants: new Map() };
+      return { ...initialState, status: "connecting", applicants: new Map(), nodeActivations: new Map(), edgeActivations: new Map(), graphNodes: new Map(), graphEdges: new Map() };
 
     case "COMPLETE":
       return { ...state, status: "complete", currentApplicantId: null };
 
     case "RESET":
-      return { ...initialState, applicants: new Map() };
+      return { ...initialState, applicants: new Map(), nodeActivations: new Map(), edgeActivations: new Map() };
 
     case "ERROR":
       return { ...state, status: "error", error: action.message };
@@ -202,7 +215,79 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
             ...newState,
             graphPhase: event.phase,
             phaseProgress: event.progress,
+            reviewBonfireId: event.review_bonfire_id ?? state.reviewBonfireId,
           };
+
+        case "graph:taxonomy": {
+          const nodes = new Map(state.graphNodes);
+          for (const node of event.nodes) {
+            if (node.uuid && !nodes.has(node.uuid)) {
+              nodes.set(node.uuid, { id: node.uuid, label: node.name, type: `taxonomy:${node.category}` });
+            }
+          }
+          return { ...newState, graphNodes: nodes };
+        }
+
+        case "graph:episode": {
+          const nodes = new Map(state.graphNodes);
+          if (event.episode_uuid && !nodes.has(event.episode_uuid)) {
+            nodes.set(event.episode_uuid, { id: event.episode_uuid, label: `Episode`, type: "episode" });
+          }
+          return { ...newState, graphNodes: nodes };
+        }
+
+        case "retrieval:hit": {
+          const nodeActs = new Map(state.nodeActivations);
+          const edgeActs = new Map(state.edgeActivations);
+          const nodes = new Map(state.graphNodes);
+          const edges = new Map(state.graphEdges);
+          const now = Date.now();
+
+          // Activate + accumulate entity nodes
+          for (const entity of event.entities) {
+            const prev = nodeActs.get(entity.id);
+            nodeActs.set(entity.id, {
+              hitCount: (prev?.hitCount ?? 0) + 1,
+              lastHitAt: now,
+            });
+            if (entity.id && !nodes.has(entity.id)) {
+              nodes.set(entity.id, { id: entity.id, label: entity.name, type: "entity" });
+            }
+          }
+
+          // Activate + accumulate episode nodes
+          for (const episode of event.episodes) {
+            const prev = nodeActs.get(episode.id);
+            nodeActs.set(episode.id, {
+              hitCount: (prev?.hitCount ?? 0) + 1,
+              lastHitAt: now,
+            });
+            if (episode.id && !nodes.has(episode.id)) {
+              nodes.set(episode.id, { id: episode.id, label: episode.name, type: "episode" });
+            }
+          }
+
+          // Activate + accumulate edges
+          for (const edge of event.edges) {
+            const edgeKey = `${edge.source}->${edge.target}`;
+            const prev = edgeActs.get(edgeKey);
+            edgeActs.set(edgeKey, {
+              hitCount: (prev?.hitCount ?? 0) + 1,
+              lastHitAt: now,
+            });
+            if (!edges.has(edgeKey)) {
+              edges.set(edgeKey, { source: edge.source, target: edge.target, label: edge.label });
+            }
+          }
+
+          return {
+            ...newState,
+            nodeActivations: nodeActs,
+            edgeActivations: edgeActs,
+            graphNodes: nodes,
+            graphEdges: edges,
+          };
+        }
 
         case "heartbeat":
           return newState;
@@ -210,6 +295,23 @@ function reducer(state: BatchStreamState, action: Action): BatchStreamState {
         default:
           return newState;
       }
+    }
+
+    case "GRAPH_EXPAND": {
+      const nodes = new Map(state.graphNodes);
+      const edges = new Map(state.graphEdges);
+      for (const node of action.nodes) {
+        if (node.id && !nodes.has(node.id)) {
+          nodes.set(node.id, node);
+        }
+      }
+      for (const edge of action.edges) {
+        const edgeKey = `${edge.source}->${edge.target}`;
+        if (!edges.has(edgeKey)) {
+          edges.set(edgeKey, edge);
+        }
+      }
+      return { ...state, graphNodes: nodes, graphEdges: edges };
     }
 
     default:
@@ -392,5 +494,12 @@ export function useBatchEvaluateStream() {
     dispatch({ type: "RESET" });
   }, []);
 
-  return { streamState, startStream, cancelStream };
+  const dispatchGraphExpand = useCallback(
+    (nodes: Array<{ id: string; label: string; type: string }>, edges: Array<{ source: string; target: string; label: string }>) => {
+      dispatch({ type: "GRAPH_EXPAND", nodes, edges });
+    },
+    [],
+  );
+
+  return { streamState, startStream, cancelStream, dispatchGraphExpand };
 }

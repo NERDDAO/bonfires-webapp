@@ -10,7 +10,7 @@ import { getNodeColor } from "./force-graph-utils";
 
 export function elementsToView(elements: GraphElement[]): {
   nodes: ViewNode[];
-  links: { source: string; target: string; id: string; label: string }[];
+  links: { source: string; target: string; id: string; label: string; activationHitCount?: number; activationLastHitAt?: number }[];
 } {
   const nodeById = new Map<string, ViewNode>();
 
@@ -44,11 +44,18 @@ export function elementsToView(elements: GraphElement[]): {
       data.node_type,
       data.labels as string[] | undefined
     );
-    nodeById.set(rawId, { id: rawId, label, size, color });
+    nodeById.set(rawId, {
+      id: rawId,
+      label,
+      size,
+      color,
+      activationHitCount: (data["activationHitCount"] as number) ?? undefined,
+      activationLastHitAt: (data["activationLastHitAt"] as number) ?? undefined,
+    });
   }
 
   const usedEdgeIds = new Map<string, number>();
-  const links: { source: string; target: string; id: string; label: string }[] =
+  const links: { source: string; target: string; id: string; label: string; activationHitCount?: number; activationLastHitAt?: number }[] =
     [];
   for (const el of edgeElements) {
     const data = el?.data ?? {};
@@ -61,7 +68,14 @@ export function elementsToView(elements: GraphElement[]): {
     const id = seen === 0 ? baseId : `${baseId}__dup_${seen + 1}`;
     usedEdgeIds.set(baseId, seen + 1);
     const label = String(data.label ?? data.relationship ?? "");
-    links.push({ source, target, id, label });
+    links.push({
+      source,
+      target,
+      id,
+      label,
+      activationHitCount: (data["activationHitCount"] as number) ?? undefined,
+      activationLastHitAt: (data["activationLastHitAt"] as number) ?? undefined,
+    });
   }
 
   return { nodes: Array.from(nodeById.values()), links };

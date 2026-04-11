@@ -27,16 +27,29 @@ export function useApplicationActions() {
   }, []);
 
   const reevaluateAll = useCallback(
-    async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean, rescoreOnly?: boolean, reviewBonfireId?: string) => {
-      if (applicationIds.length === 0) return;
-      setReevaluateProgress({ completed: 0, total: applicationIds.length });
+    async (opts: {
+      batchId: string;
+      totalCount: number;
+      rubricId?: string | null;
+      force?: boolean;
+      rescoreOnly?: boolean;
+      reviewBonfireId?: string;
+    }) => {
+      if (!opts.batchId) return;
+      setReevaluateProgress({ completed: 0, total: opts.totalCount });
       try {
-        await startStream(applicationIds, batchId, rubricId, force, rescoreOnly, reviewBonfireId);
+        await startStream({
+          batchId: opts.batchId,
+          rubricId: opts.rubricId,
+          force: opts.force,
+          rescoreOnly: opts.rescoreOnly,
+          reviewBonfireId: opts.reviewBonfireId,
+        });
       } finally {
         if (streamState.status === "complete") {
           setReevaluateProgress({
-            completed: applicationIds.length,
-            total: applicationIds.length,
+            completed: opts.totalCount,
+            total: opts.totalCount,
           });
         }
       }

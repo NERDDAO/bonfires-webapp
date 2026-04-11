@@ -7,7 +7,7 @@ import {
 } from "@/lib/api/server-utils";
 
 interface BatchEvalRunBody {
-  application_ids: string[];
+  application_ids?: string[] | null;
   rubric_id?: string | null;
   force?: boolean;
   batch_id?: string | null;
@@ -17,16 +17,18 @@ interface BatchEvalRunBody {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  if (!body?.application_ids || !Array.isArray(body.application_ids)) {
-    return createErrorResponse("application_ids array is required", 400);
+  if (!body?.batch_id && (!body?.application_ids || !Array.isArray(body.application_ids))) {
+    return createErrorResponse("batch_id or application_ids array is required", 400);
   }
 
   const proxyBody: BatchEvalRunBody = {
-    application_ids: body.application_ids,
+    batch_id: body.batch_id ?? null,
     rubric_id: body.rubric_id ?? null,
     force: body.force ?? false,
-    batch_id: body.batch_id ?? null,
   };
+  if (body.application_ids) {
+    proxyBody.application_ids = body.application_ids;
+  }
   if (body.rescore_only) {
     proxyBody.rescore_only = true;
     proxyBody.review_bonfire_id = body.review_bonfire_id;

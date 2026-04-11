@@ -2,11 +2,18 @@
 
 import { useMemo } from "react";
 
+import { useQuery } from "@tanstack/react-query";
+
 import GraphWrapper from "@/app/(main)/(graph)/graph/_components/graph/graph-wrapper";
 import type { GraphElement } from "@/lib/utils/sigma-adapter";
 import type { BatchStreamState } from "@/hooks/queries/useBatchEvaluateStream";
 import { useReviewGraphStream } from "@/hooks/queries/useReviewGraphStream";
-import { useGraphQuery } from "@/hooks/queries/useGraphQuery";
+import { apiClient } from "@/lib/api/client";
+
+interface BonfireGraphResponse {
+  nodes: Array<{ id: string; label: string; type: string }>;
+  edges: Array<{ id: string; source: string; target: string; label: string }>;
+}
 
 interface ReviewGraphPanelProps {
   /** Live mode: SSE stream state from batch evaluation */
@@ -46,38 +53,39 @@ export function ReviewGraphPanel({
     dispatchGraphExpand,
   });
 
-  // Static mode: fetch complete graph
-  const staticQuery = useGraphQuery({
-    bonfire_id: bonfireId ?? "",
-    search_query: "relationships",
-    limit: 200,
+  // Static mode: fetch complete bonfire graph
+  const staticQuery = useQuery({
+    queryKey: ["bonfireGraph", bonfireId],
+    queryFn: async (): Promise<BonfireGraphResponse> => {
+      return apiClient.get<BonfireGraphResponse>(
+        `/api/knowledge-graph/bonfire-graph?bonfire_id=${bonfireId}`,
+      );
+    },
     enabled: !isLiveMode && !!bonfireId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const staticElements: GraphElement[] = useMemo(() => {
     if (!staticQuery.data) return [];
     const elements: GraphElement[] = [];
     for (const node of staticQuery.data.nodes) {
-      const id = node.uuid ?? node.id ?? "";
-      if (!id) continue;
+      if (!node.id) continue;
       elements.push({
         data: {
-          id,
-          label: node.name ?? node.label ?? node.title ?? "",
-          node_type: (node.node_type ?? node.type ?? "entity") as "episode" | "entity" | "unknown",
+          id: node.id,
+          label: node.label ?? "",
+          node_type: (node.type ?? "entity") as "episode" | "entity" | "unknown",
         },
       });
     }
     for (const edge of staticQuery.data.edges) {
-      const source = edge.source ?? "";
-      const target = edge.target ?? "";
-      if (!source || !target) continue;
+      if (!edge.source || !edge.target) continue;
       elements.push({
         data: {
-          id: `${source}->${target}`,
-          source,
-          target,
-          label: edge.label ?? edge.relationship ?? edge.name ?? "",
+          id: edge.id ?? `${edge.source}->${edge.target}`,
+          source: edge.source,
+          target: edge.target,
+          label: edge.label ?? "",
         },
       });
     }

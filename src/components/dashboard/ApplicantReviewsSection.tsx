@@ -21,7 +21,9 @@ import { ApplicantProfile } from "@/components/applicant-reviews/ApplicantProfil
 import { BatchCreationModal } from "@/components/applicant-reviews/BatchCreationModal";
 import { BatchOverview } from "@/components/applicant-reviews/BatchOverview";
 import { BatchProgressModal } from "@/components/applicant-reviews/BatchProgressModal";
+import { EvaluatePopover } from "@/components/applicant-reviews/EvaluatePopover";
 import { ReviewGraphPanel } from "@/components/applicant-reviews/ReviewGraphPanel";
+import { useEvalRunsForBatch } from "@/hooks/queries/useEvalRunsForBatch";
 
 const PAGE_SIZE = 500;
 
@@ -65,6 +67,8 @@ export function ApplicantReviewsSection({
 
   const batchProgress = useBatchProgress();
   const applicationActions = useApplicationActions();
+  const evalRunsQuery = useEvalRunsForBatch(batchId);
+  const [evalPopoverOpen, setEvalPopoverOpen] = useState(false);
   const isActive = batchProgress.isOpen || applicationActions.isReevaluating;
   const toastIdRef = useRef<string | null>(null);
 
@@ -172,36 +176,27 @@ export function ApplicantReviewsSection({
     ]);
   };
 
-  const handleReevaluateAll = (rescoreOnly = false) => {
-    batchProgress.open(batchId ?? "");
+  const handleEvaluate = (opts: { rescoreOnly: boolean; reviewBonfireId?: string }) => {
+    if (!batchId) return;
+    setEvalPopoverOpen(false);
+    batchProgress.open(batchId);
     void (async () => {
       try {
-        const toEvaluate = selectedRubricId
-          ? applications
-          : applications.filter((a) => a.evaluation_status !== "completed");
-        if (toEvaluate.length === 0) {
-          toast.success("All applications already evaluated.");
-          return;
-        }
-        const reviewBonfireId = rescoreOnly ? batchProgress.batch?.review_bonfire_id : undefined;
-        if (rescoreOnly && !reviewBonfireId) {
-          toast.error("No previous review bonfire found — run a full evaluation first.");
-          return;
-        }
-        await applicationActions.reevaluateAll(
-          toEvaluate.map((a) => a.id),
-          batchId ?? undefined,
-          selectedRubricId,
-          true,
-          rescoreOnly,
-          reviewBonfireId ?? undefined,
-        );
+        await applicationActions.reevaluateAll({
+          batchId,
+          totalCount: applications.length,
+          rubricId: selectedRubricId,
+          force: true,
+          rescoreOnly: opts.rescoreOnly,
+          reviewBonfireId: opts.reviewBonfireId,
+        });
         await queryClient.invalidateQueries({ queryKey: ["applicantReviewBatch"] });
+        await queryClient.invalidateQueries({ queryKey: ["evalRunsForBatch"] });
         await refreshData();
         applicationActions.clearProgress();
-        toast.success(rescoreOnly ? "Re-scoring complete." : "Re-evaluation complete.");
+        toast.success(opts.rescoreOnly ? "Re-scoring complete." : "Evaluation complete.");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Re-evaluation failed.");
+        toast.error(err instanceof Error ? err.message : "Evaluation failed.");
       }
     })();
   };
@@ -323,27 +318,28 @@ export function ApplicantReviewsSection({
           >
             New Batch
           </button>
-          {applications.length > 0 && (
+          {applications.length > 0 && batchId && (
             <>
-              <button
-                className="bf-btn-primary"
-                style={{ fontSize: 12, padding: "6px 14px" }}
-                onClick={() => handleReevaluateAll(false)}
-                disabled={applicationActions.isReevaluating}
-              >
-                {applicationActions.isReevaluating ? "Evaluating..." : "Evaluate All"}
-              </button>
-              {batchProgress.batch?.review_bonfire_id && (
+              <div style={{ position: "relative" }}>
                 <button
                   className="bf-btn-primary"
-                  style={{ fontSize: 12, padding: "6px 14px", opacity: 0.9 }}
-                  onClick={() => handleReevaluateAll(true)}
+                  style={{ fontSize: 12, padding: "6px 14px" }}
+                  onClick={() => setEvalPopoverOpen(!evalPopoverOpen)}
                   disabled={applicationActions.isReevaluating}
-                  title="Re-run scoring only — skip research and KG ingestion"
                 >
-                  Rescore Only
+                  {applicationActions.isReevaluating ? "Evaluating..." : "Evaluate"}
                 </button>
-              )}
+                {evalPopoverOpen && (
+                  <EvaluatePopover
+                    batchId={batchId}
+                    runs={evalRunsQuery.data ?? []}
+                    isLoading={evalRunsQuery.isLoading}
+                    isEvaluating={applicationActions.isReevaluating}
+                    onStart={handleEvaluate}
+                    onClose={() => setEvalPopoverOpen(false)}
+                  />
+                )}
+              </div>
               <button
                 className="bf-btn-primary"
                 style={{ fontSize: 12, padding: "6px 14px", opacity: 0.8 }}
@@ -352,15 +348,13 @@ export function ApplicantReviewsSection({
               >
                 Export CSV
               </button>
-              {batchId && (
-                <button
-                  className="bf-btn-primary"
-                  style={{ fontSize: 12, padding: "6px 14px", opacity: 0.8 }}
-                  onClick={() => batchProgress.open(batchId)}
-                >
-                  Progress
-                </button>
-              )}
+              <button
+                className="bf-btn-primary"
+                style={{ fontSize: 12, padding: "6px 14px", opacity: 0.8 }}
+                onClick={() => batchProgress.open(batchId)}
+              >
+                Progress
+              </button>
             </>
           )}
         </div>
@@ -578,7 +572,7 @@ export function ApplicantReviewsSection({
         reevaluateProgress={applicationActions.reevaluateProgress}
         onReevaluateAll={
           batchId && applications.length > 0
-            ? () => handleReevaluateAll()
+            ? () => handleEvaluate({ rescoreOnly: false })
             : undefined
         }
         streamState={applicationActions.streamState}

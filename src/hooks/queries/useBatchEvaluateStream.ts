@@ -330,7 +330,13 @@ export function useBatchEvaluateStream() {
   const runIdRef = useRef<string | null>(null);
 
   const startStream = useCallback(
-    async (applicationIds: string[], batchId?: string, rubricId?: string | null, force?: boolean, rescoreOnly?: boolean, reviewBonfireId?: string) => {
+    async (opts: {
+      batchId: string;
+      rubricId?: string | null;
+      force?: boolean;
+      rescoreOnly?: boolean;
+      reviewBonfireId?: string;
+    }) => {
       // Cancel any existing stream
       abortRef.current?.abort();
 
@@ -347,14 +353,13 @@ export function useBatchEvaluateStream() {
       // Step 1: Create a batch eval run (server-side state)
       try {
         const createBody: Record<string, unknown> = {
-          application_ids: applicationIds,
+          batch_id: opts.batchId,
         };
-        if (rubricId) createBody["rubric_id"] = rubricId;
-        if (force) createBody["force"] = true;
-        if (batchId) createBody["batch_id"] = batchId;
-        if (rescoreOnly && reviewBonfireId) {
+        if (opts.rubricId) createBody["rubric_id"] = opts.rubricId;
+        if (opts.force) createBody["force"] = true;
+        if (opts.rescoreOnly && opts.reviewBonfireId) {
           createBody["rescore_only"] = true;
-          createBody["review_bonfire_id"] = reviewBonfireId;
+          createBody["review_bonfire_id"] = opts.reviewBonfireId;
         }
 
         const createResponse = await fetch(

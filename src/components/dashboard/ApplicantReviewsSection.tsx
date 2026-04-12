@@ -311,6 +311,49 @@ export function ApplicantReviewsSection({
               ))}
             </select>
           )}
+          {/* Run history picker */}
+          {evalRunsQuery.data && evalRunsQuery.data.length > 1 && (
+            <select
+              onChange={(e) => {
+                const run = evalRunsQuery.data?.find((r) => r.run_id === e.target.value);
+                if (run?.rubric_id) {
+                  // Find the rubric doc that matches this run's structured rubric ID
+                  const matchingDoc = rubricListQuery.data?.items.find(
+                    (r) => r.id === run.rubric_id,
+                  );
+                  if (matchingDoc) {
+                    setSelectedRubricDocId(matchingDoc.id);
+                  }
+                }
+                setSelectedApplicationId(null);
+              }}
+              style={{
+                background: "var(--bf-surface)",
+                border: "1px solid var(--bf-border)",
+                borderRadius: "var(--bf-radius)",
+                padding: "6px 10px",
+                fontSize: 12,
+                color: "var(--bf-text-secondary)",
+                fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                cursor: "pointer",
+                maxWidth: 180,
+              }}
+            >
+              {evalRunsQuery.data.map((run, i) => {
+                const d = new Date(run.created_at);
+                const label =
+                  d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+                  " " +
+                  d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+                const status = run.status === "completed" ? "" : ` (${run.graph_phase ?? run.status})`;
+                return (
+                  <option key={run.run_id} value={run.run_id}>
+                    Run {evalRunsQuery.data!.length - i}: {label} — {run.completed_count}/{run.total_count}{status}
+                  </option>
+                );
+              })}
+            </select>
+          )}
           <button
             className="bf-btn-primary"
             style={{ fontSize: 12, padding: "6px 14px" }}
